@@ -119,23 +119,15 @@ export class Parser {
     parseChapterDetails($: CheerioAPI): string[] {
         const pages: string[] = []
 
-        // Handle first ~8 images that have direct src attribute
-        $('img:not(.lazy-image)').each((_: any, el: any) => {
-            let src = $(el).attr('src') ?? ''
+        // Handle images - check both src and data-src attributes
+        // First images have src, lazy-loaded ones have data-src
+        $('img.lazy-image').each((_: any, el: any) => {
+            let src = $(el).attr('src') ?? $(el).attr('data-src') ?? ''
             src = src.trim()
             if (!src || src.includes('data:image')) return
             if (src.startsWith('//')) src = 'https:' + src
             if (src.includes('emoji') || src.includes('avatar') || src.includes('storage/images/default')) return
             if (!src.includes('img.shousetsu.dev')) return
-            pages.push(src)
-        })
-
-        // Handle lazy-loaded images with data-src attribute
-        $('img.lazy-image').each((_: any, el: any) => {
-            let src = $(el).attr('data-src') ?? ''
-            src = src.trim()
-            if (!src || src.includes('data:image')) return
-            if (src.startsWith('//')) src = 'https:' + src
             pages.push(src)
         })
 
