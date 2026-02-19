@@ -20,7 +20,7 @@ import { Parser } from './ViHentaiParser'
 const BASE_URL = 'https://vi-hentai.pro'
 
 export const ViHentaiInfo: SourceInfo = {
-    version: '1.1.11',
+    version: '1.1.12',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -148,17 +148,7 @@ export class ViHentai extends Source {
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         try {
-            // First get manga page to find series info
-            const mangaUrl = `${BASE_URL}/truyen/${mangaId}`
-            const mangaResponse = await this.requestManager.schedule(this.buildRequest(mangaUrl), 1)
-            const $manga = this.cheerio.load(mangaResponse.data as string)
-            
-            // Find series code (Code: XXXXX)
-            const bodyText = $manga('body').text()
-            const codeMatch = bodyText.match(/Code:\s*(\d+)/)
-            const seriesCode = codeMatch?.[1]
-            
-            // Get chapter page
+            // Get chapter page first to find the chapter UUID
             const url = `${BASE_URL}/truyen/${mangaId}/${chapterId}`
             const response = await this.requestManager.schedule(this.buildRequest(url), 1)
             
@@ -167,9 +157,15 @@ export class ViHentai extends Source {
             }
             
             const $ = this.cheerio.load(response.data as string)
+            
+            // Look for chapter_id in script (this is the UUID)
+            const scriptContent = $('script').html() || ''
+            const chapterIdMatch = scriptContent.match(/chapter_id\s*=\s*['"]([a-f0-9-]+)['"]/)
+            const chapterUUID = chapterIdMatch?.[1]
+            
+            // Try to find images directly in HTML first
             const pages: string[] = []
-
-            // Try to find images directly in HTML
+            
             $('img').each((_: number, el: any) => {
                 let src = $(el).attr('data-src') ?? $(el).attr('src') ?? ''
                 src = src.trim()
@@ -178,19 +174,22 @@ export class ViHentai extends Source {
                 if (!src.includes('shousetsu.dev')) return
                 if (!pages.includes(src)) pages.push(src)
             })
-
-            // If no images found but we have seriesCode, try to construct URLs
-            // Try using seriesCode with chapterId
-            if (pages.length === 0 && seriesCode) {
-                // Try multiple possible patterns
-                const patterns = [
-                    `https://img.shousetsu.dev/images/data/${seriesCode}/${chapterId}/`,
-                    `https://img.shousetsu.dev/images/data/${seriesCode}/${chapterId.replace(/-/g, '')}/`,
-                ]
+            
+            // If no images found, need to get series UUID from manga page
+            if (pages.length === 0 && chapterUUID) {
+                const mangaUrl = `${BASE_URL}/truyen/${mangaId}`
+                const mangaResponse = await this.requestManager.schedule(this.buildRequest(mangaUrl), 1)
+                const $manga = this.cheerio.load(mangaResponse.data as string)
                 
-                for (const baseUrl of patterns) {
-                    for (let i = 1; i <= 30; i++) {
-                        pages.push(`${baseUrl}${i}.jpg`)
+                // Look for series_id in script - it's a UUID
+                const mangaScript = $manga('script').html() || ''
+                const seriesIdMatch = mangaScript.match(/series_id\s*=\s*['"]([a-f0-9-]+)['"]/i)
+                const seriesUUID = seriesIdMatch?.[1]
+                
+                if (seriesUUID) {
+                    // Construct image URLs with proper UUIDs
+                    for (let i = 1; i <= 50; i++) {
+                        pages.push(`https://img.shousetsu.dev/images/data/${seriesUUID}/${chapterUUID}/${i}.jpg`)
                     }
                 }
             }
