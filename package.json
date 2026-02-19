@@ -1,0 +1,18 @@
+{
+    "name": "vi-hentai-extension",
+    "version": "1.0.0",
+    "repositoryName": "Vi-Hentai",
+    "description": "Paperback extension for vi-hentai.pro",
+    "scripts": {
+        "bundle": "npx paperback bundle",
+        "serve": "npx paperback serve",
+        "dev": "npx nodemon --watch \"**/*.ts\" --ext \"js ts\" --exec \"npm run serve\""
+    },
+    "dependencies": {
+        "@paperback/toolchain": "0.8.0-alpha.47",
+        "@paperback/types": "0.8.0-alpha.47"
+    },
+    "devDependencies": {
+        "typescript": "^4.3.2"
+    }
+}
