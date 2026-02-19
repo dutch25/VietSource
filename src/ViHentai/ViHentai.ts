@@ -20,7 +20,7 @@ import { Parser } from './ViHentaiParser'
 const BASE_URL = 'https://vi-hentai.pro'
 
 export const ViHentaiInfo: SourceInfo = {
-    version: '1.1.23',
+    version: '1.1.24',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -167,25 +167,38 @@ export class ViHentai extends Source {
                 return App.createChapterDetails({ id: chapterId, mangaId, pages })
             }
 
-            // If no images found by Cheerio, try to extract series_id from image URLs in HTML
-            const imgUrlMatch = html.match(/img\.shousetsu\.dev\/images\/data\/([a-f0-9-]+)\/([a-f0-9-]+)\//i)
-            const extractedSeriesId = imgUrlMatch?.[1]
-            const extractedChapterId = imgUrlMatch?.[2]
+            // Try regex directly on HTML string for image URLs
+            const imgUrlRegex = /https:\/\/img\.shousetsu\.dev\/images\/data\/([a-f0-9-]+)\/([a-f0-9-]+)\/\d+\.jpg/gi
+            const imgMatches = html.match(imgUrlRegex)
             
-            // Or extract chapter_id from script
+            // Extract chapter_id from script
             const scriptChapterIdMatch = html.match(/chapter_id\s*=\s*['"]([a-f0-9-]+)['"]/i)
             const scriptChapterId = scriptChapterIdMatch?.[1]
 
-            if (extractedSeriesId && (extractedChapterId || scriptChapterId)) {
-                const chapterUUID = extractedChapterId || scriptChapterId
-                const constructedPages: string[] = []
-                for (let i = 1; i <= 50; i++) {
-                    constructedPages.push(`https://img.shousetsu.dev/images/data/${extractedSeriesId}/${chapterUUID}/${i}.jpg`)
+            // Debug: what's in the HTML
+            const hasShousetsu = html.includes('shousetsu.dev')
+            const hasLazyImage = html.includes('lazy-image')
+            const imgCount = imgMatches ? imgMatches.length : 0
+            
+            if (imgMatches && imgMatches.length > 0) {
+                // Extract series_id and chapter_id from the first image URL
+                const firstImg = imgMatches[0]
+                const urlParts = firstImg.match(/images\/data\/([a-f0-9-]+)\/([a-f0-9-]+)\//)
+                const extractedSeriesId = urlParts?.[1]
+                const extractedChapterIdFromImg = urlParts?.[2]
+                
+                const chapterUUID = extractedChapterIdFromImg || scriptChapterId
+                
+                if (extractedSeriesId && chapterUUID) {
+                    const constructedPages: string[] = []
+                    for (let i = 1; i <= 50; i++) {
+                        constructedPages.push(`https://img.shousetsu.dev/images/data/${extractedSeriesId}/${chapterUUID}/${i}.jpg`)
+                    }
+                    return App.createChapterDetails({ id: chapterId, mangaId, pages: constructedPages })
                 }
-                return App.createChapterDetails({ id: chapterId, mangaId, pages: constructedPages })
             }
 
-            throw new Error(`No images found. Cheerio: ${pages.length}, seriesId: ${extractedSeriesId}, chapterId: ${extractedChapterId || scriptChapterId}`)
+            throw new Error(`No images. hasShousetsu:${hasShousetsu}, hasLazy:${hasLazyImage}, imgMatches:${imgCount}, chapterId:${scriptChapterId}`)
             
         } catch (error: any) {
             throw new Error(`Chapter parse failed: ${error.message}`)
