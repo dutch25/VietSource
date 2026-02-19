@@ -471,7 +471,7 @@ const isLastPage = ($) => {
 };
 exports.isLastPage = isLastPage;
 exports.ViHentaiInfo = {
-    version: '1.0.6',
+    version: '1.0.7',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'YourName',
@@ -534,18 +534,11 @@ class ViHentai extends types_1.Source {
     }
     // ─── Chapter Pages ────────────────────────────────────────────────────────
     async getChapterDetails(mangaId, chapterId) {
-        console.log('=== getChapterDetails === mangaId:', mangaId, 'chapterId:', chapterId);
-        // First, try to get images from HTML
+        // Try to get images from HTML
         const $ = await this.DOMHTML(`${DOMAIN}/truyen/${chapterId}`);
         let pages = this.parser.parseChapterDetails($);
-        console.log('Pages from HTML:', pages.length);
-        // If no images, try API approach
-        if (pages.length === 0) {
-            console.log('No pages from HTML, trying fallback...');
-            // Return empty for now - need to find seriesId
-            return App.createChapterDetails({ id: chapterId, mangaId, pages: [] });
-        }
-        console.log('Returning pages:', pages.length);
+        // If no images from HTML, we can't get images (need seriesId from JS)
+        // Return empty for now
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     // ─── Fetch chapter images via API ─────────────────────────────────────────
