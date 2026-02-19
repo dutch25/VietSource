@@ -561,22 +561,23 @@ class ViHentai extends types_1.Source {
                 console.log('Could not extract chapter_id or csrf_token');
                 return [];
             }
-            // Try to get images via POST request
-            const apiResponse = await this.requestManager.schedule(App.createRequest({
-                url: `${DOMAIN}/action/views`,
+            // Try Livewire request to get chapter data with seriesId
+            const livewireResponse = await this.requestManager.schedule(App.createRequest({
+                url: `${DOMAIN}/livewire/message/read`,
                 method: 'POST',
                 headers: {
-                    'content-type': 'application/x-www-form-urlencoded',
+                    'content-type': 'application/json',
                     'x-csrf-token': csrfToken,
                     'x-livewire-token': csrfToken,
                     'referer': `${DOMAIN}/truyen/${chapterPath}`,
                 },
-                data: `chapter_id=${chapterId}&_token=${csrfToken}`,
+                data: JSON.stringify({
+                    fingerprint: { id: 'read', name: 'read', locale: 'en' },
+                    serverMemo: { children: [], hash: '' },
+                    effects: { payload: { id: chapterId } }
+                }),
             }), 1);
-            // The response might contain view count, not images
-            // Try alternative: check if images can be constructed from seriesId
-            // For now, return empty - need to find proper API endpoint
-            console.log('API Response:', apiResponse.data);
+            console.log('Livewire response:', livewireResponse.data);
             return [];
         }
         catch (error) {
