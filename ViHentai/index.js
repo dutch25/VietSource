@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const ViHentaiParser_1 = require("./ViHentaiParser");
 const BASE_URL = 'https://vi-hentai.pro';
 exports.ViHentaiInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
