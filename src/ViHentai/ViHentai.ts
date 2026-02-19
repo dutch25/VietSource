@@ -20,7 +20,7 @@ import { Parser } from './ViHentaiParser'
 const BASE_URL = 'https://vi-hentai.pro'
 
 export const ViHentaiInfo: SourceInfo = {
-    version: '1.1.26',
+    version: '1.1.27',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -140,9 +140,6 @@ export class ViHentai extends Source {
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         try {
-            // Add delay to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 500))
-            
             const url = `${BASE_URL}/truyen/${mangaId}/${chapterId}`
             const response = await this.requestManager.schedule(this.buildRequest(url), 1)
             
