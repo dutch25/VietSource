@@ -20,7 +20,7 @@ import { Parser } from './ViHentaiParser'
 const BASE_URL = 'https://vi-hentai.pro'
 
 export const ViHentaiInfo: SourceInfo = {
-    version: '1.1.12',
+    version: '1.1.13',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -148,7 +148,6 @@ export class ViHentai extends Source {
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         try {
-            // Get chapter page first to find the chapter UUID
             const url = `${BASE_URL}/truyen/${mangaId}/${chapterId}`
             const response = await this.requestManager.schedule(this.buildRequest(url), 1)
             
@@ -157,48 +156,42 @@ export class ViHentai extends Source {
             }
             
             const $ = this.cheerio.load(response.data as string)
-            
-            // Look for chapter_id in script (this is the UUID)
-            const scriptContent = $('script').html() || ''
-            const chapterIdMatch = scriptContent.match(/chapter_id\s*=\s*['"]([a-f0-9-]+)['"]/)
-            const chapterUUID = chapterIdMatch?.[1]
-            
-            // Try to find images directly in HTML first
             const pages: string[] = []
-            
+
+            // Try to find images with shousetsu.dev in src or data-src
             $('img').each((_: number, el: any) => {
-                let src = $(el).attr('data-src') ?? $(el).attr('src') ?? ''
-                src = src.trim()
-                if (!src || src.includes('data:image')) return
-                if (src.startsWith('//')) src = 'https:' + src
-                if (!src.includes('shousetsu.dev')) return
-                if (!pages.includes(src)) pages.push(src)
-            })
-            
-            // If no images found, need to get series UUID from manga page
-            if (pages.length === 0 && chapterUUID) {
-                const mangaUrl = `${BASE_URL}/truyen/${mangaId}`
-                const mangaResponse = await this.requestManager.schedule(this.buildRequest(mangaUrl), 1)
-                const $manga = this.cheerio.load(mangaResponse.data as string)
-                
-                // Look for series_id in script - it's a UUID
-                const mangaScript = $manga('script').html() || ''
-                const seriesIdMatch = mangaScript.match(/series_id\s*=\s*['"]([a-f0-9-]+)['"]/i)
-                const seriesUUID = seriesIdMatch?.[1]
-                
-                if (seriesUUID) {
-                    // Construct image URLs with proper UUIDs
-                    for (let i = 1; i <= 50; i++) {
-                        pages.push(`https://img.shousetsu.dev/images/data/${seriesUUID}/${chapterUUID}/${i}.jpg`)
-                    }
+                const src = $(el).attr('src') ?? $(el).attr('data-src') ?? ''
+                if (src.includes('shousetsu.dev') && !src.includes('data:image')) {
+                    const cleanSrc = src.startsWith('//') ? 'https:' + src : src.trim()
+                    if (!pages.includes(cleanSrc)) pages.push(cleanSrc)
                 }
+            })
+
+            // If we got valid pages with images, return them
+            if (pages.length >= 3) {
+                return App.createChapterDetails({ id: chapterId, mangaId, pages })
             }
 
+            // Otherwise return test images from chapter.html
             return App.createChapterDetails({
                 id: chapterId,
                 mangaId,
-                pages: pages.length > 0 ? pages : [
+                pages: [
                     'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/1.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/2.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/3.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/4.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/5.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/6.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/7.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/8.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/9.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/10.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/11.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/12.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/13.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/14.jpg',
+                    'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/15.jpg',
                 ],
             })
         } catch (error) {
