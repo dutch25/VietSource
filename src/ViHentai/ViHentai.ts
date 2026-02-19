@@ -20,7 +20,7 @@ import { Parser } from './ViHentaiParser'
 const BASE_URL = 'https://vi-hentai.pro'
 
 export const ViHentaiInfo: SourceInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
