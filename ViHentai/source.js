@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const ViHentaiParser_1 = require("./ViHentaiParser");
 const BASE_URL = 'https://vi-hentai.pro';
 exports.ViHentaiInfo = {
-    version: '1.1.26',
+    version: '1.1.27',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -566,8 +566,6 @@ class ViHentai extends types_1.Source {
     }
     async getChapterDetails(mangaId, chapterId) {
         try {
-            // Add delay to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 500));
             const url = `${BASE_URL}/truyen/${mangaId}/${chapterId}`;
             const response = await this.requestManager.schedule(this.buildRequest(url), 1);
             if (response.status === 429) {
