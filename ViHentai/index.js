@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const ViHentaiParser_1 = require("./ViHentaiParser");
 const BASE_URL = 'https://vi-hentai.pro';
 exports.ViHentaiInfo = {
-    version: '1.1.4',
+    version: '1.1.5',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -577,30 +577,8 @@ class ViHentai extends types_1.Source {
         const response = await this.requestManager.schedule(this.buildRequest(url), 1);
         this.CloudFlareError(response.status);
         const $ = this.cheerio.load(response.data);
-        const pages = [];
-        // Debug - log all img tags
-        console.log('=== ALL IMGS ON PAGE ===');
-        $('img').each((_, el) => {
-            const src = $(el).attr('src') ?? '';
-            const dataSrc = $(el).attr('data-src') ?? '';
-            const id = $(el).attr('id') ?? '';
-            const cls = $(el).attr('class') ?? '';
-            console.log('img:', { src, dataSrc, id, cls });
-        });
-        console.log('=== END IMGS ===');
-        // Try various selectors
-        $('img').each((_, el) => {
-            let src = $(el).attr('data-src') ?? $(el).attr('src') ?? '';
-            src = src.trim();
-            if (!src || src.startsWith('data:'))
-                return;
-            if (src.startsWith('//'))
-                src = 'https:' + src;
-            // Only include shousetsu.dev images
-            if (src.includes('img.shousetsu.dev') || src.includes('shousetsu.dev')) {
-                pages.push(src);
-            }
-        });
+        // Use parser to get pages
+        const pages = this.parser.parseChapterDetails($);
         return App.createChapterDetails({
             id: chapterId,
             mangaId,
@@ -793,21 +771,26 @@ class Parser {
     // ─── Chapter Details (images) ─────────────────────────────────────────────
     parseChapterDetails($) {
         const pages = [];
-        // Handle images - check both src and data-src attributes
-        // First images have src, lazy-loaded ones have data-src
-        $('img.lazy-image').each((_, el) => {
-            let src = $(el).attr('src') ?? $(el).attr('data-src') ?? '';
-            src = src.trim();
-            if (!src || src.includes('data:image'))
-                return;
-            if (src.startsWith('//'))
-                src = 'https:' + src;
-            if (src.includes('emoji') || src.includes('avatar') || src.includes('storage/images/default'))
-                return;
-            if (!src.includes('img.shousetsu.dev'))
-                return;
-            pages.push(src);
-        });
+        // Try multiple selectors to find images
+        const selectors = ['img.lazy-image', 'img[data-src]', 'div.image-container img', 'img[src*="shousetsu"]'];
+        for (const selector of selectors) {
+            $(selector).each((_, el) => {
+                let src = $(el).attr('data-src') ?? $(el).attr('src') ?? '';
+                src = src.trim();
+                if (!src || src.includes('data:image'))
+                    return;
+                if (src.startsWith('//'))
+                    src = 'https:' + src;
+                if (src.includes('emoji') || src.includes('avatar') || src.includes('storage/images/default'))
+                    return;
+                if (!src.includes('shousetsu.dev'))
+                    return;
+                if (!pages.includes(src))
+                    pages.push(src);
+            });
+            if (pages.length > 0)
+                break;
+        }
         return pages;
     }
     // ─── Search Results ───────────────────────────────────────────────────────
