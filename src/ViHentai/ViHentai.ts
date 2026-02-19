@@ -20,7 +20,7 @@ import { Parser } from './ViHentaiParser'
 const BASE_URL = 'https://vi-hentai.pro'
 
 export const ViHentaiInfo: SourceInfo = {
-    version: '1.1.15',
+    version: '1.1.16',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -148,40 +148,38 @@ export class ViHentai extends Source {
             }
             
             const html = response.data as string
-            const $ = this.cheerio.load(html)
-            const pages: string[] = []
-
-            // Try multiple selectors
-            const selectors = [
-                'img.lazy-image',
-                'img[src*="shousetsu"]',
-                'img[data-src*="shousetsu"]',
-                'div.image-container img',
-                'img'
-            ]
             
-            for (const selector of selectors) {
-                $(selector).each((_: number, el: any) => {
+            // Search for shousetsu.dev URLs anywhere in the HTML (including JS)
+            const pages: string[] = []
+            
+            // Method 1: Regex search for any image URLs in entire HTML
+            const imgRegex = /https?:\/\/img\.shousetsu\.dev\/images\/data\/[^"'\s]+\.jpg/gi
+            const matches = html.match(imgRegex) || []
+            
+            for (const match of matches) {
+                if (!pages.includes(match)) pages.push(match)
+            }
+            
+            // Method 2: Also try Cheerio
+            if (pages.length < 3) {
+                const $ = this.cheerio.load(html)
+                $('img').each((_: number, el: any) => {
                     const src = $(el).attr('src') ?? $(el).attr('data-src') ?? ''
-                    if (src.includes('shousetsu.dev') && !src.includes('data:image')) {
+                    if (src.includes('shousetsu.dev') && src.endsWith('.jpg')) {
                         const cleanSrc = src.startsWith('//') ? 'https:' + src : src.trim()
                         if (!pages.includes(cleanSrc)) pages.push(cleanSrc)
                     }
                 })
-                if (pages.length >= 3) break
             }
-
-            // Check page content length to see if we got real HTML or blocked
-            const pageLength = html.length
-            const hasImageContainer = html.includes('image-container')
-            const hasLazyImage = html.includes('lazy-image')
             
-            // If pages found, return them
-            if (pages.length >= 3) {
-                return App.createChapterDetails({ id: chapterId, mangaId, pages })
+            // Deduplicate and sort
+            const uniquePages = [...new Set(pages)]
+            
+            if (uniquePages.length >= 3) {
+                return App.createChapterDetails({ id: chapterId, mangaId, pages: uniquePages })
             }
 
-            // Otherwise return test images
+            // Fallback to test images
             return App.createChapterDetails({
                 id: chapterId,
                 mangaId,
