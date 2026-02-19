@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const ViHentaiParser_1 = require("./ViHentaiParser");
 const BASE_URL = 'https://vi-hentai.pro';
 exports.ViHentaiInfo = {
-    version: '1.1.7',
+    version: '1.1.8',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -573,78 +573,19 @@ class ViHentai extends types_1.Source {
         });
     }
     async getChapterDetails(mangaId, chapterId) {
-        try {
-            const url = `${BASE_URL}/truyen/${mangaId}/${chapterId}`;
-            const response = await this.requestManager.schedule(this.buildRequest(url), 1);
-            if (response.status !== 200) {
-                this.CloudFlareError(response.status);
-            }
-            const $ = this.cheerio.load(response.data);
-            // Try to get images directly from HTML using img.lazy-image
-            const pages = [];
-            $('img.lazy-image').each((_, el) => {
-                let src = $(el).attr('data-src') ?? $(el).attr('src') ?? '';
-                src = src.trim();
-                if (!src || src.includes('data:image'))
-                    return;
-                if (src.startsWith('//'))
-                    src = 'https:' + src;
-                if (!src.includes('shousetsu.dev'))
-                    return;
-                if (!pages.includes(src))
-                    pages.push(src);
-            });
-            // Fallback: try any img with shousetsu.dev
-            if (pages.length === 0) {
-                $('img').each((_, el) => {
-                    let src = $(el).attr('data-src') ?? $(el).attr('src') ?? '';
-                    src = src.trim();
-                    if (!src || src.includes('data:image'))
-                        return;
-                    if (src.startsWith('//'))
-                        src = 'https:' + src;
-                    if (!src.includes('shousetsu.dev'))
-                        return;
-                    if (!pages.includes(src))
-                        pages.push(src);
-                });
-            }
-            // If still no images, try constructing from chapter_id
-            if (pages.length === 0) {
-                const scriptContent = $('script').html() || '';
-                const chapterIdMatch = scriptContent.match(/chapter_id\s*=\s*['"]([^'"]+)['"]/);
-                const chapterIdFromScript = chapterIdMatch?.[1];
-                if (chapterIdFromScript) {
-                    const mangaUrl = `${BASE_URL}/truyen/${mangaId}`;
-                    const mangaResponse = await this.requestManager.schedule(this.buildRequest(mangaUrl), 1);
-                    const $manga = this.cheerio.load(mangaResponse.data);
-                    const mangaScript = $manga('script').html() || '';
-                    const seriesIdMatch = mangaScript.match(/series_id["\s:]+["']?([a-f0-9-]+)["']?/i);
-                    const seriesId = seriesIdMatch?.[1];
-                    const codeMatch = mangaScript.match(/Code:\s*(\d+)/);
-                    const code = codeMatch?.[1];
-                    if (seriesId || code) {
-                        const seriesIdentifier = seriesId || code;
-                        for (let i = 1; i <= 50; i++) {
-                            const imgUrl = `https://img.shousetsu.dev/images/data/${seriesIdentifier}/${chapterIdFromScript}/${i}.jpg`;
-                            pages.push(imgUrl);
-                        }
-                    }
-                }
-            }
-            return App.createChapterDetails({
-                id: chapterId,
-                mangaId,
-                pages,
-            });
-        }
-        catch (error) {
-            return App.createChapterDetails({
-                id: chapterId,
-                mangaId,
-                pages: [],
-            });
-        }
+        // First, return test images to verify code works
+        const testPages = [
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/1.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/2.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/3.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/4.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/0a5202db-69e4-4da5-a1fb-9f2a1ee9ebbf/5.jpg',
+        ];
+        return App.createChapterDetails({
+            id: chapterId,
+            mangaId,
+            pages: testPages,
+        });
     }
     async getHomePageSections(sectionCallback) {
         const sections = [
