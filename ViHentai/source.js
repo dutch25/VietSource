@@ -577,19 +577,31 @@ class ViHentai extends types_1.Source {
         const response = await this.requestManager.schedule(this.buildRequest(url), 1);
         this.CloudFlareError(response.status);
         const $ = this.cheerio.load(response.data);
-        const collected = [];
-        $('div.image-container').each((_, container) => {
-            const index = parseInt($(container).attr('data-index') ?? '0', 10);
-            const img = $(container).find('img');
-            const src = img.attr('data-src') ??
-                img.attr('src') ??
-                '';
-            if (src && !src.startsWith('data:')) {
-                collected.push({ index, src: src.trim() });
+        const pages = [];
+        // Try the new selector first (div.image-container)
+        $('div.image-container img').each((_, el) => {
+            const src = $(el).attr('data-src') ?? $(el).attr('src') ?? '';
+            if (src && !src.startsWith('data:') && src.includes('img.shousetsu.dev')) {
+                pages.push(src.trim());
             }
         });
-        collected.sort((a, b) => a.index - b.index);
-        const pages = collected.map(p => p.src);
+        // If no images found, try the old selector (img.lazy-image)
+        if (pages.length === 0) {
+            $('img.lazy-image').each((_, el) => {
+                let src = $(el).attr('src') ?? $(el).attr('data-src') ?? '';
+                src = src.trim();
+                if (!src || src.includes('data:image'))
+                    return;
+                if (src.startsWith('//'))
+                    src = 'https:' + src;
+                if (src.includes('emoji') || src.includes('avatar') || src.includes('storage/images/default'))
+                    return;
+                if (!src.includes('img.shousetsu.dev'))
+                    return;
+                pages.push(src);
+            });
+        }
+        console.log('Found pages:', pages.length);
         return App.createChapterDetails({
             id: chapterId,
             mangaId,
