@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const ViHentaiParser_1 = require("./ViHentaiParser");
 const BASE_URL = 'https://vi-hentai.pro';
 exports.ViHentaiInfo = {
-    version: '1.1.17',
+    version: '1.1.18',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -566,44 +566,67 @@ class ViHentai extends types_1.Source {
     }
     async getChapterDetails(mangaId, chapterId) {
         try {
-            // First, get manga page to find series UUID
-            const mangaUrl = `${BASE_URL}/truyen/${mangaId}`;
-            const mangaRes = await this.requestManager.schedule(this.buildRequest(mangaUrl), 1);
-            const mangaHtml = mangaRes.data;
-            // Try to find series UUID in manga HTML
+            // Get chapter page
+            const url = `${BASE_URL}/truyen/${mangaId}/${chapterId}`;
+            const response = await this.requestManager.schedule(this.buildRequest(url), 1);
+            if (response.status !== 200) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const html = response.data;
+            // Try multiple regex patterns to find image URLs or UUIDs
+            // Pattern 1: Direct image URLs in HTML
+            let pages = [];
+            const imgRegex = /https?:\/\/img\.shousetsu\.dev\/images\/data\/([a-f0-9-]+)\/([a-f0-9-]+)\/(\d+)\.jpg/gi;
+            let match;
+            while ((match = imgRegex.exec(html)) !== null) {
+                const imgUrl = match[0];
+                if (!pages.includes(imgUrl))
+                    pages.push(imgUrl);
+            }
+            // Pattern 2: Extract series_id and chapter_id from JavaScript
             let seriesUUID = '';
-            // Look for series_id in script
-            const seriesMatch = mangaHtml.match(/series_id["\s:]+["']?([a-f0-9-]+)["']?/i);
-            if (seriesMatch)
-                seriesUUID = seriesMatch[1];
-            // Also try other patterns
-            if (!seriesUUID) {
-                const altMatch = mangaHtml.match(/"series"\s*:\s*["']([a-f0-9-]+)["']/i);
-                if (altMatch)
-                    seriesUUID = altMatch[1];
-            }
-            // Get chapter page to find chapter UUID  
-            const chapterUrl = `${BASE_URL}/truyen/${mangaId}/${chapterId}`;
-            const chapterRes = await this.requestManager.schedule(this.buildRequest(chapterUrl), 1);
-            const chapterHtml = chapterRes.data;
-            // Try to find chapter UUID in chapter HTML
             let chapterUUID = '';
-            // Look for chapter_id in script
-            const chapMatch = chapterHtml.match(/chapter_id["\s=]+["']?([a-f0-9-]+)["']?/i);
-            if (chapMatch)
-                chapterUUID = chapMatch[1];
-            // Try another pattern
-            if (!chapterUUID) {
-                const altChapMatch = chapterHtml.match(/"id"\s*:\s*["']([a-f0-9-]+)["'][^}]*chapter/i);
-                if (altChapMatch)
-                    chapterUUID = altChapMatch[1];
+            // Try various patterns for series_id
+            const seriesPatterns = [
+                /series_id\s*[=:]\s*['"]([a-f0-9-]+)['"]/i,
+                /"series"\s*:\s*['"]([a-f0-9-]+)['"]/i,
+                /seriesId\s*[=:]\s*['"]([a-f0-9-]+)['"]/i,
+                /data-series[=\s]+['"]([a-f0-9-]+)['"]/i,
+            ];
+            for (const pattern of seriesPatterns) {
+                const m = html.match(pattern);
+                if (m) {
+                    seriesUUID = m[1];
+                    break;
+                }
             }
-            // If we have both UUIDs, construct image URLs
-            if (seriesUUID && chapterUUID) {
-                const pages = [];
+            // Try various patterns for chapter_id
+            const chapterPatterns = [
+                /chapter_id\s*[=:]\s*['"]([a-f0-9-]+)['"]/i,
+                /"chapter"\s*:\s*['"]([a-f0-9-]+)['"]/i,
+                /chapterId\s*[=:]\s*['"]([a-f0-9-]+)['"]/i,
+                /data-chapter[=\s]+['"]([a-f0-9-]+)['"]/i,
+            ];
+            for (const pattern of chapterPatterns) {
+                const m = html.match(pattern);
+                if (m) {
+                    chapterUUID = m[1];
+                    break;
+                }
+            }
+            // If we found both UUIDs but no direct URLs, construct URLs
+            if ((seriesUUID || chapterUUID) && pages.length < 3) {
+                // If we have chapterUUID but not seriesUUID, use slug as fallback
+                if (!seriesUUID)
+                    seriesUUID = chapterId;
+                if (!chapterUUID)
+                    chapterUUID = chapterId;
+                pages = [];
                 for (let i = 1; i <= 30; i++) {
                     pages.push(`https://img.shousetsu.dev/images/data/${seriesUUID}/${chapterUUID}/${i}.jpg`);
                 }
+            }
+            if (pages.length >= 3) {
                 return App.createChapterDetails({ id: chapterId, mangaId, pages });
             }
             // Fallback to test images
