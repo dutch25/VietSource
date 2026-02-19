@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const ViHentaiParser_1 = require("./ViHentaiParser");
 const BASE_URL = 'https://vi-hentai.pro';
 exports.ViHentaiInfo = {
-    version: '1.1.20',
+    version: '1.1.21',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -571,9 +571,10 @@ class ViHentai extends types_1.Source {
             if (response.status !== 200) {
                 throw new Error(`HTTP ${response.status}`);
             }
-            const $ = this.cheerio.load(response.data);
+            const html = response.data;
+            // Try Cheerio first
+            const $ = this.cheerio.load(html);
             const pages = [];
-            // Extract from img.lazy-image - check both src and data-src
             $('img.lazy-image').each((_, el) => {
                 let src = $(el).attr('data-src') ?? $(el).attr('src') ?? '';
                 src = src.trim();
@@ -587,6 +588,22 @@ class ViHentai extends types_1.Source {
             });
             if (pages.length >= 3) {
                 return App.createChapterDetails({ id: chapterId, mangaId, pages });
+            }
+            // Try to extract chapter_id from script if no images found
+            const chapterIdMatch = html.match(/chapter_id\s*=\s*['"]([a-f0-9-]+)['"]/i);
+            const extractedChapterId = chapterIdMatch?.[1];
+            // Get series_id from manga page
+            const mangaUrl = `${BASE_URL}/truyen/${mangaId}`;
+            const mangaRes = await this.requestManager.schedule(this.buildRequest(mangaUrl), 1);
+            const mangaHtml = mangaRes.data;
+            const seriesIdMatch = mangaHtml.match(/series_id\s*=\s*['"]([a-f0-9-]+)['"]/i);
+            const seriesId = seriesIdMatch?.[1];
+            if (extractedChapterId && seriesId) {
+                const constructedPages = [];
+                for (let i = 1; i <= 50; i++) {
+                    constructedPages.push(`https://img.shousetsu.dev/images/data/${seriesId}/${extractedChapterId}/${i}.jpg`);
+                }
+                return App.createChapterDetails({ id: chapterId, mangaId, pages: constructedPages });
             }
             throw new Error('No images found');
         }
