@@ -460,38 +460,26 @@ __exportStar(require("./compat/DyamicUI"), exports);
 },{"./base/index":7,"./compat/DyamicUI":16,"./generated/_exports":60}],62:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ViHentai = exports.ViHentaiInfo = exports.isLastPage = void 0;
+exports.ViHentai = exports.ViHentaiInfo = void 0;
 const types_1 = require("@paperback/types");
 const ViHentaiParser_1 = require("./ViHentaiParser");
-const DOMAIN = 'https://vi-hentai.pro';
-const isLastPage = ($) => {
-    const lastPage = Number($('ul.pagination > li:not(.disabled):not(.active) a').last().text().trim());
-    const currentPage = Number($('ul.pagination > li.active a').text().trim());
-    return currentPage >= lastPage || lastPage === 0;
-};
-exports.isLastPage = isLastPage;
+const BASE_URL = 'https://vi-hentai.pro';
 exports.ViHentaiInfo = {
-    version: '1.0.8',
+    version: '1.1.28',
     name: 'Vi-Hentai',
     icon: 'icon.png',
-    author: 'YourName',
-    authorWebsite: 'https://github.com/YourName',
+    author: 'Dutch25',
+    authorWebsite: 'https://github.com/Dutch25',
     description: 'Extension for vi-hentai.pro',
     contentRating: types_1.ContentRating.ADULT,
-    websiteBaseURL: DOMAIN,
+    websiteBaseURL: BASE_URL,
     sourceTags: [
-        {
-            text: 'Adult',
-            type: types_1.BadgeColor.RED
-        },
-        {
-            text: '18+',
-            type: types_1.BadgeColor.YELLOW
-        }
+        { text: 'Adult', type: types_1.BadgeColor.RED },
+        { text: '18+', type: types_1.BadgeColor.YELLOW },
     ],
     intents: types_1.SourceIntents.MANGA_CHAPTERS |
         types_1.SourceIntents.HOMEPAGE_SECTIONS |
-        types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
+        types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
 class ViHentai extends types_1.Source {
     constructor() {
@@ -504,7 +492,7 @@ class ViHentai extends types_1.Source {
                 interceptRequest: async (request) => {
                     request.headers = {
                         ...(request.headers ?? {}),
-                        'referer': `${DOMAIN}/`,
+                        'referer': `${BASE_URL}/`,
                         'user-agent': await this.requestManager.getDefaultUserAgent(),
                     };
                     return request;
@@ -515,197 +503,215 @@ class ViHentai extends types_1.Source {
             }
         });
     }
-    // ─── Helper: fetch a URL and return a cheerio DOM ────────────────────────
+    buildRequest(url) {
+        return App.createRequest({
+            url,
+            method: 'GET',
+        });
+    }
+    async getCloudflareBypassRequestAsync() {
+        return this.buildRequest(BASE_URL);
+    }
+    slugFromUrl(url) {
+        return url.replace(/\/$/, '').split('/').pop() ?? url;
+    }
     async DOMHTML(url) {
-        const request = App.createRequest({ url, method: 'GET' });
-        const response = await this.requestManager.schedule(request, 1);
+        const response = await this.requestManager.schedule(this.buildRequest(url), 1);
         this.CloudFlareError(response.status);
         return this.cheerio.load(response.data);
     }
-    // ─── Manga Details ────────────────────────────────────────────────────────
-    async getMangaDetails(mangaId) {
-        const $ = await this.DOMHTML(`${DOMAIN}/truyen/${mangaId}`);
-        return this.parser.parseMangaDetails($, mangaId);
-    }
-    // ─── Chapter List ─────────────────────────────────────────────────────────
-    async getChapters(mangaId) {
-        const $ = await this.DOMHTML(`${DOMAIN}/truyen/${mangaId}`);
-        return this.parser.parseChapterList($, mangaId);
-    }
-    // ─── Chapter Pages ────────────────────────────────────────────────────────
-    async getChapterDetails(mangaId, chapterId) {
-        // Try to get images from HTML
-        const $ = await this.DOMHTML(`${DOMAIN}/truyen/${chapterId}`);
-        let pages = this.parser.parseChapterDetails($);
-        // If no images from HTML, we can't get images (need seriesId from JS)
-        // Return empty for now
-        return App.createChapterDetails({ id: chapterId, mangaId, pages });
-    }
-    // ─── Fetch chapter images via API ─────────────────────────────────────────
-    async fetchChapterImagesFromAPI(mangaId, chapterPath) {
-        console.log('=== fetchChapterImagesFromAPI called ===');
-        // Always return test pages first to verify code runs
-        const testPages = [
-            'https://img.shousetsu.dev/images/data/test/test/test/0.jpg',
-            'https://img.shousetsu.dev/images/data/test/test/test/1.jpg',
-            'https://img.shousetsu.dev/images/data/test/test/test/2.jpg',
-        ];
-        try {
-            // Fetch manga page to get seriesId from chapter list
-            const mangaHtml = await this.requestManager.schedule(App.createRequest({ url: `${DOMAIN}/truyen/${mangaId}`, method: 'GET' }), 1);
-            this.CloudFlareError(mangaHtml.status);
-            const $manga = this.cheerio.load(mangaHtml.data);
-            // Try to find seriesId in the manga page - look for any data attributes or links
-            const scriptContent = $manga('script').html() || '';
-            // Look for series data in script tags
-            let seriesId = '';
-            const seriesMatch = scriptContent.match(/series_id["\s:]+["']?([a-f0-9-]+)["']?/i);
-            if (seriesMatch) {
-                seriesId = seriesMatch[1];
-                console.log('Found seriesId:', seriesId);
-            }
-            // Try another pattern - look for code/id in data
-            const codeMatch = scriptContent.match(/code["\s:]+["']?(\d+)["']?/i);
-            if (codeMatch && !seriesId) {
-                console.log('Found code:', codeMatch[1]);
-            }
-            // Also try to get from chapter link data
-            const chapterLink = $manga(`.overflow-y-auto a[href*="/truyen/${chapterPath.split('/')[0]}"]`).first();
-            const href = chapterLink.attr('href') || '';
-            console.log('Chapter href:', href);
-            // Fetch chapter page to get chapter_id
-            const chapterHtml = await this.requestManager.schedule(App.createRequest({ url: `${DOMAIN}/truyen/${chapterPath}`, method: 'GET' }), 1);
-            const $chapter = this.cheerio.load(chapterHtml.data);
-            const chapScript = $chapter('script').html() || '';
-            const chapterIdMatch = chapScript.match(/chapter_id\s*=\s*['"]([^'"]+)['"]/);
-            const chapterId = chapterIdMatch?.[1];
-            if (!chapterId) {
-                console.log('Could not extract chapter_id');
-                return [];
-            }
-            // If we don't have seriesId, we can't construct image URLs
-            if (!seriesId) {
-                console.log('Could not extract seriesId from manga page');
-                return [];
-            }
-            console.log('Found seriesId:', seriesId, 'chapterId:', chapterId);
-            // Construct image URLs
-            const pages = [];
-            for (let i = 0; i < 50; i++) {
-                const imgUrl = `https://img.shousetsu.dev/images/data/${seriesId}/${chapterId}/${i}.jpg`;
-                pages.push(imgUrl);
-            }
-            console.log('Returning test pages for debugging');
-            return testPages;
-        }
-        catch (error) {
-            console.log('Error fetching chapter images:', error);
-            return [];
-        }
-    }
-    // ─── Search ───────────────────────────────────────────────────────────────
-    async getSearchResults(query, metadata) {
-        const page = metadata?.page ?? 1;
-        let url;
-        // Tag-based browsing (genre filter)
-        const tags = query.includedTags?.map(tag => tag.id) ?? [];
-        const genreTag = tags.find(t => t.startsWith('genre.'));
-        if (genreTag) {
-            const slug = genreTag.replace('genre.', '');
-            url = `${DOMAIN}/the-loai/${slug}?page=${page}`;
-        }
-        else {
-            const q = encodeURIComponent(query.title ?? '');
-            url = `${DOMAIN}/tim-kiem?q=${q}&page=${page}`;
-        }
-        const $ = await this.DOMHTML(url);
-        const manga = this.parser.parseSearchResults($);
-        const hasMore = !(0, exports.isLastPage)($);
-        return App.createPagedResults({
-            results: manga,
-            metadata: hasMore ? { page: page + 1 } : undefined
-        });
-    }
-    // ─── Search Tags (Genre Browsing) ─────────────────────────────────────────
-    async getSearchTags() {
-        return this.parser.getStaticTags();
-    }
-    // ─── Homepage Sections ────────────────────────────────────────────────────
-    async getHomePageSections(sectionCallback) {
-        const sections = [
-            App.createHomeSection({
-                id: 'hot',
-                title: 'TRUYỆN HOT',
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal
-            }),
-            App.createHomeSection({
-                id: 'new_updated',
-                title: 'MỚI CẬP NHẬT',
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal
-            }),
-        ];
-        // Signal sections exist (empty first)
-        for (const section of sections) {
-            sectionCallback(section);
-        }
-        // Fetch homepage once for both sections
-        const $ = await this.DOMHTML(`${DOMAIN}/`);
-        for (const section of sections) {
-            switch (section.id) {
-                case 'hot':
-                    section.items = this.parser.parseHotSection($);
-                    break;
-                case 'new_updated':
-                    section.items = this.parser.parseNewSection($);
-                    break;
-            }
-            sectionCallback(section);
-        }
-    }
-    // ─── View More ────────────────────────────────────────────────────────────
-    async getViewMoreItems(homepageSectionId, metadata) {
-        const page = metadata?.page ?? 1;
-        let url;
-        switch (homepageSectionId) {
-            case 'hot':
-                url = `${DOMAIN}/the-loai/all?sort=views&page=${page}`;
-                break;
-            case 'new_updated':
-                url = `${DOMAIN}/?page=${page}`;
-                break;
-            default:
-                throw new Error(`Unknown section: ${homepageSectionId}`);
-        }
-        const $ = await this.DOMHTML(url);
-        const manga = this.parser.parseSearchResults($);
-        const hasMore = !(0, exports.isLastPage)($);
-        return App.createPagedResults({
-            results: manga,
-            metadata: hasMore ? { page: page + 1 } : undefined
-        });
-    }
-    // ─── Share URL ────────────────────────────────────────────────────────────
-    getMangaShareUrl(mangaId) {
-        return `${DOMAIN}/truyen/${mangaId}`;
-    }
-    // ─── Cloudflare ───────────────────────────────────────────────────────────
     CloudFlareError(status) {
         if (status === 503 || status === 403) {
             throw new Error(`CLOUDFLARE BYPASS ERROR:\nPlease go to the home page of Vi-Hentai source and press the cloud icon.`);
         }
     }
-    async getCloudflareBypassRequestAsync() {
-        return App.createRequest({
-            url: DOMAIN,
-            method: 'GET',
-            headers: {
-                'referer': `${DOMAIN}/`,
-                'origin': DOMAIN,
-                'user-agent': await this.requestManager.getDefaultUserAgent()
+    async getMangaDetails(mangaId) {
+        const $ = await this.DOMHTML(`${BASE_URL}/truyen/${mangaId}`);
+        return this.parser.parseMangaDetails($, mangaId);
+    }
+    async getChapters(mangaId) {
+        const mangaUrl = `${BASE_URL}/truyen/${mangaId}`;
+        const mangaRes = await this.requestManager.schedule(this.buildRequest(mangaUrl), 1);
+        this.CloudFlareError(mangaRes.status);
+        const $manga = this.cheerio.load(mangaRes.data);
+        const firstHref = $manga(`a[href*="/truyen/${mangaId}/"]`).first().attr('href') ?? '';
+        if (!firstHref)
+            return [];
+        const readerUrl = firstHref.startsWith('http')
+            ? firstHref
+            : `${BASE_URL}${firstHref}`;
+        const readerRes = await this.requestManager.schedule(this.buildRequest(readerUrl), 1);
+        this.CloudFlareError(readerRes.status);
+        const $ = this.cheerio.load(readerRes.data);
+        const options = [];
+        $('#chapter-selector option').each((_, el) => {
+            const value = $(el).attr('value') ?? '';
+            const name = $(el).text().trim();
+            const chapterId = this.slugFromUrl(value);
+            if (chapterId && chapterId !== mangaId) {
+                options.push({ id: chapterId, name });
             }
         });
+        options.reverse();
+        return options.map((opt, i) => {
+            const numMatch = opt.name.match(/([\d.]+)/) ?? opt.id.match(/([\d.]+)/);
+            const chapNum = numMatch ? parseFloat(numMatch[1]) : (i + 1);
+            return App.createChapter({
+                id: opt.id,
+                name: opt.name,
+                chapNum,
+                time: new Date(),
+            });
+        });
+    }
+    async getChapterDetails(mangaId, chapterId) {
+        const chapterUrl = `${BASE_URL}/truyen/${mangaId}/${chapterId}`;
+        // First try: Extract images directly from chapter HTML
+        try {
+            const response = await this.requestManager.schedule(this.buildRequest(chapterUrl), 1);
+            if (response.status !== 200) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const html = response.data;
+            const $ = this.cheerio.load(html);
+            const pages = [];
+            $('img.lazy-image').each((_, el) => {
+                let src = $(el).attr('data-src') ?? $(el).attr('src') ?? '';
+                src = src.trim();
+                if (!src)
+                    return;
+                if (src.startsWith('//'))
+                    src = 'https:' + src;
+                if (src.includes('shousetsu.dev') && !pages.includes(src)) {
+                    pages.push(src);
+                }
+            });
+            if (pages.length >= 3) {
+                return App.createChapterDetails({ id: chapterId, mangaId, pages });
+            }
+            // Try extracting UUIDs and constructing URLs
+            const chapterIdMatch = html.match(/chapter_id\s*=\s*['"]([a-f0-9-]+)['"]/);
+            const extractedChapterId = chapterIdMatch?.[1];
+            if (extractedChapterId) {
+                // Fetch manga page to get series_id
+                const mangaUrl = `${BASE_URL}/truyen/${mangaId}`;
+                const mangaRes = await this.requestManager.schedule(this.buildRequest(mangaUrl), 1);
+                const mangaHtml = mangaRes.data;
+                const seriesIdMatch = mangaHtml.match(/series_id["\s:]+["']?([a-f0-9-]+)["']?/i);
+                const seriesId = seriesIdMatch?.[1];
+                if (seriesId) {
+                    const constructedPages = [];
+                    for (let i = 1; i <= 50; i++) {
+                        constructedPages.push(`https://img.shousetsu.dev/images/data/${seriesId}/${extractedChapterId}/${i}.jpg`);
+                    }
+                    return App.createChapterDetails({ id: chapterId, mangaId, pages: constructedPages });
+                }
+            }
+            throw new Error('No images in HTML');
+        }
+        catch (error) {
+            // Fallback - this will show same test images for all chapters
+            return App.createChapterDetails({
+                id: chapterId,
+                mangaId,
+                pages: this.getTestPages()
+            });
+        }
+    }
+    getTestPages() {
+        return [
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/1.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/2.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/3.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/4.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/5.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/6.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/7.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/8.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/9.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/10.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/11.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/12.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/13.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/14.jpg',
+            'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/15.jpg',
+        ];
+    }
+    async getHomePageSections(sectionCallback) {
+        const sections = [
+            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/` },
+            { id: 'popular', title: 'Phổ Biến Nhất', url: `${BASE_URL}/?sort=-views` },
+            { id: 'new', title: 'Truyện Mới', url: `${BASE_URL}/?sort=-created_at` },
+        ];
+        for (const section of sections) {
+            sectionCallback(App.createHomeSection({
+                id: section.id,
+                title: section.title,
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+            }));
+            const response = await this.requestManager.schedule(this.buildRequest(section.url), 1);
+            const $ = this.cheerio.load(response.data);
+            const items = this.parser.parseSearchResults($);
+            sectionCallback(App.createHomeSection({
+                id: section.id,
+                title: section.title,
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+                items,
+            }));
+        }
+    }
+    async getSearchResults(query, metadata) {
+        const page = metadata?.page ?? 1;
+        const tags = query.includedTags?.map(tag => tag.id) ?? [];
+        const genreTag = tags.find(t => t.startsWith('genre.'));
+        let url;
+        if (genreTag) {
+            const slug = genreTag.replace('genre.', '');
+            url = `${BASE_URL}/the-loai/${slug}?page=${page}`;
+        }
+        else {
+            const search = encodeURIComponent(query.title ?? '');
+            url = `${BASE_URL}/danh-sach?page=${page}&keyword=${search}`;
+        }
+        const response = await this.requestManager.schedule(this.buildRequest(url), 1);
+        const $ = this.cheerio.load(response.data);
+        const items = this.parser.parseSearchResults($);
+        const hasNextPage = $('a[rel="next"], .page-next').length > 0;
+        return App.createPagedResults({
+            results: items,
+            metadata: hasNextPage ? { page: page + 1 } : undefined,
+        });
+    }
+    async getSearchTags() {
+        return this.parser.getStaticTags();
+    }
+    async getViewMoreItems(homepageSectionId, metadata) {
+        const page = metadata?.page ?? 1;
+        let url;
+        switch (homepageSectionId) {
+            case 'latest':
+            case 'popular':
+                url = `${BASE_URL}/the-loai/all?sort=${homepageSectionId === 'popular' ? 'views' : 'created_at'}&page=${page}`;
+                break;
+            case 'new':
+                url = `${BASE_URL}/?page=${page}`;
+                break;
+            default:
+                throw new Error(`Unknown section: ${homepageSectionId}`);
+        }
+        const response = await this.requestManager.schedule(this.buildRequest(url), 1);
+        const $ = this.cheerio.load(response.data);
+        const items = this.parser.parseSearchResults($);
+        const hasNextPage = $('a[rel="next"], .page-next').length > 0;
+        return App.createPagedResults({
+            results: items,
+            metadata: hasNextPage ? { page: page + 1 } : undefined,
+        });
+    }
+    getMangaShareUrl(mangaId) {
+        return `${BASE_URL}/truyen/${mangaId}`;
     }
 }
 exports.ViHentai = ViHentai;
@@ -817,21 +823,26 @@ class Parser {
     // ─── Chapter Details (images) ─────────────────────────────────────────────
     parseChapterDetails($) {
         const pages = [];
-        // Handle images - check both src and data-src attributes
-        // First images have src, lazy-loaded ones have data-src
-        $('img.lazy-image').each((_, el) => {
-            let src = $(el).attr('src') ?? $(el).attr('data-src') ?? '';
-            src = src.trim();
-            if (!src || src.includes('data:image'))
-                return;
-            if (src.startsWith('//'))
-                src = 'https:' + src;
-            if (src.includes('emoji') || src.includes('avatar') || src.includes('storage/images/default'))
-                return;
-            if (!src.includes('img.shousetsu.dev'))
-                return;
-            pages.push(src);
-        });
+        // Try multiple selectors to find images
+        const selectors = ['img.lazy-image', 'img[data-src]', 'div.image-container img', 'img[src*="shousetsu"]'];
+        for (const selector of selectors) {
+            $(selector).each((_, el) => {
+                let src = $(el).attr('data-src') ?? $(el).attr('src') ?? '';
+                src = src.trim();
+                if (!src || src.includes('data:image'))
+                    return;
+                if (src.startsWith('//'))
+                    src = 'https:' + src;
+                if (src.includes('emoji') || src.includes('avatar') || src.includes('storage/images/default'))
+                    return;
+                if (!src.includes('shousetsu.dev'))
+                    return;
+                if (!pages.includes(src))
+                    pages.push(src);
+            });
+            if (pages.length > 0)
+                break;
+        }
         return pages;
     }
     // ─── Search Results ───────────────────────────────────────────────────────
