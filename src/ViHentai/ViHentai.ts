@@ -20,7 +20,7 @@ import { Parser } from './ViHentaiParser'
 const BASE_URL = 'https://vi-hentai.pro'
 
 export const ViHentaiInfo: SourceInfo = {
-    version: '1.1.5',
+    version: '1.1.6',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -153,8 +153,53 @@ export class ViHentai extends Source {
         this.CloudFlareError(response.status)
         const $ = this.cheerio.load(response.data as string)
 
-        // Use parser to get pages
-        const pages = this.parser.parseChapterDetails($)
+        // First try to get images directly from HTML
+        const pages: string[] = []
+
+        // The images use img.lazy-image with src or data-src
+        $('img.lazy-image').each((_: number, el: any) => {
+            let src = $(el).attr('data-src') ?? $(el).attr('src') ?? ''
+            src = src.trim()
+            if (!src || src.includes('data:image')) return
+            if (src.startsWith('//')) src = 'https:' + src
+            if (!src.includes('shousetsu.dev')) return
+            if (!pages.includes(src)) pages.push(src)
+        })
+
+        // If no images found, try to construct from chapter_id in script
+        if (pages.length === 0) {
+            const scriptContent = $('script').html() || ''
+            
+            // Look for chapter_id in script
+            const chapterIdMatch = scriptContent.match(/chapter_id\s*=\s*['"]([^'"]+)['"]/)
+            const chapterIdFromScript = chapterIdMatch?.[1]
+            
+            // We need series_id from manga page
+            if (chapterIdFromScript) {
+                const mangaUrl = `${BASE_URL}/truyen/${mangaId}`
+                const mangaResponse = await this.requestManager.schedule(this.buildRequest(mangaUrl), 1)
+                const $manga = this.cheerio.load(mangaResponse.data as string)
+                const mangaScript = $manga('script').html() || ''
+                
+                // Try to find series_id
+                const seriesIdMatch = mangaScript.match(/series_id["\s:]+["']?([a-f0-9-]+)["']?/i)
+                const seriesId = seriesIdMatch?.[1]
+                
+                // Also try to find code in manga page
+                const codeMatch = mangaScript.match(/Code:\s*(\d+)/)
+                const code = codeMatch?.[1]
+                
+                if (seriesId || code) {
+                    const seriesIdentifier = seriesId || code
+                    // Construct image URLs - try both patterns
+                    for (let i = 1; i <= 50; i++) {
+                        // Pattern 1: /images/data/{seriesId}/{chapterId}/{i}.jpg
+                        const imgUrl = `https://img.shousetsu.dev/images/data/${seriesIdentifier}/${chapterIdFromScript}/${i}.jpg`
+                        pages.push(imgUrl)
+                    }
+                }
+            }
+        }
 
         return App.createChapterDetails({
             id: chapterId,
