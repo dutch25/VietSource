@@ -94,10 +94,70 @@ export class ViHentai extends Source {
 
     // ─── Chapter Pages ────────────────────────────────────────────────────────
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        // chapterId is the full path: e.g. "manga-slug/chapter-slug"
+        // First, try to get images from HTML
         const $ = await this.DOMHTML(`${DOMAIN}/truyen/${chapterId}`)
-        const pages = this.parser.parseChapterDetails($)
+        let pages = this.parser.parseChapterDetails($)
+
+        // If no images found in HTML, try API approach
+        if (pages.length === 0) {
+            pages = await this.fetchChapterImagesFromAPI(chapterId)
+        }
+
         return App.createChapterDetails({ id: chapterId, mangaId, pages })
+    }
+
+    // ─── Fetch chapter images via API ─────────────────────────────────────────
+    private async fetchChapterImagesFromAPI(chapterPath: string): Promise<string[]> {
+        try {
+            // Fetch chapter page to get chapter_id and csrf_token
+            const chapterHtml = await this.requestManager.schedule(
+                App.createRequest({ url: `${DOMAIN}/truyen/${chapterPath}`, method: 'GET' }),
+                1
+            )
+            this.CloudFlareError(chapterHtml.status)
+
+            const html = chapterHtml.data as string
+            const $ = this.cheerio.load(html)
+
+            // Extract chapter_id and csrf_token from script tags
+            const scriptContent = $('script').html() || ''
+            const chapterIdMatch = scriptContent.match(/chapter_id\s*=\s*['"]([^'"]+)['"]/)
+            const csrfMatch = scriptContent.match(/csrf_token\s*=\s*['"]([^'"]+)['"]/)
+
+            const chapterId = chapterIdMatch?.[1]
+            const csrfToken = csrfMatch?.[1]
+
+            if (!chapterId || !csrfToken) {
+                console.log('Could not extract chapter_id or csrf_token')
+                return []
+            }
+
+            // Try to get images via POST request
+            const apiResponse = await this.requestManager.schedule(
+                App.createRequest({
+                    url: `${DOMAIN}/action/views`,
+                    method: 'POST',
+                    headers: {
+                        'content-type': 'application/x-www-form-urlencoded',
+                        'x-csrf-token': csrfToken,
+                        'x-livewire-token': csrfToken,
+                        'referer': `${DOMAIN}/truyen/${chapterPath}`,
+                    },
+                    data: `chapter_id=${chapterId}&_token=${csrfToken}`,
+                }),
+                1
+            )
+
+            // The response might contain view count, not images
+            // Try alternative: check if images can be constructed from seriesId
+            // For now, return empty - need to find proper API endpoint
+            console.log('API Response:', apiResponse.data)
+            return []
+
+        } catch (error) {
+            console.log('Error fetching chapter images:', error)
+            return []
+        }
     }
 
     // ─── Search ───────────────────────────────────────────────────────────────
