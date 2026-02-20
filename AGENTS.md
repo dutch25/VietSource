@@ -151,15 +151,15 @@ Images are served from `img.shousetsu.dev`. The source includes Cloudflare bypas
 
 ## Release Checklist
 
-**Important:** Each source has its own version number - update the one you're modifying.
+**Important:** Only update the version for the source you're modifying. Do NOT update both sources at once.
 
 ### 1. Update Version Numbers
 
-**ViHentai:** `src/ViHentai/ViHentai.ts` - `version: 'x.x.x'`
+**If working on ViHentai:** Update `src/ViHentai/ViHentai.ts` - `version: 'x.x.x'`
 
-**NHentaiClub:** `src/NHentaiClub/NHentaiClub.ts` - `version: 'x.x.x'`
+**If working on NHentaiClub:** Update `src/NHentaiClub/NHentaiClub.ts` - `version: 'x.x.x'`
 
-Also update `package.json` version to match.
+Optionally update `package.json` version to match (can use same version or keep separate).
 
 ### 2. Build and Push
 
@@ -172,17 +172,12 @@ git push
 
 GitHub Actions will auto-deploy to GitHub Pages.
 
-### 3. Auto Version Update Script (Optional)
+### 3. Quick Release Command
 
-You can automate version bumps with npm scripts. Add to package.json:
-
-```json
-"scripts": {
-  "release": "npm version patch && npm run bundle && git add bundles/ package.json && git commit -m 'Version '$(npm version patch --json | grep -oP '(?<="patch":)\\d+(?=,)' | head -1)' && git push"
-}
+To bump patch version and push in one command:
+```bash
+npm version patch && npm run bundle && git add bundles/ package.json && git commit -m "Version x.x.x" && git push
 ```
-
-Then run `npm run release` to auto-bump patch version and push.
 
 ## NHentaiClub Extension
 
