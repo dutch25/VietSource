@@ -19,7 +19,7 @@ import { Parser } from './NHentaiClubParser'
 const BASE_URL = 'https://nhentaiclub.space'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.0.2',
+    version: '1.0.4',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -33,7 +33,8 @@ export const NHentaiClubInfo: SourceInfo = {
     ],
     intents:
         SourceIntents.MANGA_CHAPTERS |
-        SourceIntents.HOMEPAGE_SECTIONS,
+        SourceIntents.HOMEPAGE_SECTIONS |
+        SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 }
 
 export class NHentaiClub extends Source {
@@ -62,7 +63,15 @@ export class NHentaiClub extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 0)
+        
+        // Log response length for debugging
+        console.log('Response length:', response.data?.length ?? 0)
+        
         const $ = this.cheerio.load(response.data as string)
+        
+        // Log number of manga found
+        const mangaCount = $('a[href^="/g/"]').length
+        console.log('Manga count:', mangaCount)
 
         const manga = this.parser.parseHomePage($)
 
@@ -165,6 +174,13 @@ export class NHentaiClub extends Source {
 
     getMangaShareUrl(mangaId: string): string {
         return `${BASE_URL}/g/${mangaId}`
+    }
+
+    async getCloudflareBypassRequestAsync(): Promise<any> {
+        return App.createRequest({
+            url: BASE_URL,
+            method: 'GET',
+        })
     }
 
     async getSearchTags(): Promise<TagSection[]> {
