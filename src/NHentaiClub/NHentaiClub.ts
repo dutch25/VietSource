@@ -21,7 +21,7 @@ const CDN_URL = 'https://i1.nhentaiclub.shop'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.34',
+    version: '1.1.35',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -65,20 +65,20 @@ export class NHentaiClub extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 0)
-        
+
         // Debug: log response info
         console.log('Status:', response.status)
         console.log('Data length:', response.data?.length ?? 0)
-        
+
         // Check for Cloudflare block
         if (response.status === 403 || response.status === 503) {
             throw new Error('CLOUDFLARE BYPASS ERROR: Please visit the homepage first')
         }
-        
+
         const $ = this.cheerio.load(response.data as string)
 
         const manga = this.parser.parseHomePage($)
-        
+
         // Debug: log manga count
         console.log('Manga found:', manga.length)
 
@@ -156,17 +156,17 @@ export class NHentaiClub extends Source {
         })
 
         console.log('Fetching chapters for:', mangaId)
-        
+
         const response = await this.requestManager.schedule(request, 0)
-        
+
         // Log response status
         console.log('Response status:', response.status)
-        
+
         const $ = this.cheerio.load(response.data as string)
-        
+
         // Log HTML length
         console.log('HTML length:', response.data?.length ?? 0)
-        
+
         // Log all chapter links found
         const chapterLinks = $('a[href^="/read/"]').map((_: any, el: any) => $(el).attr('href')).get()
         console.log('Chapter links found:', chapterLinks)
@@ -178,30 +178,39 @@ export class NHentaiClub extends Source {
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         console.log('getChapterDetails:', mangaId, chapterId)
-        
-        // Step 1: Get page count from worker
-        const countUrl = `${PROXY_URL}/count?comicId=${mangaId}&lang=VI&chapter=${chapterId}`
-        const countRes = await this.requestManager.schedule(
-            App.createRequest({ url: countUrl, method: 'GET' }), 1
+
+        // Fetch manga page to get page count from embedded JSON
+        const response = await this.requestManager.schedule(
+            App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 1
         )
-        
-        const { count } = JSON.parse(countRes.data as string)
-        if (!count || count === 0) {
-            throw new Error(`Could not determine page count for chapter ${chapterId}`)
+        const html = response.data as string
+
+        // Chapter data is embedded in the HTML as:
+        // "data":[{"name":"2","pictures":33,...},{"name":"1.0","pictures":30,...}]
+        const match = html.match(/"data"\s*:\s*(\[\s*\{"name"[\s\S]*?\}\s*\])/)
+        if (!match) throw new Error(`Could not find chapter data in HTML for manga ${mangaId}`)
+
+        let chapterData: Array<{ name: string; pictures: number }>
+        try {
+            chapterData = JSON.parse(match[1])
+        } catch {
+            throw new Error('Failed to parse chapter JSON from HTML')
         }
 
-        // Step 2: Build page URLs through proxy
+        const chapter = chapterData.find(ch => String(ch.name) === chapterId)
+        if (!chapter) throw new Error(`Chapter ${chapterId} not found in manga ${mangaId}`)
+
+        const pageCount = chapter.pictures
+        if (!pageCount) throw new Error(`Page count is 0 for chapter ${chapterId}`)
+
+        // Build page URLs through proxy
         const pages: string[] = []
-        for (let i = 1; i <= count; i++) {
+        for (let i = 1; i <= pageCount; i++) {
             const imgUrl = `${CDN_URL}/${mangaId}/VI/${chapterId}/${i}.jpg`
             pages.push(`${PROXY_URL}?url=${encodeURIComponent(imgUrl)}`)
         }
 
-        return App.createChapterDetails({
-            id: chapterId,
-            mangaId: mangaId,
-            pages: pages,
-        })
+        return App.createChapterDetails({ id: chapterId, mangaId, pages })
     }
 
     getMangaShareUrl(mangaId: string): string {

@@ -38,14 +38,14 @@ export class Parser {
     // ─── Manga Details ─────────────────────────────────────────────────────────
     parseMangaDetails($: CheerioAPI, mangaId: string): SourceManga {
         const title = $('meta[property="og:title"]').attr('content')?.trim()
-                   || $('h1').first().text().trim()
-                   || mangaId
+            || $('h1').first().text().trim()
+            || mangaId
 
         const image = $('meta[property="og:image"]').attr('content')?.trim() ?? ''
 
         const desc = $('meta[property="og:description"]').attr('content')?.trim()
-                  || $('div.description, div.summary').first().text().trim()
-                  || ''
+            || $('div.description, div.summary').first().text().trim()
+            || ''
 
         return App.createSourceManga({
             id: mangaId,
@@ -64,7 +64,9 @@ export class Parser {
 
         $(`a[href*="/read/${mangaId}/"]`).each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
-            const chapterNum = href.split('/read/').pop()?.split('/').pop() ?? ''
+            // Strip query params like ?lang=VI before extracting chapter id
+            const cleanHref = href.split('?')[0]
+            const chapterNum = cleanHref.split('/read/').pop()?.split('/').pop() ?? ''
             const name = $(el).text().trim() || `Chapter ${chapterNum}`
             const num = parseFloat(chapterNum) || 0
 
