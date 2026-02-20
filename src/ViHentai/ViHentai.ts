@@ -21,7 +21,7 @@ const BASE_URL = 'https://vi-hentai.pro'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const ViHentaiInfo: SourceInfo = {
-    version: '1.1.31',
+    version: '1.1.32',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -163,13 +163,18 @@ export class ViHentai extends Source {
             }
         })
 
-        // DEBUG: show what we found — remove this throw once working
+        // DEBUG: show what img tags exist in the HTML
         if (!uuid1 || !uuid2) {
+            const allImgs: string[] = []
+            $('img').each((_: number, el: any) => {
+                const src = $(el).attr('src') ?? ''
+                const dataSrc = $(el).attr('data-src') ?? ''
+                const cls = $(el).attr('class') ?? ''
+                allImgs.push(`[src=${src.substring(0, 60)} | data-src=${dataSrc.substring(0, 60)} | class=${cls}]`)
+            })
             throw new Error(
-                `Could not find image UUIDs. ` +
-                `HTML length: ${html.length} | ` +
-                `Has shousetsu: ${html.includes('shousetsu.dev')} | ` +
-                `First 300: ${html.substring(0, 300)}`
+                `Selectors found nothing. Total img tags: ${allImgs.length}\n` +
+                allImgs.slice(0, 5).join('\n')
             )
         }
 
