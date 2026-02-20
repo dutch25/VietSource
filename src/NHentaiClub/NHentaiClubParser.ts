@@ -8,14 +8,13 @@ import { CheerioAPI } from 'cheerio'
 
 export class Parser {
 
-    // ─── Home Page ────────────────────────────────────────────────────────────
+    // ─── Home Page ─────────────────────────────────────────────────────────────
     parseHomePage($: CheerioAPI): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
 
-        // href must START with /g/ and id must be purely numeric
         $('a[href^="/g/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
-            const id = href.replace('/g/', '').replace(/\/$/, '').split('?')[0]
+            const id = href.replace('/g/', '').replace(/\/$/, '')
             if (!id || isNaN(Number(id))) return
 
             const img = $(el).find('img').first()
@@ -30,7 +29,7 @@ export class Parser {
         return this.deduplicate(results)
     }
 
-    // ─── Manga Details ────────────────────────────────────────────────────────
+    // ─── Manga Details ─────────────────────────────────────────────────────────
     parseMangaDetails($: CheerioAPI, mangaId: string): SourceManga {
         const title = $('meta[property="og:title"]').attr('content')?.trim()
             || $('h1').first().text().trim()
@@ -40,32 +39,34 @@ export class Parser {
 
         return App.createSourceManga({
             id: mangaId,
-            mangaInfo: App.createMangaInfo({
-                titles: [title],
-                image,
-                desc,
-                status: 'Ongoing',
-            }),
+            mangaInfo: App.createMangaInfo({ titles: [title], image, desc, status: 'Ongoing' }),
         })
     }
 
     // ─── Chapters ─────────────────────────────────────────────────────────────
-    // The chapter list is JS-rendered and NOT in static HTML.
-    // Chapter data is only available in the JSON blob embedded in the raw HTML:
-    //   "data":[{"name":"2","pictures":33,"createdAt":"2026-01-01"},...]
-    // We extract it with regex on the raw HTML string.
+    // Takes RAW HTML STRING — the chapter list is JS-rendered so it is NOT in
+    // static HTML. The only source is the JSON blob embedded in the page:
+    // "data":[{"name":"2","pictures":25,"createdAt":"2026-01-01"},{"name":"1",...}]
     parseChapters(html: string): Chapter[] {
-        const chapterData = this.extractChapterData(html)
-        if (!chapterData) return []
+        // From debug: the exact string in HTML is:
+        // "data":[{"name":"1","pictures":26,"createdAt":"2026-01-01"}]
+        // We extract just the array value after "data":
+        const match = html.match(/"data":\[(\{[^\]]+)\]/)
+        if (!match) return []
 
-        // JSON is newest-first — reverse for oldest-first display
-        chapterData.reverse()
+        let chapterData: Array<{ name: string; pictures: number; createdAt?: string }>
+        try {
+            chapterData = JSON.parse('[' + match[1] + ']')
+        } catch {
+            return []
+        }
+
+        chapterData.reverse() // newest-first in JSON → reverse to oldest-first
 
         return chapterData.map((ch, i) => {
             const name = String(ch.name)
             const chapNum = parseFloat(name) || (i + 1)
             const date = ch.createdAt ? new Date(ch.createdAt) : new Date()
-
             return App.createChapter({
                 id: name,
                 chapNum,
@@ -75,43 +76,22 @@ export class Parser {
         })
     }
 
-    // ─── Page Count ───────────────────────────────────────────────────────────
+    // ─── Page count for a chapter ─────────────────────────────────────────────
     getPageCount(html: string, chapterId: string): number {
-        const chapterData = this.extractChapterData(html)
-        if (!chapterData) return 0
-        const chapter = chapterData.find(ch => String(ch.name) === chapterId)
-        return chapter?.pictures ?? 0
-    }
+        const match = html.match(/"data":\[(\{[^\]]+)\]/)
+        if (!match) return 0
 
-    // ─── Private: extract chapter JSON from raw HTML ──────────────────────────
-    private extractChapterData(html: string): Array<{ name: string; pictures: number; createdAt?: string }> | null {
-        // The JSON is inside a <script> tag and looks like:
-        // "data":[{"name":"2","pictures":33,"createdAt":"2026-01-01"},{"name":"1.0","pictures":30,...}]
-        //
-        // We try multiple regex patterns in case the exact format varies slightly
-        const patterns = [
-            /"data"\s*:\s*(\[\{"name":"[^"]+","pictures":\d+[^\]]*\])/,
-            /"data"\s*:\s*(\[.*?"pictures":\d+.*?\])/s,
-            /"data"\s*:\s*(\[[^\]]+\])/,
-        ]
-
-        for (const pattern of patterns) {
-            const match = html.match(pattern)
-            if (!match) continue
-            try {
-                const parsed = JSON.parse(match[1])
-                // Validate it looks like chapter data
-                if (Array.isArray(parsed) && parsed.length > 0 && 'name' in parsed[0] && 'pictures' in parsed[0]) {
-                    return parsed
-                }
-            } catch {
-                continue
-            }
+        let chapterData: Array<{ name: string; pictures: number }>
+        try {
+            chapterData = JSON.parse('[' + match[1] + ']')
+        } catch {
+            return 0
         }
-        return null
+
+        return chapterData.find(ch => String(ch.name) === chapterId)?.pictures ?? 0
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────
+    // ─── Helpers ─────────────────────────────────────────────────────────────
     private deduplicate(items: PartialSourceManga[]): PartialSourceManga[] {
         const seen = new Set<string>()
         return items.filter(item => {

@@ -21,7 +21,7 @@ const CDN_URL = 'https://i1.nhentaiclub.shop'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.37',
+    version: '1.1.38',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -64,10 +64,10 @@ export class NHentaiClub extends Source {
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/`, method: 'GET' }), 0
+            App.createRequest({ url: BASE_URL + '/', method: 'GET' }), 0
         )
         if (response.status === 403 || response.status === 503) {
-            throw new Error('CLOUDFLARE BYPASS ERROR: Please visit the homepage first')
+            throw new Error('Cloudflare blocked — please visit the homepage first')
         }
         const $ = this.cheerio.load(response.data as string)
         const manga = this.parser.parseHomePage($)
@@ -89,19 +89,17 @@ export class NHentaiClub extends Source {
             App.createRequest({ url: `${BASE_URL}/?page=${page}`, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        const manga = this.parser.parseHomePage($)
-        return { results: manga, metadata: { page: page + 1 } }
+        return { results: this.parser.parseHomePage($), metadata: { page: page + 1 } }
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
-        const search = encodeURIComponent(query.title ?? '')
+        const searchQuery = encodeURIComponent(query.title ?? '')
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/search?keyword=${search}&page=${page}`, method: 'GET' }), 0
+            App.createRequest({ url: `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        const manga = this.parser.parseHomePage($)
-        return { results: manga, metadata: { page: page + 1 } }
+        return { results: this.parser.parseHomePage($), metadata: { page: page + 1 } }
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
@@ -116,18 +114,8 @@ export class NHentaiClub extends Source {
         const response = await this.requestManager.schedule(
             App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0
         )
-        const html = response.data as string
-
-        // ── DEBUG: show snippet around 'pictures' so we can fix the regex ──
-        // Remove this throw once chapters are working
-        const idx = html.indexOf('pictures')
-        const snippet = idx >= 0
-            ? html.substring(Math.max(0, idx - 100), idx + 120)
-            : 'pictures NOT FOUND IN HTML'
-        throw new Error(`DEBUG | length:${html.length} | idx:${idx} | snippet: ${snippet}`)
-        // ── END DEBUG ──
-
-        // return this.parser.parseChapters(html)
+        // Pass raw HTML string — NOT cheerio — chapter data is in embedded JSON
+        return this.parser.parseChapters(response.data as string)
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
@@ -138,9 +126,7 @@ export class NHentaiClub extends Source {
         const pageCount = this.parser.getPageCount(html, chapterId)
 
         if (!pageCount) {
-            const idx = html.indexOf('pictures')
-            const snippet = idx >= 0 ? html.substring(Math.max(0, idx - 100), idx + 120) : 'NOT FOUND'
-            throw new Error(`No page count for ${chapterId} | length:${html.length} | snippet: ${snippet}`)
+            throw new Error(`Page count is 0 for chapter ${chapterId} in manga ${mangaId}`)
         }
 
         const pages: string[] = []
@@ -148,6 +134,7 @@ export class NHentaiClub extends Source {
             const imgUrl = `${CDN_URL}/${mangaId}/VI/${chapterId}/${i}.jpg`
             pages.push(`${PROXY_URL}?url=${encodeURIComponent(imgUrl)}`)
         }
+
         return App.createChapterDetails({ id: chapterId, mangaId, pages })
     }
 
