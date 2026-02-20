@@ -466,7 +466,7 @@ const ViHentaiParser_1 = require("./ViHentaiParser");
 const BASE_URL = 'https://vi-hentai.pro';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.ViHentaiInfo = {
-    version: '1.1.30',
+    version: '1.1.31',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
