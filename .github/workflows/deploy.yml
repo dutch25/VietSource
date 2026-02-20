@@ -41,7 +41,8 @@ jobs:
           else
             STATUS="❌ Deployment Failed"
           fi
-          curl -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
+          echo "Sending Discord notification..."
+          RESPONSE=$(curl -s -X POST "${{ secrets.DISCORD_WEBHOOK }}" \
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
@@ -54,4 +55,5 @@ jobs:
                 ],
                 "url": "https://dutch25.github.io/test-extension/"
               }]
-            }'
+            }')
+          echo "Response: $RESPONSE"
