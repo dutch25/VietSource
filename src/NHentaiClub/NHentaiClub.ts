@@ -21,7 +21,7 @@ const CDN_URL = 'https://i1.nhentaiclub.shop'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.33',
+    version: '1.1.34',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -139,7 +139,7 @@ export class NHentaiClub extends Source {
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const request = App.createRequest({
-            url: `${BASE_URL}/comic/${mangaId}`,
+            url: `${BASE_URL}/g/${mangaId}`,
             method: 'GET',
         })
 
@@ -151,7 +151,7 @@ export class NHentaiClub extends Source {
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const request = App.createRequest({
-            url: `${BASE_URL}/comic/${mangaId}`,
+            url: `${BASE_URL}/g/${mangaId}`,
             method: 'GET',
         })
 
@@ -205,7 +205,7 @@ export class NHentaiClub extends Source {
     }
 
     getMangaShareUrl(mangaId: string): string {
-        return `${BASE_URL}/comic/${mangaId}`
+        return `${BASE_URL}/g/${mangaId}`
     }
 
     async getCloudflareBypassRequestAsync(): Promise<any> {

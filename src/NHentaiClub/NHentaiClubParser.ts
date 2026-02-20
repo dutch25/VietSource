@@ -13,9 +13,9 @@ export class Parser {
     parseHomePage($: CheerioAPI): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
 
-        $('a[href*="/comic/"]').each((_: any, el: any) => {
+        $('a[href*="/g/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
-            const id = href.split('/comic/').pop() ?? ''
+            const id = href.split('/g/').pop() ?? ''
 
             if (!id) return
 

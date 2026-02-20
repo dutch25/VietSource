@@ -467,7 +467,7 @@ const BASE_URL = 'https://nhentaiclub.space';
 const CDN_URL = 'https://i1.nhentaiclub.shop';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.33',
+    version: '1.1.34',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -565,7 +565,7 @@ class NHentaiClub extends types_1.Source {
     }
     async getMangaDetails(mangaId) {
         const request = App.createRequest({
-            url: `${BASE_URL}/comic/${mangaId}`,
+            url: `${BASE_URL}/g/${mangaId}`,
             method: 'GET',
         });
         const response = await this.requestManager.schedule(request, 0);
@@ -574,7 +574,7 @@ class NHentaiClub extends types_1.Source {
     }
     async getChapters(mangaId) {
         const request = App.createRequest({
-            url: `${BASE_URL}/comic/${mangaId}`,
+            url: `${BASE_URL}/g/${mangaId}`,
             method: 'GET',
         });
         console.log('Fetching chapters for:', mangaId);
@@ -613,7 +613,7 @@ class NHentaiClub extends types_1.Source {
         });
     }
     getMangaShareUrl(mangaId) {
-        return `${BASE_URL}/comic/${mangaId}`;
+        return `${BASE_URL}/g/${mangaId}`;
     }
     async getCloudflareBypassRequestAsync() {
         return App.createRequest({
@@ -635,9 +635,9 @@ class Parser {
     // ─── Home Page ─────────────────────────────────────────────────────────────
     parseHomePage($) {
         const results = [];
-        $('a[href*="/comic/"]').each((_, el) => {
+        $('a[href*="/g/"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
-            const id = href.split('/comic/').pop() ?? '';
+            const id = href.split('/g/').pop() ?? '';
             if (!id)
                 return;
             const img = $(el).find('img').first();
