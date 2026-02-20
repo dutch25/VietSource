@@ -10,6 +10,9 @@ import { CheerioAPI } from 'cheerio'
 
 export class Parser {
     private readonly IMAGE_BASE_URL = 'https://i1.nhentaiclub.shop'
+    // Cloudflare Worker proxy URL - replace with your own worker URL
+    // Create at: https://workers.cloudflare.com
+    private readonly PROXY_URL = '' // e.g., 'https://your-worker.workers.dev'
 
     // ─── Home Page ─────────────────────────────────────────────────────────────
     parseHomePage($: CheerioAPI): PartialSourceManga[] {
@@ -23,9 +26,14 @@ export class Parser {
 
             const img = $(el).find('img').first()
             const title = img.attr('alt')?.trim() || ''
-            const image = img.attr('src') ?? ''
+            let image = img.attr('src') ?? ''
 
             if (!title || title.length < 2) return
+
+            // Use proxy for images if configured
+            if (this.PROXY_URL && image) {
+                image = `${this.PROXY_URL}?url=${encodeURIComponent(image)}`
+            }
 
             results.push(App.createPartialSourceManga({
                 mangaId: id,
@@ -135,7 +143,14 @@ export class Parser {
 
         if (pages.length === 0) {
             for (let i = 1; i <= 20; i++) {
-                pages.push(`${this.IMAGE_BASE_URL}/${mangaId}/VI/${chapterId}/${i}.jpg`)
+                let imageUrl = `${this.IMAGE_BASE_URL}/${mangaId}/VI/${chapterId}/${i}.jpg`
+                
+                // Use proxy if configured
+                if (this.PROXY_URL) {
+                    imageUrl = `${this.PROXY_URL}?url=${encodeURIComponent(imageUrl)}`
+                }
+                
+                pages.push(imageUrl)
             }
         }
 
