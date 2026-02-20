@@ -18,9 +18,10 @@ import { CheerioAPI } from 'cheerio'
 import { Parser } from './ViHentaiParser'
 
 const BASE_URL = 'https://vi-hentai.pro'
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const ViHentaiInfo: SourceInfo = {
-    version: '1.1.28',
+    version: '1.1.29',
     name: 'Vi-Hentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -183,7 +184,8 @@ export class ViHentai extends Source {
                 if (seriesId) {
                     const constructedPages: string[] = []
                     for (let i = 1; i <= 50; i++) {
-                        constructedPages.push(`https://img.shousetsu.dev/images/data/${seriesId}/${extractedChapterId}/${i}.jpg`)
+                        const imageUrl = `https://img.shousetsu.dev/images/data/${seriesId}/${extractedChapterId}/${i}.jpg`
+                        constructedPages.push(`${PROXY_URL}?url=${encodeURIComponent(imageUrl)}`)
                     }
                     return App.createChapterDetails({ id: chapterId, mangaId, pages: constructedPages })
                 }
@@ -202,7 +204,7 @@ export class ViHentai extends Source {
     }
     
     private getTestPages(): string[] {
-        return [
+        const testImages = [
             'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/1.jpg',
             'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/2.jpg',
             'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/3.jpg',
@@ -219,6 +221,7 @@ export class ViHentai extends Source {
             'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/14.jpg',
             'https://img.shousetsu.dev/images/data/3761d3c1-9696-48ed-832d-46f4b64d9fc4/1b7fe50f-0175-4168-93ac-e5dd77dbf932/15.jpg',
         ]
+        return testImages.map(img => `${PROXY_URL}?url=${encodeURIComponent(img)}`)
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {

@@ -8,7 +8,15 @@ import {
 
 import { CheerioAPI } from 'cheerio'
 
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
+
 export class Parser {
+    private applyProxy(url: string): string {
+        if (url && (url.includes('shousetsu.dev') || url.includes('vi-hentai.pro'))) {
+            return `${PROXY_URL}?url=${encodeURIComponent(url)}`
+        }
+        return url
+    }
 
     // ─── Time helpers ─────────────────────────────────────────────────────────
     convertTime(timeStr: string): Date {
@@ -157,7 +165,8 @@ export class Parser {
             const style = imgEl.attr('style') ?? ''
             const match = style.match(/url\(['"]?([^'"]+)['"]?\)/)
             if (match) image = match[1]
-            if (image.startsWith('//')) image = 'https:' + image
+        if (image.startsWith('//')) image = 'https:' + image
+        image = this.applyProxy(image)
 
             const subtitleEl = $('.latest-chapter a', el).first()
             const subtitle = subtitleEl.text().trim()
