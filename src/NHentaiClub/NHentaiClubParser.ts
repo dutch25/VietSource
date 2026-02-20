@@ -87,20 +87,16 @@ export class Parser {
 
         $('a[href^="/read/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
-            // Extract full chapter identifier (e.g., "oneshot", "1", "2")
-            const match = href.match(/\/read\/\d+\/([^?]+)/)
+            // Match chapter number
+            const match = href.match(/\/read\/\d+\/(\d+)/)
             if (!match) return
 
             const chapterId = match[1]
             const chapterTitle = $(el).text().trim() || `Chapter ${chapterId}`
 
-            // Try to parse as number for sorting
-            const numMatch = chapterId.match(/(\d+)/)
-            const chapNum = numMatch ? parseFloat(numMatch[1]) : 0
-
             chapters.push(App.createChapter({
                 id: chapterId,
-                chapNum: chapNum,
+                chapNum: parseFloat(chapterId),
                 name: chapterTitle,
             }))
         })

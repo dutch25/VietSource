@@ -19,7 +19,7 @@ import { Parser } from './NHentaiClubParser'
 const BASE_URL = 'https://nhentaiclub.space'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -156,10 +156,14 @@ export class NHentaiClub extends Source {
         const response = await this.requestManager.schedule(request, 0)
         const $ = this.cheerio.load(response.data as string)
 
-        return this.parser.parseChapters($, mangaId)
+        const chapters = this.parser.parseChapters($, mangaId)
+        console.log('Chapters for', mangaId, ':', chapters.length, chapters.map(c => c.id))
+        return chapters
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
+        console.log('getChapterDetails:', mangaId, chapterId)
+        
         const request = App.createRequest({
             url: `${BASE_URL}/read/${mangaId}/${chapterId}?lang=VI`,
             method: 'GET',

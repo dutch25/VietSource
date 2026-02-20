@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.space';
 exports.NHentaiClubInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -577,9 +577,12 @@ class NHentaiClub extends types_1.Source {
         });
         const response = await this.requestManager.schedule(request, 0);
         const $ = this.cheerio.load(response.data);
-        return this.parser.parseChapters($, mangaId);
+        const chapters = this.parser.parseChapters($, mangaId);
+        console.log('Chapters for', mangaId, ':', chapters.length, chapters.map(c => c.id));
+        return chapters;
     }
     async getChapterDetails(mangaId, chapterId) {
+        console.log('getChapterDetails:', mangaId, chapterId);
         const request = App.createRequest({
             url: `${BASE_URL}/read/${mangaId}/${chapterId}?lang=VI`,
             method: 'GET',
@@ -680,18 +683,15 @@ class Parser {
         const chapters = [];
         $('a[href^="/read/"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
-            // Extract full chapter identifier (e.g., "oneshot", "1", "2")
-            const match = href.match(/\/read\/\d+\/([^?]+)/);
+            // Match chapter number
+            const match = href.match(/\/read\/\d+\/(\d+)/);
             if (!match)
                 return;
             const chapterId = match[1];
             const chapterTitle = $(el).text().trim() || `Chapter ${chapterId}`;
-            // Try to parse as number for sorting
-            const numMatch = chapterId.match(/(\d+)/);
-            const chapNum = numMatch ? parseFloat(numMatch[1]) : 0;
             chapters.push(App.createChapter({
                 id: chapterId,
-                chapNum: chapNum,
+                chapNum: parseFloat(chapterId),
                 name: chapterTitle,
             }));
         });
