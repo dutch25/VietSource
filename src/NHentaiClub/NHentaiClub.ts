@@ -19,7 +19,7 @@ import { Parser } from './NHentaiClubParser'
 const BASE_URL = 'https://nhentaiclub.space'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -63,9 +63,22 @@ export class NHentaiClub extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 0)
+        
+        // Debug: log response info
+        console.log('Status:', response.status)
+        console.log('Data length:', response.data?.length ?? 0)
+        
+        // Check for Cloudflare block
+        if (response.status === 403 || response.status === 503) {
+            throw new Error('CLOUDFLARE BYPASS ERROR: Please visit the homepage first')
+        }
+        
         const $ = this.cheerio.load(response.data as string)
 
         const manga = this.parser.parseHomePage($)
+        
+        // Debug: log manga count
+        console.log('Manga found:', manga.length)
 
         sectionCallback(App.createHomeSection({
             id: 'latest',
