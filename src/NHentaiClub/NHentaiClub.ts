@@ -21,7 +21,7 @@ const CDN_URL = 'https://i1.nhentaiclub.shop'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.39',
+    version: '1.1.41',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -70,7 +70,7 @@ export class NHentaiClub extends Source {
             throw new Error('Cloudflare blocked — please visit the homepage first')
         }
         const $ = this.cheerio.load(response.data as string)
-        const manga = this.parser.parseHomePage($)
+        const manga = this.parser.parseHomePage($, PROXY_URL)
 
         sectionCallback(App.createHomeSection({
             id: 'latest', title: 'Mới Cập Nhật',
@@ -89,7 +89,7 @@ export class NHentaiClub extends Source {
             App.createRequest({ url: `${BASE_URL}/?page=${page}`, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        return { results: this.parser.parseHomePage($), metadata: { page: page + 1 } }
+        return { results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } }
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
@@ -99,7 +99,7 @@ export class NHentaiClub extends Source {
             App.createRequest({ url: `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        return { results: this.parser.parseHomePage($), metadata: { page: page + 1 } }
+        return { results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } }
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
@@ -107,14 +107,13 @@ export class NHentaiClub extends Source {
             App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        return this.parser.parseMangaDetails($, mangaId)
+        return this.parser.parseMangaDetails($, mangaId, PROXY_URL)
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const response = await this.requestManager.schedule(
             App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0
         )
-        // IMPORTANT: pass raw HTML string, NOT cheerio — chapter data is in embedded JSON
         return this.parser.parseChapters(response.data as string)
     }
 
@@ -126,7 +125,7 @@ export class NHentaiClub extends Source {
         const pageCount = this.parser.getPageCount(html, chapterId)
 
         if (!pageCount) {
-            throw new Error(`Page count is 0 for chapter ${chapterId} in manga ${mangaId}`)
+            throw new Error(`Page count 0 for chapter ${chapterId} in manga ${mangaId}`)
         }
 
         const pages: string[] = []
