@@ -69,6 +69,21 @@ export class NHentaiClub extends Source {
             { id: 'day', title: 'Xếp Hạng Ngày', url: `${BASE_URL}/ranking/day` },
             { id: 'week', title: 'Xếp Hạng Tuần', url: `${BASE_URL}/ranking/week` },
             { id: 'month', title: 'Xếp Hạng Tháng', url: `${BASE_URL}/ranking/month` },
+            // Genre sections - users can tap to see manga by genre
+            { id: 'ahegao', title: 'Ahegao', url: `${BASE_URL}/genre/ahegao` },
+            { id: 'anal', title: 'Anal', url: `${BASE_URL}/genre/anal` },
+            { id: 'big-boobs', title: 'Big Boobs', url: `${BASE_URL}/genre/big-boobs` },
+            { id: 'blowjobs', title: 'Blowjobs', url: `${BASE_URL}/genre/blowjobs` },
+            { id: 'cosplay', title: 'Cosplay', url: `${BASE_URL}/genre/cosplay` },
+            { id: 'doujinshi', title: 'Doujinshi', url: `${BASE_URL}/genre/doujinshi` },
+            { id: 'fantasy', title: 'Fantasy', url: `${BASE_URL}/genre/fantasy` },
+            { id: 'futanari', title: 'Futanari', url: `${BASE_URL}/genre/futanari` },
+            { id: 'harem', title: 'Harem', url: `${BASE_URL}/genre/harem` },
+            { id: 'incest', title: 'Incest', url: `${BASE_URL}/genre/incest` },
+            { id: 'milf', title: 'MILF', url: `${BASE_URL}/genre/milf` },
+            { id: 'ntr', title: 'NTR', url: `${BASE_URL}/genre/netorare` },
+            { id: 'yaoi', title: 'Yaoi', url: `${BASE_URL}/genre/yaoi` },
+            { id: 'yuri', title: 'Yuri', url: `${BASE_URL}/genre/yuri` },
         ]
 
         for (const section of sections) {
