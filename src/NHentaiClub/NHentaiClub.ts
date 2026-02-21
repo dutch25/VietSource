@@ -17,11 +17,10 @@ import {
 import { Parser } from './NHentaiClubParser'
 
 const BASE_URL = 'https://nhentaiclub.space'
-const CDN_URL = 'https://i1.nhentaiclub.shop'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.41',
+    version: '1.1.43',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -63,40 +62,87 @@ export class NHentaiClub extends Source {
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        const response = await this.requestManager.schedule(
-            App.createRequest({ url: BASE_URL + '/', method: 'GET' }), 0
-        )
-        if (response.status === 403 || response.status === 503) {
-            throw new Error('Cloudflare blocked — please visit the homepage first')
-        }
-        const $ = this.cheerio.load(response.data as string)
-        const manga = this.parser.parseHomePage($, PROXY_URL)
+        // Announce sections first so UI shows them immediately
+        const sections = [
+            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/` },
+            { id: 'all-time', title: 'Xếp Hạng Tất Cả', url: `${BASE_URL}/ranking/all-time` },
+            { id: 'day', title: 'Xếp Hạng Ngày', url: `${BASE_URL}/ranking/day` },
+            { id: 'week', title: 'Xếp Hạng Tuần', url: `${BASE_URL}/ranking/week` },
+            { id: 'month', title: 'Xếp Hạng Tháng', url: `${BASE_URL}/ranking/month` },
+        ]
 
-        sectionCallback(App.createHomeSection({
-            id: 'latest', title: 'Mới Cập Nhật',
-            containsMoreItems: true, type: HomeSectionType.singleRowNormal,
-        }))
-        sectionCallback(App.createHomeSection({
-            id: 'latest', title: 'Mới Cập Nhật',
-            containsMoreItems: true, type: HomeSectionType.singleRowNormal,
-            items: manga,
-        }))
+        for (const section of sections) {
+            sectionCallback(App.createHomeSection({
+                id: section.id,
+                title: section.title,
+                containsMoreItems: true,
+                type: HomeSectionType.singleRowNormal,
+            }))
+        }
+
+        // Fetch each section and populate
+        for (const section of sections) {
+            try {
+                const response = await this.requestManager.schedule(
+                    App.createRequest({ url: section.url, method: 'GET' }), 0
+                )
+                if (response.status === 403 || response.status === 503) continue
+                const $ = this.cheerio.load(response.data as string)
+                const manga = this.parser.parseHomePage($, PROXY_URL)
+
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items: manga,
+                }))
+            } catch (e) {
+                // Skip failed sections silently
+            }
+        }
     }
 
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
+
+        const urlMap: Record<string, string> = {
+            'latest': `${BASE_URL}/?page=${page}`,
+            'all-time': `${BASE_URL}/ranking/all-time?page=${page}`,
+            'day': `${BASE_URL}/ranking/day?page=${page}`,
+            'week': `${BASE_URL}/ranking/week?page=${page}`,
+            'month': `${BASE_URL}/ranking/month?page=${page}`,
+        }
+
+        // Genre sections use /genre/{id}
+        const url = urlMap[homepageSectionId]
+            ?? `${BASE_URL}/genre/${homepageSectionId}?page=${page}`
+
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/?page=${page}`, method: 'GET' }), 0
+            App.createRequest({ url, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        return { results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } }
+        const manga = this.parser.parseHomePage($, PROXY_URL)
+
+        return { results: manga, metadata: { page: page + 1 } }
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
-        const searchQuery = encodeURIComponent(query.title ?? '')
+
+        // If a genre tag is selected, browse that genre page
+        const selectedGenre = query.includedTags?.[0]?.id
+        let url: string
+
+        if (selectedGenre) {
+            url = `${BASE_URL}/genre/${selectedGenre}?page=${page}`
+        } else {
+            const searchQuery = encodeURIComponent(query.title ?? '')
+            url = `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`
+        }
+
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`, method: 'GET' }), 0
+            App.createRequest({ url, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
         return { results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } }
@@ -122,6 +168,8 @@ export class NHentaiClub extends Source {
             App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 1
         )
         const html = response.data as string
+        const $ = this.cheerio.load(html)
+        const cdnBase = this.parser.getCdnBase($)
         const pageCount = this.parser.getPageCount(html, chapterId)
 
         if (!pageCount) {
@@ -130,7 +178,7 @@ export class NHentaiClub extends Source {
 
         const pages: string[] = []
         for (let i = 1; i <= pageCount; i++) {
-            const imgUrl = `${CDN_URL}/${mangaId}/VI/${chapterId}/${i}.jpg`
+            const imgUrl = `${cdnBase}/${mangaId}/VI/${chapterId}/${i}.jpg`
             pages.push(`${PROXY_URL}?url=${encodeURIComponent(imgUrl)}`)
         }
 
@@ -142,6 +190,6 @@ export class NHentaiClub extends Source {
     }
 
     async getSearchTags(): Promise<TagSection[]> {
-        return []
+        return this.parser.getSearchTags()
     }
 }
