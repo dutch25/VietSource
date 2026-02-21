@@ -21,7 +21,7 @@ const CDN_URL = 'https://i1.nhentaiclub.shop'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.38',
+    version: '1.1.39',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -114,7 +114,7 @@ export class NHentaiClub extends Source {
         const response = await this.requestManager.schedule(
             App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0
         )
-        // Pass raw HTML string — NOT cheerio — chapter data is in embedded JSON
+        // IMPORTANT: pass raw HTML string, NOT cheerio — chapter data is in embedded JSON
         return this.parser.parseChapters(response.data as string)
     }
 

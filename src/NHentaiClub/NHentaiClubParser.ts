@@ -44,24 +44,25 @@ export class Parser {
     }
 
     // ─── Chapters ─────────────────────────────────────────────────────────────
-    // Takes RAW HTML STRING — the chapter list is JS-rendered so it is NOT in
-    // static HTML. The only source is the JSON blob embedded in the page:
+    // Takes RAW HTML STRING — not cheerio $
+    // Chapter data is embedded as JSON in the page:
     // "data":[{"name":"2","pictures":25,"createdAt":"2026-01-01"},{"name":"1",...}]
     parseChapters(html: string): Chapter[] {
-        // From debug: the exact string in HTML is:
-        // "data":[{"name":"1","pictures":26,"createdAt":"2026-01-01"}]
-        // We extract just the array value after "data":
-        const match = html.match(/"data":\[(\{[^\]]+)\]/)
+        // Confirmed working regex (tested against real HTML snippet)
+        const match = html.match(/"data":(\[[^\]]*\])/)
         if (!match) return []
 
         let chapterData: Array<{ name: string; pictures: number; createdAt?: string }>
         try {
-            chapterData = JSON.parse('[' + match[1] + ']')
+            chapterData = JSON.parse(match[1])
         } catch {
             return []
         }
 
-        chapterData.reverse() // newest-first in JSON → reverse to oldest-first
+        if (!Array.isArray(chapterData) || chapterData.length === 0) return []
+
+        // JSON is newest-first — reverse to oldest-first
+        chapterData.reverse()
 
         return chapterData.map((ch, i) => {
             const name = String(ch.name)
@@ -78,12 +79,12 @@ export class Parser {
 
     // ─── Page count for a chapter ─────────────────────────────────────────────
     getPageCount(html: string, chapterId: string): number {
-        const match = html.match(/"data":\[(\{[^\]]+)\]/)
+        const match = html.match(/"data":(\[[^\]]*\])/)
         if (!match) return 0
 
         let chapterData: Array<{ name: string; pictures: number }>
         try {
-            chapterData = JSON.parse('[' + match[1] + ']')
+            chapterData = JSON.parse(match[1])
         } catch {
             return 0
         }

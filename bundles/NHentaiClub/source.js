@@ -467,7 +467,7 @@ const BASE_URL = 'https://nhentaiclub.space';
 const CDN_URL = 'https://i1.nhentaiclub.shop';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.38',
+    version: '1.1.39',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -543,7 +543,7 @@ class NHentaiClub extends types_1.Source {
     }
     async getChapters(mangaId) {
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0);
-        // Pass raw HTML string — NOT cheerio — chapter data is in embedded JSON
+        // IMPORTANT: pass raw HTML string, NOT cheerio — chapter data is in embedded JSON
         return this.parser.parseChapters(response.data);
     }
     async getChapterDetails(mangaId, chapterId) {
@@ -604,24 +604,25 @@ class Parser {
         });
     }
     // ─── Chapters ─────────────────────────────────────────────────────────────
-    // Takes RAW HTML STRING — the chapter list is JS-rendered so it is NOT in
-    // static HTML. The only source is the JSON blob embedded in the page:
+    // Takes RAW HTML STRING — not cheerio $
+    // Chapter data is embedded as JSON in the page:
     // "data":[{"name":"2","pictures":25,"createdAt":"2026-01-01"},{"name":"1",...}]
     parseChapters(html) {
-        // From debug: the exact string in HTML is:
-        // "data":[{"name":"1","pictures":26,"createdAt":"2026-01-01"}]
-        // We extract just the array value after "data":
-        const match = html.match(/"data":\[(\{[^\]]+)\]/);
+        // Confirmed working regex (tested against real HTML snippet)
+        const match = html.match(/"data":(\[[^\]]*\])/);
         if (!match)
             return [];
         let chapterData;
         try {
-            chapterData = JSON.parse('[' + match[1] + ']');
+            chapterData = JSON.parse(match[1]);
         }
         catch {
             return [];
         }
-        chapterData.reverse(); // newest-first in JSON → reverse to oldest-first
+        if (!Array.isArray(chapterData) || chapterData.length === 0)
+            return [];
+        // JSON is newest-first — reverse to oldest-first
+        chapterData.reverse();
         return chapterData.map((ch, i) => {
             const name = String(ch.name);
             const chapNum = parseFloat(name) || (i + 1);
@@ -636,12 +637,12 @@ class Parser {
     }
     // ─── Page count for a chapter ─────────────────────────────────────────────
     getPageCount(html, chapterId) {
-        const match = html.match(/"data":\[(\{[^\]]+)\]/);
+        const match = html.match(/"data":(\[[^\]]*\])/);
         if (!match)
             return 0;
         let chapterData;
         try {
-            chapterData = JSON.parse('[' + match[1] + ']');
+            chapterData = JSON.parse(match[1]);
         }
         catch {
             return 0;
