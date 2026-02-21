@@ -20,7 +20,7 @@ const BASE_URL = 'https://nhentaiclub.space'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.48',
+    version: '1.1.49',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -141,8 +141,17 @@ export class NHentaiClub extends Source {
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
-        const searchQuery = encodeURIComponent(query.title ?? '')
-        const url = `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`
+
+        // If a genre tag is selected, browse that genre page
+        const selectedGenre = query.includedTags?.[0]?.id
+        let url: string
+
+        if (selectedGenre) {
+            url = `${BASE_URL}/genre/${selectedGenre}?page=${page}`
+        } else {
+            const searchQuery = encodeURIComponent(query.title ?? '')
+            url = `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`
+        }
 
         const response = await this.requestManager.schedule(
             App.createRequest({ url, method: 'GET' }), 0
@@ -190,5 +199,9 @@ export class NHentaiClub extends Source {
 
     getMangaShareUrl(mangaId: string): string {
         return `${BASE_URL}/g/${mangaId}`
+    }
+
+    async getSearchTags(): Promise<TagSection[]> {
+        return this.parser.getSearchTags()
     }
 }
