@@ -466,7 +466,7 @@ const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.space';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.47',
+    version: '1.1.48',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -511,7 +511,6 @@ class NHentaiClub extends types_1.Source {
             { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/` },
             { id: 'all-time', title: 'Xếp Hạng Tất Cả', url: `${BASE_URL}/ranking/all-time` },
             { id: 'day', title: 'Xếp Hạng Ngày', url: `${BASE_URL}/ranking/day` },
-            { id: 'week', title: 'Xếp Hạng Tuần', url: `${BASE_URL}/ranking/week` },
             { id: 'month', title: 'Xếp Hạng Tháng', url: `${BASE_URL}/ranking/month` },
             // Genre sections - users can tap to see manga by genre
             { id: 'ahegao', title: 'Ahegao', url: `${BASE_URL}/genre/ahegao` },
@@ -526,7 +525,6 @@ class NHentaiClub extends types_1.Source {
             { id: 'incest', title: 'Incest', url: `${BASE_URL}/genre/incest` },
             { id: 'milf', title: 'MILF', url: `${BASE_URL}/genre/milf` },
             { id: 'ntr', title: 'NTR', url: `${BASE_URL}/genre/netorare` },
-            { id: 'yaoi', title: 'Yaoi', url: `${BASE_URL}/genre/yaoi` },
             { id: 'yuri', title: 'Yuri', url: `${BASE_URL}/genre/yuri` },
         ];
         for (const section of sections) {
@@ -564,7 +562,6 @@ class NHentaiClub extends types_1.Source {
             'latest': `${BASE_URL}/?page=${page}`,
             'all-time': `${BASE_URL}/ranking/all-time?page=${page}`,
             'day': `${BASE_URL}/ranking/day?page=${page}`,
-            'week': `${BASE_URL}/ranking/week?page=${page}`,
             'month': `${BASE_URL}/ranking/month?page=${page}`,
         };
         // Genre sections use /genre/{id}
