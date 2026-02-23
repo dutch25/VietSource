@@ -20,7 +20,7 @@ const BASE_URL = 'https://nhentaiclub.space'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.52',
+    version: '1.1.53',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -130,12 +130,17 @@ export class NHentaiClub extends Source {
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
 
-        // If a genre tag is selected, browse that genre page
-        const selectedGenre = query.includedTags?.[0]?.id
+        // If a genre or author tag is selected, browse that page
+        const selectedTag = query.includedTags?.[0]
         let url: string
 
-        if (selectedGenre) {
-            url = `${BASE_URL}/genre/${selectedGenre}?page=${page}`
+        if (selectedTag) {
+            if (selectedTag.id.startsWith('author:')) {
+                const authorId = selectedTag.id.replace('author:', '')
+                url = `${BASE_URL}/author/${authorId}?page=${page}`
+            } else {
+                url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}`
+            }
         } else {
             const searchQuery = encodeURIComponent(query.title ?? '')
             url = `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`

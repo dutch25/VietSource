@@ -41,7 +41,9 @@ export class Parser {
         const image = rawImage ? `${proxyUrl}?url=${encodeURIComponent(rawImage)}` : ''
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? ''
 
-        const author = $('a[href^="/author/"]').first().text().trim() ?? ''
+        const authorLink = $('a[href^="/author/"]').first()
+        const author = authorLink.text().trim() ?? ''
+        const authorId = authorLink.attr('href')?.replace('/author/', '').trim() ?? author
 
         const statusText = $('a[href*="status="]').first().text().trim().toLowerCase() ?? ''
         const status = statusText.includes('hoàn thành') || statusText.includes('completed') ? 'Completed' : 'Ongoing'
@@ -56,9 +58,13 @@ export class Parser {
             }
         })
 
-        const tagSections = genres.length > 0
-            ? [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags: genres })]
-            : []
+        const tagSections: TagSection[] = []
+        if (genres.length > 0) {
+            tagSections.push(App.createTagSection({ id: 'genre', label: 'Thể Loại', tags: genres }))
+        }
+        if (author) {
+            tagSections.push(App.createTagSection({ id: 'author', label: 'Tác Giả', tags: [App.createTag({ id: 'author:' + authorId, label: author })] }))
+        }
 
         return App.createSourceManga({
             id: mangaId,
