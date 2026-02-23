@@ -466,7 +466,7 @@ const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.space';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.52',
+    version: '1.1.53',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -562,11 +562,17 @@ class NHentaiClub extends types_1.Source {
     }
     async getSearchResults(query, metadata) {
         const page = metadata?.page ?? 1;
-        // If a genre tag is selected, browse that genre page
-        const selectedGenre = query.includedTags?.[0]?.id;
+        // If a genre or author tag is selected, browse that page
+        const selectedTag = query.includedTags?.[0];
         let url;
-        if (selectedGenre) {
-            url = `${BASE_URL}/genre/${selectedGenre}?page=${page}`;
+        if (selectedTag) {
+            if (selectedTag.id.startsWith('author:')) {
+                const authorId = selectedTag.id.replace('author:', '');
+                url = `${BASE_URL}/author/${authorId}?page=${page}`;
+            }
+            else {
+                url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}`;
+            }
         }
         else {
             const searchQuery = encodeURIComponent(query.title ?? '');
@@ -641,7 +647,9 @@ class Parser {
         const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? '';
         const image = rawImage ? `${proxyUrl}?url=${encodeURIComponent(rawImage)}` : '';
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? '';
-        const author = $('a[href^="/author/"]').first().text().trim() ?? '';
+        const authorLink = $('a[href^="/author/"]').first();
+        const author = authorLink.text().trim() ?? '';
+        const authorId = authorLink.attr('href')?.replace('/author/', '').trim() ?? author;
         const statusText = $('a[href*="status="]').first().text().trim().toLowerCase() ?? '';
         const status = statusText.includes('hoàn thành') || statusText.includes('completed') ? 'Completed' : 'Ongoing';
         const genres = [];
@@ -653,9 +661,13 @@ class Parser {
                 genres.push(App.createTag({ id: genreId, label }));
             }
         });
-        const tagSections = genres.length > 0
-            ? [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags: genres })]
-            : [];
+        const tagSections = [];
+        if (genres.length > 0) {
+            tagSections.push(App.createTagSection({ id: 'genre', label: 'Thể Loại', tags: genres }));
+        }
+        if (author) {
+            tagSections.push(App.createTagSection({ id: 'author', label: 'Tác Giả', tags: [App.createTag({ id: 'author:' + authorId, label: author })] }));
+        }
         return App.createSourceManga({
             id: mangaId,
             mangaInfo: App.createMangaInfo({ titles: [title], image, desc, author, artist: author, status, tags: tagSections }),
