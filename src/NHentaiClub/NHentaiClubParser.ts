@@ -41,6 +41,11 @@ export class Parser {
         const image = rawImage ? `${proxyUrl}?url=${encodeURIComponent(rawImage)}` : ''
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? ''
 
+        const author = $('a[href^="/author/"]').first().text().trim() ?? ''
+
+        const statusText = $('a[href*="status="]').first().text().trim().toLowerCase() ?? ''
+        const status = statusText.includes('hoàn thành') || statusText.includes('completed') ? 'Completed' : 'Ongoing'
+
         const genres: Tag[] = []
         $('.flex.flex-wrap.gap-2 a[href^="/genre/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
@@ -57,7 +62,7 @@ export class Parser {
 
         return App.createSourceManga({
             id: mangaId,
-            mangaInfo: App.createMangaInfo({ titles: [title], image, desc, status: 'Ongoing', tags: tagSections }),
+            mangaInfo: App.createMangaInfo({ titles: [title], image, desc, author, artist: author, status, tags: tagSections }),
         })
     }
 
