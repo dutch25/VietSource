@@ -41,9 +41,23 @@ export class Parser {
         const image = rawImage ? `${proxyUrl}?url=${encodeURIComponent(rawImage)}` : ''
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? ''
 
+        const genres: Tag[] = []
+        $('.flex.flex-wrap.gap-2 a[href^="/genre/"]').each((_: any, el: any) => {
+            const href = $(el).attr('href') ?? ''
+            const genreId = href.replace('/genre/', '').trim()
+            const label = $(el).find('button').text().trim()
+            if (genreId && label) {
+                genres.push(App.createTag({ id: genreId, label }))
+            }
+        })
+
+        const tagSections = genres.length > 0
+            ? [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags: genres })]
+            : []
+
         return App.createSourceManga({
             id: mangaId,
-            mangaInfo: App.createMangaInfo({ titles: [title], image, desc, status: 'Ongoing' }),
+            mangaInfo: App.createMangaInfo({ titles: [title], image, desc, status: 'Ongoing', tags: tagSections }),
         })
     }
 
