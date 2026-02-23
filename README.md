@@ -1,4 +1,4 @@
-# Vietnamese Source for Paperback
+# Vietnamese Extension for Paperback
 
 A **Paperback 0.8** extension supporting **two Vietnamese manga sources**:
 
