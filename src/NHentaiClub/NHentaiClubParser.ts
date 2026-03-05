@@ -150,12 +150,12 @@ export class Parser {
         const tags = genres.map(([id, label]) => App.createTag({ id, label }))
 
         const sortTags = [
-            { id: 'recent-update', label: 'Mới Cập Nhật' },
-            { id: 'newest', label: 'Mới Nhất' },
-            { id: 'view', label: 'Xem Nhiều Nhất' },
-            { id: 'top-day', label: 'Top Ngày' },
-            { id: 'top-week', label: 'Top Tuần' },
-            { id: 'top-month', label: 'Top Tháng' },
+            { id: 'sort=recent-update', label: 'Mới Cập Nhật' },
+            { id: 'sort=newest', label: 'Mới Nhất' },
+            { id: 'sort=view', label: 'Xem Nhiều Nhất' },
+            { id: 'sort=top-day', label: 'Top Ngày' },
+            { id: 'sort=top-week', label: 'Top Tuần' },
+            { id: 'sort=top-month', label: 'Top Tháng' },
         ].map(t => App.createTag(t))
 
         return [

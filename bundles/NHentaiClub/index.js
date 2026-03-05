@@ -466,7 +466,7 @@ const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.site';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.66',
+    version: '1.1.67',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -545,6 +545,7 @@ class NHentaiClub extends types_1.Source {
     }
     async getViewMoreItems(homepageSectionId, metadata) {
         const page = metadata?.page ?? 1;
+        const sort = metadata?.sort ?? '';
         const urlMap = {
             'latest': `${BASE_URL}/?page=${page}`,
             'all-time': `${BASE_URL}/ranking/all-time?page=${page}`,
@@ -554,21 +555,20 @@ class NHentaiClub extends types_1.Source {
         };
         // Genre sections use /genre/{id}
         const url = urlMap[homepageSectionId]
-            ?? `${BASE_URL}/genre/${homepageSectionId}?page=${page}`;
+            ?? `${BASE_URL}/genre/${homepageSectionId}?page=${page}${sort ? '&' + sort : ''}`;
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         const manga = this.parser.parseHomePage($, PROXY_URL);
-        return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
+        return App.createPagedResults({ results: manga, metadata: { page: page + 1, sort } });
     }
     async getSearchResults(query, metadata) {
         const page = metadata?.page ?? 1;
-        const sortTags = ['recent-update', 'newest', 'view', 'top-day', 'top-week', 'top-month'];
-        const selectedSort = query.includedTags?.find(t => sortTags.includes(t.id));
-        const sortParam = selectedSort ? `&sort=${selectedSort.id}` : '';
-        const selectedTag = query.includedTags?.find(t => !sortTags.includes(t.id) && !t.id.startsWith('author:'));
+        const sortTag = query.includedTags?.find(t => t.id.startsWith('sort='));
+        const sortParam = sortTag ? `&${sortTag.id}` : '';
+        const genreTag = query.includedTags?.find(t => !t.id.startsWith('sort=') && !t.id.startsWith('author:'));
         let url;
-        if (selectedTag) {
-            url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}${sortParam}`;
+        if (genreTag) {
+            url = `${BASE_URL}/genre/${genreTag.id}?page=${page}${sortParam}`;
         }
         else if (query.title) {
             const searchQuery = encodeURIComponent(query.title);
@@ -751,12 +751,12 @@ class Parser {
         ];
         const tags = genres.map(([id, label]) => App.createTag({ id, label }));
         const sortTags = [
-            { id: 'recent-update', label: 'Mới Cập Nhật' },
-            { id: 'newest', label: 'Mới Nhất' },
-            { id: 'view', label: 'Xem Nhiều Nhất' },
-            { id: 'top-day', label: 'Top Ngày' },
-            { id: 'top-week', label: 'Top Tuần' },
-            { id: 'top-month', label: 'Top Tháng' },
+            { id: 'sort=recent-update', label: 'Mới Cập Nhật' },
+            { id: 'sort=newest', label: 'Mới Nhất' },
+            { id: 'sort=view', label: 'Xem Nhiều Nhất' },
+            { id: 'sort=top-day', label: 'Top Ngày' },
+            { id: 'sort=top-week', label: 'Top Tuần' },
+            { id: 'sort=top-month', label: 'Top Tháng' },
         ].map(t => App.createTag(t));
         return [
             App.createTagSection({ id: 'sort', label: 'Sắp Xếp', tags: sortTags }),

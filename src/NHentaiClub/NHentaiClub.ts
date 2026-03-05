@@ -20,7 +20,7 @@ const BASE_URL = 'https://nhentaiclub.site'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.66',
+    version: '1.1.67',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -105,6 +105,7 @@ export class NHentaiClub extends Source {
 
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
+        const sort = metadata?.sort ?? ''
 
         const urlMap: Record<string, string> = {
             'latest': `${BASE_URL}/?page=${page}`,
@@ -116,7 +117,7 @@ export class NHentaiClub extends Source {
 
         // Genre sections use /genre/{id}
         const url = urlMap[homepageSectionId]
-            ?? `${BASE_URL}/genre/${homepageSectionId}?page=${page}`
+            ?? `${BASE_URL}/genre/${homepageSectionId}?page=${page}${sort ? '&' + sort : ''}`
 
         const response = await this.requestManager.schedule(
             App.createRequest({ url, method: 'GET' }), 0
@@ -124,21 +125,20 @@ export class NHentaiClub extends Source {
         const $ = this.cheerio.load(response.data as string)
         const manga = this.parser.parseHomePage($, PROXY_URL)
 
-        return App.createPagedResults({ results: manga, metadata: { page: page + 1 } })
+        return App.createPagedResults({ results: manga, metadata: { page: page + 1, sort } })
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
 
-        const sortTags = ['recent-update', 'newest', 'view', 'top-day', 'top-week', 'top-month']
-        const selectedSort = query.includedTags?.find(t => sortTags.includes(t.id))
-        const sortParam = selectedSort ? `&sort=${selectedSort.id}` : ''
+        const sortTag = query.includedTags?.find(t => t.id.startsWith('sort='))
+        const sortParam = sortTag ? `&${sortTag.id}` : ''
 
-        const selectedTag = query.includedTags?.find(t => !sortTags.includes(t.id) && !t.id.startsWith('author:'))
+        const genreTag = query.includedTags?.find(t => !t.id.startsWith('sort=') && !t.id.startsWith('author:'))
         let url: string
 
-        if (selectedTag) {
-            url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}${sortParam}`
+        if (genreTag) {
+            url = `${BASE_URL}/genre/${genreTag.id}?page=${page}${sortParam}`
         } else if (query.title) {
             const searchQuery = encodeURIComponent(query.title)
             url = `${BASE_URL}/?keyword=${searchQuery}&page=${page}${sortParam}`
