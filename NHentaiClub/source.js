@@ -464,7 +464,7 @@ exports.NHentaiClub = exports.NHentaiClubInfo = void 0;
 const types_1 = require("@paperback/types");
 const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.space';
-const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
+const PROXY_URL = 'https://busy-starling-39.dutch25.deno.net';
 // Wraps a nhentaiclub.space page URL through the proxy
 function proxyPage(path) {
     return `${PROXY_URL}?url=${encodeURIComponent(`${BASE_URL}${path}`)}`;
