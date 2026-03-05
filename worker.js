@@ -9,13 +9,11 @@ export default {
     const target = url.searchParams.get('url')
 
     const imageAllowed = [
-      'https://i1.nhentaiclub.shop/',
-      'https://i2.nhentaiclub.shop/',
-      'https://i3.nhentaiclub.shop/',
+      'https://vvcz.store/',
     ]
 
     const isImage = imageAllowed.some(prefix => target.startsWith(prefix))
-    const isPage = target.includes('nhentaiclub.space') && !isImage
+    const isPage = target.includes('nhentaiclub.site') && !isImage
 
     if (!isImage && !isPage) {
       return new Response('Invalid URL', { status: 400 })
@@ -23,8 +21,8 @@ export default {
 
     const response = await fetch(target, {
       headers: {
-        'Referer': 'https://nhentaiclub.space',
-        'Origin': 'https://nhentaiclub.space',
+        'Referer': 'https://nhentaiclub.site',
+        'Origin': 'https://nhentaiclub.site',
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'
       }
     })

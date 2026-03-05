@@ -74,12 +74,12 @@ export class Parser {
     }
 
     // ─── CDN base from og:image ────────────────────────────────────────────────
-    // e.g. og:image = https://i3.nhentaiclub.shop/7054059/thumbnail.jpg
-    //      returns   https://i3.nhentaiclub.shop
+    // e.g. og:image = https://vvcz.store/7054059/thumbnail.jpg
+    //      returns   https://vvcz.store
     getCdnBase($: CheerioAPI): string {
         const ogImage = $('meta[property="og:image"]').attr('content')?.trim() ?? ''
-        if (!ogImage) return 'https://i1.nhentaiclub.shop'
-        try { return new URL(ogImage).origin } catch { return 'https://i1.nhentaiclub.shop' }
+        if (!ogImage) return 'https://vvcz.store'
+        try { return new URL(ogImage).origin } catch { return 'https://vvcz.store' }
     }
 
     // ─── Chapters ─────────────────────────────────────────────────────────────
