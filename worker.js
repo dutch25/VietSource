@@ -8,13 +8,16 @@ export default {
 
     const target = url.searchParams.get('url')
 
-    const allowed = [
+    const imageAllowed = [
       'https://i1.nhentaiclub.shop/',
       'https://i2.nhentaiclub.shop/',
       'https://i3.nhentaiclub.shop/',
     ]
 
-    if (!allowed.some(prefix => target.startsWith(prefix))) {
+    const isImage = imageAllowed.some(prefix => target.startsWith(prefix))
+    const isPage = target.includes('nhentaiclub.space') && !isImage
+
+    if (!isImage && !isPage) {
       return new Response('Invalid URL', { status: 400 })
     }
 
@@ -26,10 +29,21 @@ export default {
       }
     })
 
+    if (isImage) {
+      return new Response(response.body, {
+        headers: {
+          'Content-Type': response.headers.get('Content-Type') ?? 'image/jpeg',
+          'Cache-Control': 'public, max-age=86400',
+          'Access-Control-Allow-Origin': '*',
+        }
+      })
+    }
+
     return new Response(response.body, {
+      status: response.status,
       headers: {
-        'Content-Type': response.headers.get('Content-Type') ?? 'image/jpeg',
-        'Cache-Control': 'public, max-age=86400',
+        'Content-Type': response.headers.get('Content-Type') ?? 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=60',
         'Access-Control-Allow-Origin': '*',
       }
     })

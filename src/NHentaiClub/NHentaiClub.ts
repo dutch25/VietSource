@@ -17,7 +17,7 @@ import {
 import { Parser } from './NHentaiClubParser'
 
 const BASE_URL = 'https://nhentaiclub.space'
-const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
+const PROXY_URL = 'https://busy-starling-39.dutch25.deno.net'
 
 // Wraps a nhentaiclub.space page URL through the proxy
 function proxyPage(path: string): string {
@@ -29,7 +29,7 @@ function getProxyUrl(path: string): string {
 }
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.61',
+    version: '1.1.62',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
