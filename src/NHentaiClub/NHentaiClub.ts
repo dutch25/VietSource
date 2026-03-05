@@ -20,7 +20,7 @@ const BASE_URL = 'https://nhentaiclub.site'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.71',
+    version: '1.1.72',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -73,6 +73,7 @@ export class NHentaiClub extends Source {
         const genreSections = [
             { id: 'ahegao', title: 'Ahegao Most Views', url: `${BASE_URL}/genre/ahegao?sort=view` },
             { id: 'anal', title: 'Anal Most Views', url: `${BASE_URL}/genre/anal?sort=view` },
+            { id: 'armpit-licking', title: 'Armpit Licking Most Views', url: `${BASE_URL}/genre/armpit-licking?sort=view` },
             { id: 'bdsm', title: 'BDSM Most Views', url: `${BASE_URL}/genre/bdsm?sort=view` },
             { id: 'big-boobs', title: 'Big Boobs Most Views', url: `${BASE_URL}/genre/big-boobs?sort=view` },
             { id: 'blowjobs', title: 'Blowjobs Most Views', url: `${BASE_URL}/genre/blowjobs?sort=view` },
@@ -128,7 +129,7 @@ export class NHentaiClub extends Source {
             'month': `${BASE_URL}/ranking/month?page=${page}`,
         }
 
-        const genreSectionIds = ['ahegao', 'anal', 'bdsm', 'big-boobs', 'blowjobs', 'cosplay', 'milf', 'netorare', 'rape', 'yuri']
+        const genreSectionIds = ['ahegao', 'anal', 'armpit-licking', 'bdsm', 'big-boobs', 'blowjobs', 'cosplay', 'milf', 'netorare', 'rape', 'yuri']
         let url: string
 
         if (urlMap[homepageSectionId]) {
