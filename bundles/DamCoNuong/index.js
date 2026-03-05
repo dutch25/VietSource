@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const DamCoNuongParser_1 = require("./DamCoNuongParser");
 const BASE_URL = 'https://damconuong.city';
 exports.DamCoNuongInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -621,10 +621,10 @@ class Parser {
         if (results.length === 0) {
             $('a[href^="/truyen/"]').each((_, el) => {
                 const href = $(el).attr('href') ?? '';
-                const idMatch = href.match(/\/truyen\/(\d+)/);
+                const idMatch = href.match(/\/truyen\/([^?#]+)/);
                 if (!idMatch)
                     return;
-                const id = idMatch[1];
+                const id = idMatch[1].trim();
                 if (!id || results.some(r => r.mangaId === id))
                     return;
                 const img = $(el).find('img').first();
