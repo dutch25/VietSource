@@ -15,9 +15,9 @@ export class Parser {
 
         $('.cover-frame, [class*="manga"]').closest('a[href^="/truyen/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
-            const idMatch = href.match(/\/truyen\/(\d+)/)
+            const idMatch = href.match(/\/truyen\/([^?#]+)/)
             if (!idMatch) return
-            const id = idMatch[1]
+            const id = idMatch[1].trim()
             if (!id) return
 
             const img = $(el).find('img').first()
