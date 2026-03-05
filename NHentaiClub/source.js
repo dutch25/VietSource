@@ -469,8 +469,11 @@ const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 function proxyPage(path) {
     return `${PROXY_URL}?url=${encodeURIComponent(`${BASE_URL}${path}`)}`;
 }
+function getProxyUrl(path) {
+    return `${PROXY_URL}?url=${encodeURIComponent(path)}`;
+}
 exports.NHentaiClubInfo = {
-    version: '1.1.60',
+    version: '1.1.61',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -497,7 +500,7 @@ class NHentaiClub extends types_1.Source {
                 interceptRequest: async (request) => {
                     request.headers = {
                         ...(request.headers ?? {}),
-                        'referer': BASE_URL,
+                        'referer': getProxyUrl(BASE_URL),
                         'user-agent': await this.requestManager.getDefaultUserAgent(),
                     };
                     return request;
@@ -507,7 +510,7 @@ class NHentaiClub extends types_1.Source {
         });
     }
     async getCloudflareBypassRequestAsync() {
-        return App.createRequest({ url: BASE_URL, method: 'GET' });
+        return App.createRequest({ url: proxyPage('/'), method: 'GET' });
     }
     async getHomePageSections(sectionCallback) {
         const sections = [
@@ -607,7 +610,7 @@ class NHentaiClub extends types_1.Source {
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     getMangaShareUrl(mangaId) {
-        return `${BASE_URL}/g/${mangaId}`;
+        return proxyPage(`/g/${mangaId}`);
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
