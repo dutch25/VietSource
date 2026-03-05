@@ -463,22 +463,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NHentaiClub = exports.NHentaiClubInfo = void 0;
 const types_1 = require("@paperback/types");
 const NHentaiClubParser_1 = require("./NHentaiClubParser");
-const BASE_URL = 'https://nhentaiclub.space';
-const PROXY_URL = 'https://busy-starling-39.dutch25.deno.net';
-// Wraps a nhentaiclub.space page URL through the proxy
-function proxyPage(path) {
-    return `${PROXY_URL}?url=${encodeURIComponent(`${BASE_URL}${path}`)}`;
-}
-function getProxyUrl(path) {
-    return `${PROXY_URL}?url=${encodeURIComponent(path)}`;
-}
+const BASE_URL = 'https://nhentaiclub.site';
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.62',
+    version: '1.1.63',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
     authorWebsite: 'https://github.com/Dutch25',
-    description: 'Extension for nhentaiclub.space',
+    description: 'Extension for nhentaiclub.site',
     contentRating: types_1.ContentRating.ADULT,
     websiteBaseURL: BASE_URL,
     sourceTags: [
@@ -500,7 +493,7 @@ class NHentaiClub extends types_1.Source {
                 interceptRequest: async (request) => {
                     request.headers = {
                         ...(request.headers ?? {}),
-                        'referer': getProxyUrl(BASE_URL),
+                        'referer': BASE_URL,
                         'user-agent': await this.requestManager.getDefaultUserAgent(),
                     };
                     return request;
@@ -510,15 +503,16 @@ class NHentaiClub extends types_1.Source {
         });
     }
     async getCloudflareBypassRequestAsync() {
-        return App.createRequest({ url: proxyPage('/'), method: 'GET' });
+        return App.createRequest({ url: BASE_URL, method: 'GET' });
     }
     async getHomePageSections(sectionCallback) {
+        // Announce sections first so UI shows them immediately
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', path: '/' },
-            { id: 'all-time', title: 'Xếp Hạng Tất Cả', path: '/ranking/all-time' },
-            { id: 'day', title: 'Xếp Hạng Ngày', path: '/ranking/day' },
-            { id: 'week', title: 'Xếp Hạng Tuần', path: '/ranking/week' },
-            { id: 'month', title: 'Xếp Hạng Tháng', path: '/ranking/month' },
+            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/` },
+            { id: 'all-time', title: 'Xếp Hạng Tất Cả', url: `${BASE_URL}/ranking/all-time` },
+            { id: 'day', title: 'Xếp Hạng Ngày', url: `${BASE_URL}/ranking/day` },
+            { id: 'week', title: 'Xếp Hạng Tuần', url: `${BASE_URL}/ranking/week` },
+            { id: 'month', title: 'Xếp Hạng Tháng', url: `${BASE_URL}/ranking/month` },
         ];
         for (const section of sections) {
             sectionCallback(App.createHomeSection({
@@ -528,9 +522,10 @@ class NHentaiClub extends types_1.Source {
                 type: types_1.HomeSectionType.singleRowNormal,
             }));
         }
+        // Fetch each section and populate
         for (const section of sections) {
             try {
-                const response = await this.requestManager.schedule(App.createRequest({ url: proxyPage(section.path), method: 'GET' }), 0);
+                const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 0);
                 if (response.status === 403 || response.status === 503)
                     continue;
                 const $ = this.cheerio.load(response.data);
@@ -550,51 +545,54 @@ class NHentaiClub extends types_1.Source {
     }
     async getViewMoreItems(homepageSectionId, metadata) {
         const page = metadata?.page ?? 1;
-        const pathMap = {
-            'latest': `/?page=${page}`,
-            'all-time': `/ranking/all-time?page=${page}`,
-            'day': `/ranking/day?page=${page}`,
-            'week': `/ranking/week?page=${page}`,
-            'month': `/ranking/month?page=${page}`,
+        const urlMap = {
+            'latest': `${BASE_URL}/?page=${page}`,
+            'all-time': `${BASE_URL}/ranking/all-time?page=${page}`,
+            'day': `${BASE_URL}/ranking/day?page=${page}`,
+            'week': `${BASE_URL}/ranking/week?page=${page}`,
+            'month': `${BASE_URL}/ranking/month?page=${page}`,
         };
-        const path = pathMap[homepageSectionId] ?? `/genre/${homepageSectionId}?page=${page}`;
-        const response = await this.requestManager.schedule(App.createRequest({ url: proxyPage(path), method: 'GET' }), 0);
+        // Genre sections use /genre/{id}
+        const url = urlMap[homepageSectionId]
+            ?? `${BASE_URL}/genre/${homepageSectionId}?page=${page}`;
+        const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         const manga = this.parser.parseHomePage($, PROXY_URL);
-        return { results: manga, metadata: { page: page + 1 } };
+        return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
     }
     async getSearchResults(query, metadata) {
         const page = metadata?.page ?? 1;
+        // If a genre or author tag is selected, browse that page
         const selectedTag = query.includedTags?.[0];
-        let path;
+        let url;
         if (selectedTag) {
             if (selectedTag.id.startsWith('author:')) {
                 const authorId = selectedTag.id.replace('author:', '').replace(/ /g, '+');
-                path = `/author/${authorId}?page=${page}`;
+                url = `${BASE_URL}/author/${authorId}?page=${page}`;
             }
             else {
-                path = `/genre/${selectedTag.id}?page=${page}`;
+                url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}`;
             }
         }
         else {
             const searchQuery = encodeURIComponent(query.title ?? '');
-            path = `/search?keyword=${searchQuery}&page=${page}`;
+            url = `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`;
         }
-        const response = await this.requestManager.schedule(App.createRequest({ url: proxyPage(path), method: 'GET' }), 0);
+        const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
-        return { results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } };
+        return App.createPagedResults({ results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } });
     }
     async getMangaDetails(mangaId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: proxyPage(`/g/${mangaId}`), method: 'GET' }), 0);
+        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseMangaDetails($, mangaId, PROXY_URL);
     }
     async getChapters(mangaId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: proxyPage(`/g/${mangaId}`), method: 'GET' }), 0);
+        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0);
         return this.parser.parseChapters(response.data);
     }
     async getChapterDetails(mangaId, chapterId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: proxyPage(`/g/${mangaId}`), method: 'GET' }), 1);
+        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 1);
         const html = response.data;
         const $ = this.cheerio.load(html);
         const cdnBase = this.parser.getCdnBase($);
@@ -610,7 +608,7 @@ class NHentaiClub extends types_1.Source {
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     getMangaShareUrl(mangaId) {
-        return proxyPage(`/g/${mangaId}`);
+        return `${BASE_URL}/g/${mangaId}`;
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
