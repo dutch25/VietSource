@@ -466,7 +466,7 @@ const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.site';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.67',
+    version: '1.1.69',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -506,14 +506,25 @@ class NHentaiClub extends types_1.Source {
         return App.createRequest({ url: BASE_URL, method: 'GET' });
     }
     async getHomePageSections(sectionCallback) {
-        // Announce sections first so UI shows them immediately
-        const sections = [
+        const rankingSections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/` },
             { id: 'all-time', title: 'Xếp Hạng Tất Cả', url: `${BASE_URL}/ranking/all-time` },
             { id: 'day', title: 'Xếp Hạng Ngày', url: `${BASE_URL}/ranking/day` },
             { id: 'week', title: 'Xếp Hạng Tuần', url: `${BASE_URL}/ranking/week` },
             { id: 'month', title: 'Xếp Hạng Tháng', url: `${BASE_URL}/ranking/month` },
         ];
+        const genreSections = [
+            { id: 'ahegao', title: 'Ahegao', url: `${BASE_URL}/genre/ahegao?sort=view` },
+            { id: 'anal', title: 'Anal', url: `${BASE_URL}/genre/anal?sort=view` },
+            { id: 'bdsm', title: 'BDSM', url: `${BASE_URL}/genre/bdsm?sort=view` },
+            { id: 'big-boobs', title: 'Big Boobs', url: `${BASE_URL}/genre/big-boobs?sort=view` },
+            { id: 'cosplay', title: 'Cosplay', url: `${BASE_URL}/genre/cosplay?sort=view` },
+            { id: 'milf', title: 'MILF', url: `${BASE_URL}/genre/milf?sort=view` },
+            { id: 'netorare', title: 'NTR', url: `${BASE_URL}/genre/netorare?sort=view` },
+            { id: 'yaoi', title: 'Yaoi', url: `${BASE_URL}/genre/yaoi?sort=view` },
+            { id: 'yuri', title: 'Yuri', url: `${BASE_URL}/genre/yuri?sort=view` },
+        ];
+        const sections = [...rankingSections, ...genreSections];
         for (const section of sections) {
             sectionCallback(App.createHomeSection({
                 id: section.id,
@@ -545,7 +556,6 @@ class NHentaiClub extends types_1.Source {
     }
     async getViewMoreItems(homepageSectionId, metadata) {
         const page = metadata?.page ?? 1;
-        const sort = metadata?.sort ?? '';
         const urlMap = {
             'latest': `${BASE_URL}/?page=${page}`,
             'all-time': `${BASE_URL}/ranking/all-time?page=${page}`,
@@ -553,29 +563,38 @@ class NHentaiClub extends types_1.Source {
             'week': `${BASE_URL}/ranking/week?page=${page}`,
             'month': `${BASE_URL}/ranking/month?page=${page}`,
         };
-        // Genre sections use /genre/{id}
-        const url = urlMap[homepageSectionId]
-            ?? `${BASE_URL}/genre/${homepageSectionId}?page=${page}${sort ? '&' + sort : ''}`;
+        const genreSectionIds = ['ahegao', 'anal', 'bdsm', 'big-boobs', 'cosplay', 'milf', 'netorare', 'yaoi', 'yuri'];
+        let url;
+        if (urlMap[homepageSectionId]) {
+            url = urlMap[homepageSectionId];
+        }
+        else if (genreSectionIds.includes(homepageSectionId)) {
+            url = `${BASE_URL}/genre/${homepageSectionId}?sort=view&page=${page}`;
+        }
+        else {
+            url = `${BASE_URL}/genre/${homepageSectionId}?page=${page}`;
+        }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         const manga = this.parser.parseHomePage($, PROXY_URL);
-        return App.createPagedResults({ results: manga, metadata: { page: page + 1, sort } });
+        return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
     }
     async getSearchResults(query, metadata) {
         const page = metadata?.page ?? 1;
-        const sortTag = query.includedTags?.find(t => t.id.startsWith('sort='));
-        const sortParam = sortTag ? `&${sortTag.id}` : '';
-        const genreTag = query.includedTags?.find(t => !t.id.startsWith('sort=') && !t.id.startsWith('author:'));
+        const selectedTag = query.includedTags?.[0];
         let url;
-        if (genreTag) {
-            url = `${BASE_URL}/genre/${genreTag.id}?page=${page}${sortParam}`;
-        }
-        else if (query.title) {
-            const searchQuery = encodeURIComponent(query.title);
-            url = `${BASE_URL}/?keyword=${searchQuery}&page=${page}${sortParam}`;
+        if (selectedTag) {
+            if (selectedTag.id.startsWith('author:')) {
+                const authorId = selectedTag.id.replace('author:', '').replace(/ /g, '+');
+                url = `${BASE_URL}/author/${authorId}?page=${page}`;
+            }
+            else {
+                url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}`;
+            }
         }
         else {
-            url = `${BASE_URL}/?page=${page}${sortParam}`;
+            const searchQuery = encodeURIComponent(query.title ?? '');
+            url = `${BASE_URL}/?keyword=${searchQuery}&page=${page}`;
         }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
@@ -750,18 +769,7 @@ class Parser {
             ['yuri', 'Yuri'], ['3d', '3D'],
         ];
         const tags = genres.map(([id, label]) => App.createTag({ id, label }));
-        const sortTags = [
-            { id: 'sort=recent-update', label: 'Mới Cập Nhật' },
-            { id: 'sort=newest', label: 'Mới Nhất' },
-            { id: 'sort=view', label: 'Xem Nhiều Nhất' },
-            { id: 'sort=top-day', label: 'Top Ngày' },
-            { id: 'sort=top-week', label: 'Top Tuần' },
-            { id: 'sort=top-month', label: 'Top Tháng' },
-        ].map(t => App.createTag(t));
-        return [
-            App.createTagSection({ id: 'sort', label: 'Sắp Xếp', tags: sortTags }),
-            App.createTagSection({ id: 'genre', label: 'Thể Loại', tags }),
-        ];
+        return [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })];
     }
     // ─── Extract chapter JSON array from raw HTML ─────────────────────────────
     // Inside Next.js script tags quotes are escaped as \"
