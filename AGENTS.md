@@ -142,15 +142,15 @@ vi-hentai/
 
 # Release Checklist
 
-**Important:** Only update the version for the source you're modifying.
+**IMPORTANT: You MUST update the version in the .ts file every time you make changes!**
 
-### 1. Update Version Numbers
+### 1. Update Version Numbers (REQUIRED)
 
 **If working on ViHentai:** Update `src/ViHentai/ViHentai.ts` - `version: 'x.x.x'`
 
 **If working on NHentaiClub:** Update `src/NHentaiClub/NHentaiClub.ts` - `version: 'x.x.x'`
 
-Optionally update `package.json` version to match.
+DO NOT update package.json unless specifically asked.
 
 ### 2. Build and Push
 
