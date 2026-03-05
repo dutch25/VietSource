@@ -15,9 +15,9 @@ export class Parser {
 
         $('.cover-frame, [class*="manga"]').closest('a[href^="/truyen/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
-            const idMatch = href.match(/\/truyen\/([^?#]+)/)
+            const idMatch = href.match(/\/truyen\/(\d+)/)
             if (!idMatch) return
-            const id = idMatch[1].trim()
+            const id = idMatch[1]
             if (!id) return
 
             const img = $(el).find('img').first()
@@ -32,9 +32,9 @@ export class Parser {
         if (results.length === 0) {
             $('a[href^="/truyen/"]').each((_: any, el: any) => {
                 const href = $(el).attr('href') ?? ''
-                const idMatch = href.match(/\/truyen\/([^?#]+)/)
+                const idMatch = href.match(/\/truyen\/(\d+)/)
                 if (!idMatch) return
-                const id = idMatch[1].trim()
+                const id = idMatch[1]
                 if (!id || results.some(r => r.mangaId === id)) return
 
                 const img = $(el).find('img').first()
