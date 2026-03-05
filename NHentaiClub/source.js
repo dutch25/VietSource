@@ -470,7 +470,7 @@ function proxyPage(path) {
     return `${PROXY_URL}?url=${encodeURIComponent(`${BASE_URL}${path}`)}`;
 }
 exports.NHentaiClubInfo = {
-    version: '1.1.59',
+    version: '1.1.60',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
