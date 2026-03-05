@@ -19,8 +19,13 @@ import { Parser } from './NHentaiClubParser'
 const BASE_URL = 'https://nhentaiclub.space'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
+// Wraps a nhentaiclub.space page URL through the proxy
+function proxyPage(path: string): string {
+    return `${PROXY_URL}?url=${encodeURIComponent(`${BASE_URL}${path}`)}`
+}
+
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.58',
+    version: '1.1.59',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -62,13 +67,12 @@ export class NHentaiClub extends Source {
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        // Announce sections first so UI shows them immediately
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/` },
-            { id: 'all-time', title: 'Xếp Hạng Tất Cả', url: `${BASE_URL}/ranking/all-time` },
-            { id: 'day', title: 'Xếp Hạng Ngày', url: `${BASE_URL}/ranking/day` },
-            { id: 'week', title: 'Xếp Hạng Tuần', url: `${BASE_URL}/ranking/week` },
-            { id: 'month', title: 'Xếp Hạng Tháng', url: `${BASE_URL}/ranking/month` },
+            { id: 'latest', title: 'Mới Cập Nhật', path: '/' },
+            { id: 'all-time', title: 'Xếp Hạng Tất Cả', path: '/ranking/all-time' },
+            { id: 'day', title: 'Xếp Hạng Ngày', path: '/ranking/day' },
+            { id: 'week', title: 'Xếp Hạng Tuần', path: '/ranking/week' },
+            { id: 'month', title: 'Xếp Hạng Tháng', path: '/ranking/month' },
         ]
 
         for (const section of sections) {
@@ -80,11 +84,10 @@ export class NHentaiClub extends Source {
             }))
         }
 
-        // Fetch each section and populate
         for (const section of sections) {
             try {
                 const response = await this.requestManager.schedule(
-                    App.createRequest({ url: section.url, method: 'GET' }), 0
+                    App.createRequest({ url: proxyPage(section.path), method: 'GET' }), 0
                 )
                 if (response.status === 403 || response.status === 503) continue
                 const $ = this.cheerio.load(response.data as string)
@@ -106,56 +109,53 @@ export class NHentaiClub extends Source {
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
 
-        const urlMap: Record<string, string> = {
-            'latest': `${BASE_URL}/?page=${page}`,
-            'all-time': `${BASE_URL}/ranking/all-time?page=${page}`,
-            'day': `${BASE_URL}/ranking/day?page=${page}`,
-            'week': `${BASE_URL}/ranking/week?page=${page}`,
-            'month': `${BASE_URL}/ranking/month?page=${page}`,
+        const pathMap: Record<string, string> = {
+            'latest': `/?page=${page}`,
+            'all-time': `/ranking/all-time?page=${page}`,
+            'day': `/ranking/day?page=${page}`,
+            'week': `/ranking/week?page=${page}`,
+            'month': `/ranking/month?page=${page}`,
         }
 
-        // Genre sections use /genre/{id}
-        const url = urlMap[homepageSectionId]
-            ?? `${BASE_URL}/genre/${homepageSectionId}?page=${page}`
+        const path = pathMap[homepageSectionId] ?? `/genre/${homepageSectionId}?page=${page}`
 
         const response = await this.requestManager.schedule(
-            App.createRequest({ url, method: 'GET' }), 0
+            App.createRequest({ url: proxyPage(path), method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
         const manga = this.parser.parseHomePage($, PROXY_URL)
 
-        return App.createPagedResults({ results: manga, metadata: { page: page + 1 } })
+        return { results: manga, metadata: { page: page + 1 } }
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
 
-        // If a genre or author tag is selected, browse that page
         const selectedTag = query.includedTags?.[0]
-        let url: string
+        let path: string
 
         if (selectedTag) {
             if (selectedTag.id.startsWith('author:')) {
                 const authorId = selectedTag.id.replace('author:', '').replace(/ /g, '+')
-                url = `${BASE_URL}/author/${authorId}?page=${page}`
+                path = `/author/${authorId}?page=${page}`
             } else {
-                url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}`
+                path = `/genre/${selectedTag.id}?page=${page}`
             }
         } else {
             const searchQuery = encodeURIComponent(query.title ?? '')
-            url = `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`
+            path = `/search?keyword=${searchQuery}&page=${page}`
         }
 
         const response = await this.requestManager.schedule(
-            App.createRequest({ url, method: 'GET' }), 0
+            App.createRequest({ url: proxyPage(path), method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        return App.createPagedResults({ results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } })
+        return { results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } }
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0
+            App.createRequest({ url: proxyPage(`/g/${mangaId}`), method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
         return this.parser.parseMangaDetails($, mangaId, PROXY_URL)
@@ -163,14 +163,14 @@ export class NHentaiClub extends Source {
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0
+            App.createRequest({ url: proxyPage(`/g/${mangaId}`), method: 'GET' }), 0
         )
         return this.parser.parseChapters(response.data as string)
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 1
+            App.createRequest({ url: proxyPage(`/g/${mangaId}`), method: 'GET' }), 1
         )
         const html = response.data as string
         const $ = this.cheerio.load(html)
