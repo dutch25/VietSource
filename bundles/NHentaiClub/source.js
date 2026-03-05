@@ -466,7 +466,7 @@ const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.site';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.65',
+    version: '1.1.66',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -562,21 +562,20 @@ class NHentaiClub extends types_1.Source {
     }
     async getSearchResults(query, metadata) {
         const page = metadata?.page ?? 1;
-        // If a genre or author tag is selected, browse that page
-        const selectedTag = query.includedTags?.[0];
+        const sortTags = ['recent-update', 'newest', 'view', 'top-day', 'top-week', 'top-month'];
+        const selectedSort = query.includedTags?.find(t => sortTags.includes(t.id));
+        const sortParam = selectedSort ? `&sort=${selectedSort.id}` : '';
+        const selectedTag = query.includedTags?.find(t => !sortTags.includes(t.id) && !t.id.startsWith('author:'));
         let url;
         if (selectedTag) {
-            if (selectedTag.id.startsWith('author:')) {
-                const authorId = selectedTag.id.replace('author:', '').replace(/ /g, '+');
-                url = `${BASE_URL}/author/${authorId}?page=${page}`;
-            }
-            else {
-                url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}`;
-            }
+            url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}${sortParam}`;
+        }
+        else if (query.title) {
+            const searchQuery = encodeURIComponent(query.title);
+            url = `${BASE_URL}/?keyword=${searchQuery}&page=${page}${sortParam}`;
         }
         else {
-            const searchQuery = encodeURIComponent(query.title ?? '');
-            url = `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`;
+            url = `${BASE_URL}/?page=${page}${sortParam}`;
         }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
@@ -751,7 +750,18 @@ class Parser {
             ['yuri', 'Yuri'], ['3d', '3D'],
         ];
         const tags = genres.map(([id, label]) => App.createTag({ id, label }));
-        return [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })];
+        const sortTags = [
+            { id: 'recent-update', label: 'Mới Cập Nhật' },
+            { id: 'newest', label: 'Mới Nhất' },
+            { id: 'view', label: 'Xem Nhiều Nhất' },
+            { id: 'top-day', label: 'Top Ngày' },
+            { id: 'top-week', label: 'Top Tuần' },
+            { id: 'top-month', label: 'Top Tháng' },
+        ].map(t => App.createTag(t));
+        return [
+            App.createTagSection({ id: 'sort', label: 'Sắp Xếp', tags: sortTags }),
+            App.createTagSection({ id: 'genre', label: 'Thể Loại', tags }),
+        ];
     }
     // ─── Extract chapter JSON array from raw HTML ─────────────────────────────
     // Inside Next.js script tags quotes are escaped as \"

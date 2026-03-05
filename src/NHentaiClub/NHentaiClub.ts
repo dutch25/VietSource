@@ -20,7 +20,7 @@ const BASE_URL = 'https://nhentaiclub.site'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.65',
+    version: '1.1.66',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -130,20 +130,20 @@ export class NHentaiClub extends Source {
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
 
-        // If a genre or author tag is selected, browse that page
-        const selectedTag = query.includedTags?.[0]
+        const sortTags = ['recent-update', 'newest', 'view', 'top-day', 'top-week', 'top-month']
+        const selectedSort = query.includedTags?.find(t => sortTags.includes(t.id))
+        const sortParam = selectedSort ? `&sort=${selectedSort.id}` : ''
+
+        const selectedTag = query.includedTags?.find(t => !sortTags.includes(t.id) && !t.id.startsWith('author:'))
         let url: string
 
         if (selectedTag) {
-            if (selectedTag.id.startsWith('author:')) {
-                const authorId = selectedTag.id.replace('author:', '').replace(/ /g, '+')
-                url = `${BASE_URL}/author/${authorId}?page=${page}`
-            } else {
-                url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}`
-            }
+            url = `${BASE_URL}/genre/${selectedTag.id}?page=${page}${sortParam}`
+        } else if (query.title) {
+            const searchQuery = encodeURIComponent(query.title)
+            url = `${BASE_URL}/?keyword=${searchQuery}&page=${page}${sortParam}`
         } else {
-            const searchQuery = encodeURIComponent(query.title ?? '')
-            url = `${BASE_URL}/search?keyword=${searchQuery}&page=${page}`
+            url = `${BASE_URL}/?page=${page}${sortParam}`
         }
 
         const response = await this.requestManager.schedule(
