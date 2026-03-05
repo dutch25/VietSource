@@ -13,21 +13,39 @@ export class Parser {
     parseHomePage($: CheerioAPI): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
 
-        $('a[href^="/truyen/"]').each((_: any, el: any) => {
+        $('.cover-frame, [class*="manga"]').closest('a[href^="/truyen/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
-            const idMatch = href.match(/\/truyen\/(\d+)/)
+            const idMatch = href.match(/\/truyen\/([^?#]+)/)
             if (!idMatch) return
-            const id = idMatch[1]
-            if (!id || isNaN(Number(id))) return
+            const id = idMatch[1].trim()
+            if (!id) return
 
             const img = $(el).find('img').first()
-            const title = img.attr('alt')?.trim() ?? $(el).find('h3').text().trim() ?? ''
+            const title = img.attr('alt')?.trim() ?? ''
             const rawImage = img.attr('src') ?? img.attr('data-src') ?? ''
 
             if (!title || title.length < 2 || !rawImage) return
 
             results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }))
         })
+
+        if (results.length === 0) {
+            $('a[href^="/truyen/"]').each((_: any, el: any) => {
+                const href = $(el).attr('href') ?? ''
+                const idMatch = href.match(/\/truyen\/([^?#]+)/)
+                if (!idMatch) return
+                const id = idMatch[1].trim()
+                if (!id || results.some(r => r.mangaId === id)) return
+
+                const img = $(el).find('img').first()
+                const title = img.attr('alt')?.trim() ?? $(el).text().trim() ?? ''
+                const rawImage = img.attr('src') ?? img.attr('data-src') ?? ''
+
+                if (!title || title.length < 2) return
+
+                results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }))
+            })
+        }
 
         return this.deduplicate(results)
     }
