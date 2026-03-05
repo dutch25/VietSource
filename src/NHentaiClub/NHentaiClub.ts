@@ -24,8 +24,12 @@ function proxyPage(path: string): string {
     return `${PROXY_URL}?url=${encodeURIComponent(`${BASE_URL}${path}`)}`
 }
 
+function getProxyUrl(path: string): string {
+    return `${PROXY_URL}?url=${encodeURIComponent(path)}`
+}
+
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.60',
+    version: '1.1.61',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -53,7 +57,7 @@ export class NHentaiClub extends Source {
             interceptRequest: async (request) => {
                 request.headers = {
                     ...(request.headers ?? {}),
-                    'referer': BASE_URL,
+                    'referer': getProxyUrl(BASE_URL),
                     'user-agent': await this.requestManager.getDefaultUserAgent(),
                 }
                 return request
@@ -63,7 +67,7 @@ export class NHentaiClub extends Source {
     })
 
     async getCloudflareBypassRequestAsync(): Promise<any> {
-        return App.createRequest({ url: BASE_URL, method: 'GET' })
+        return App.createRequest({ url: proxyPage('/'), method: 'GET' })
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
@@ -191,7 +195,7 @@ export class NHentaiClub extends Source {
     }
 
     getMangaShareUrl(mangaId: string): string {
-        return `${BASE_URL}/g/${mangaId}`
+        return proxyPage(`/g/${mangaId}`)
     }
 
     async getSearchTags(): Promise<TagSection[]> {
