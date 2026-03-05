@@ -148,20 +148,7 @@ export class Parser {
         ]
 
         const tags = genres.map(([id, label]) => App.createTag({ id, label }))
-
-        const sortTags = [
-            { id: 'sort=recent-update', label: 'Mới Cập Nhật' },
-            { id: 'sort=newest', label: 'Mới Nhất' },
-            { id: 'sort=view', label: 'Xem Nhiều Nhất' },
-            { id: 'sort=top-day', label: 'Top Ngày' },
-            { id: 'sort=top-week', label: 'Top Tuần' },
-            { id: 'sort=top-month', label: 'Top Tháng' },
-        ].map(t => App.createTag(t))
-
-        return [
-            App.createTagSection({ id: 'sort', label: 'Sắp Xếp', tags: sortTags }),
-            App.createTagSection({ id: 'genre', label: 'Thể Loại', tags }),
-        ]
+        return [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })]
     }
 
     // ─── Extract chapter JSON array from raw HTML ─────────────────────────────
