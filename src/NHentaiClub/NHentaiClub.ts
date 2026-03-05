@@ -25,7 +25,7 @@ function proxyPage(path: string): string {
 }
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.59',
+    version: '1.1.60',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
