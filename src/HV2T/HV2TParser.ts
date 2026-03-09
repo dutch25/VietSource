@@ -101,7 +101,7 @@ export class Parser {
     // ─── Chapters ─────────────────────────────────────────────────────────────
     parseChapters(json: any, mangaId: string): Chapter[] {
         const chapters: Chapter[] = []
-        const data = json?.data?.chapters
+        const data = json?.chapters || json?.data?.chapters
 
         if (!Array.isArray(data)) {
             console.log(`[HV2T] parseChapters: No chapters found in JSON data`)

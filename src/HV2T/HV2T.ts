@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.1.13',
+    version: '1.1.14',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -60,6 +60,10 @@ export class HV2T extends Source {
             },
         }
     })
+
+    private getMangaSlug(mangaId: string): string {
+        return mangaId.split('/').filter(p => !!p).pop() || mangaId
+    }
 
     async getCloudflareBypassRequestAsync(): Promise<any> {
         return App.createRequest({ url: BASE_URL, method: 'GET' })
@@ -169,19 +173,22 @@ export class HV2T extends Source {
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
-        const url = `${BASE_URL}/api/comics/${mangaId}`
+        const slug = this.getMangaSlug(mangaId)
+        const url = `${BASE_URL}/api/comics/${slug}`
         const json = await this.fetchJSON(url)
         return this.parser.parseMangaDetails(json, mangaId, PROXY_URL)
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        const url = `${BASE_URL}/api/comics/${mangaId}`
+        const slug = this.getMangaSlug(mangaId)
+        const url = `${BASE_URL}/api/comics/${slug}`
         const json = await this.fetchJSON(url)
         return this.parser.parseChapters(json, mangaId)
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        const url = `${BASE_URL}/api/comics/${mangaId}/${chapterId}/view`
+        const slug = this.getMangaSlug(mangaId)
+        const url = `${BASE_URL}/api/comics/${slug}/${chapterId}/view`
         const json = await this.fetchJSON(url)
         const pages = this.parser.parseChapterDetails(json, chapterId, mangaId, PROXY_URL)
         return App.createChapterDetails({ id: chapterId, mangaId, pages })
