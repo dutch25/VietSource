@@ -18,12 +18,16 @@ export class Parser {
             const title = titleLink.text().trim()
             const href = titleLink.attr('href') ?? ''
 
+            // Strictly ignore chapter links or empty hrefs
             if (!href || href.includes('/chapter-')) return
 
-            const idMatch = href.match(/\/truyen\/([^/?#]+)/)
+            // Extract the clean manga ID. Pattern: /truyen/manga-slug
+            // We want to ensure we don't accidentally capture chapter paths
+            const idMatch = href.match(/\/truyen\/([^/?#]+)$/)
             if (!idMatch) return
+
             const id = idMatch[1].trim()
-            if (!id) return
+            if (!id || id.includes('/')) return // Double check for sub-paths
 
             const img = $('.cover-frame img', el).first()
             const rawImage = img.attr('src') ?? img.attr('data-src') ?? ''
@@ -32,26 +36,6 @@ export class Parser {
 
             results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }))
         })
-
-        if (results.length === 0) {
-            $('a[href*="/truyen/"]').each((_: any, el: any) => {
-                const href = $(el).attr('href') ?? ''
-                if (href.includes('/chapter-')) return
-
-                const idMatch = href.match(/\/truyen\/([^/?#]+)/)
-                if (!idMatch) return
-                const id = idMatch[1].trim()
-                if (!id || id.includes('/chapter-') || results.some(r => r.mangaId === id)) return
-
-                const img = $(el).find('img').first()
-                const title = $(el).attr('title')?.trim() ?? img.attr('alt')?.trim() ?? $(el).text().trim() ?? ''
-                const rawImage = img.attr('src') ?? img.attr('data-src') ?? ''
-
-                if (!title || title.length < 2 || !rawImage) return
-
-                results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }))
-            })
-        }
 
         return this.deduplicate(results)
     }
