@@ -16,70 +16,55 @@ export class Parser {
     parseHomePage($: CheerioAPI, proxyUrl: string): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
 
-        // Main grid container: .grid.grid-cols-2 or .grid.grid-cols-3 etc
-        // Each manga is inside .manga-vertical
-        const selectors = [
-            '.manga-vertical',
-            '.grid .manga-vertical',
-            '.grid-cols-2 .manga-vertical',
-            '.grid-cols-3 .manga-vertical',
-            '.grid-cols-6 .manga-vertical'
-        ]
+        // Main manga list is in .manga-vertical elements
+        // Each item has:
+        // - a[href^="/truyen/"] for the title link
+        // - .cover.lazyload with data-bg attribute for the image
+        
+        $('.manga-vertical').each((_, el) => {
+            const $el = $(el)
 
-        for (const selector of selectors) {
-            $(selector).each((_, el) => {
-                const $el = $(el)
+            // Find the manga link (not chapter link)
+            // The title link is after the cover, in the .p-2 .truncate container
+            const titleLink = $el.find('a[href^="/truyen/"]').first()
+            const href = titleLink.attr('href') || ''
 
-                // Find manga link - pattern: /truyen/slug
-                const titleLink = $el.find('a[href^="/truyen/"]').first()
-                const href = titleLink.attr('href') || ''
+            // Skip chapter links
+            if (!href || href.includes('/chap-') || href.includes('/chapter-') || href.includes('/oneshot') || href.includes('/part-')) return
 
-                // Skip if no valid href or if it's a chapter link
-                if (!href || href.includes('/chap-') || href.includes('/chapter-') || href.includes('/oneshot') || href.includes('/part-')) return
+            // Extract manga slug
+            const slugMatch = href.match(/\/truyen\/([^/?#]+)/)
+            if (!slugMatch) return
 
-                // Extract manga slug from URL pattern: /truyen/slug
-                const slugMatch = href.match(/\/truyen\/([^/?#]+)/)
-                if (!slugMatch) return
+            const mangaId = slugMatch[1]!
+            if (!mangaId) return
 
-                const mangaId = slugMatch[1]!
-                if (!mangaId) return
+            // Get title
+            let title = titleLink.text().trim()
+            if (!title) return
 
-                // Get title
-                let title = titleLink.text().trim() || ''
-                if (!title) {
-                    // Try to get from title attribute
-                    title = titleLink.attr('title') || ''
-                }
-                if (!title) return
+            // Get image from data-bg attribute
+            let image = $el.find('.cover.lazyload').attr('data-bg') || ''
+            
+            // Also check style attribute for background-image
+            if (!image) {
+                const style = $el.find('.cover').attr('style') || ''
+                const match = style.match(/url\(['"]?([^'")]+)['"]?\)/)
+                if (match) image = match[1]
+            }
+            
+            if (!image) return
 
-                // Get image from data-bg attribute
-                let image = $el.find('.cover.lazyload').attr('data-bg') || $el.find('.cover img').attr('src') || ''
-                if (!image) {
-                    const bg = $el.find('.cover').attr('style')
-                    if (bg) {
-                        const match = bg.match(/url\(['"]?(.*?)['"]?\)/)
-                        if (match) image = match[1]
-                    }
-                }
-                if (!image) return
+            // Image is already full URL starting with https://
+            // Just proxy it
+            image = `${proxyUrl}?url=${encodeURIComponent(image)}`
 
-                // Add domain if relative URL
-                if (!image.startsWith('http')) {
-                    image = `https://${this.BASE_DOMAIN}${image.startsWith('/') ? '' : '/'}${image}`
-                }
-
-                // Proxy the image
-                image = `${proxyUrl}?url=${encodeURIComponent(image)}`
-
-                results.push(App.createPartialSourceManga({
-                    mangaId: mangaId,
-                    title,
-                    image
-                }))
-            })
-
-            if (results.length > 0) break
-        }
+            results.push(App.createPartialSourceManga({
+                mangaId,
+                title,
+                image
+            }))
+        })
 
         console.log(`[LxManga] parseHomePage: Found ${results.length} items`)
         return results

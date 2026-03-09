@@ -20,7 +20,7 @@ const BASE_URL = 'https://lxmanga.space'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const LxMangaInfo: SourceInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'LxManga',
     icon: 'icon.png',
     author: 'Dutch25',
