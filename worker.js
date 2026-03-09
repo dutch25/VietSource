@@ -43,7 +43,7 @@ export default {
 
     // HARDCODED AUTH COOKIES (from browser session)
     // NOTE: These may expire eventually. Update them if access is lost.
-    const AUTH_COOKIES = 'access_token=Bearer%20eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxNjkxNCIsImFkbWluIjpmYWxzZSwiaWF0IjoxNzczMDU1MDE5LCJleHAiOjE3NzM2NTk4MTl9.8fxPlfp_wRQ_iBWp5nm0VIFvb92M3nnR6_X6H0WvL0Y; cf_clearance=RwXPQ_Fxw6VPzCo1KAPg60FCTYZ.L5FAMJQGm1IqFPQ-1773059004-1.2.1.1-k3YJEfif8DCORlcVYgOsSCE1iPksiKVbvrNaAGc5f5soBIsj5oZhfxfIXJ2Xb1U1cf5JlLWnnMPDng.BGh15CKx_IG0Y5DTcNhsw4PoqSc9FVMHCh9LTYDv3zj_CiwT0HXmUDwRXSgJ0QLaNYdpCY_hM0uy1d2jdmP9Mr7zMAfjj1mtJTaKMva26q7d.ACT7dREVAWOWCOJyRkiPU8TkmyZFUHBW7UUWriu0bYOqQ_Y'
+  
 
     const fetchHeaders = {
       'Referer': referer,
