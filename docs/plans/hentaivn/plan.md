@@ -147,11 +147,23 @@ Cả hai sẽ được xây dựng dựa trên PaperBack Toolchain v0.8.0.
 - [ ] Xác định selectors cho chapter list
 - [ ] Xác định cách lấy hình ảnh chapter
 - [ ] Implement các hàm parse trong Parser
+- [ ] Test thử với một số truyện
+- [ ] **Tình trạng: ❌ DỪNG** - Website sử dụng Livewire (JS rendering), không thể parse trực tiếp từ HTML
 
 ### Phase 05: LxManga - Hoàn thiện logic & Test
 - [ ] Hoàn thiện tất cả các hàm
 - [ ] Test thử với một số truyện
 - [ ] Cập nhật version: 1.0.0
+
+---
+
+## ⚠️ Lưu ý quan trọng
+
+### LxManga - Không khả thi
+- **Website**: https://lxmanga.space
+- **Vấn đề**: Site sử dụng **Livewire** (JavaScript rendering) - nội dung được load động bằng JS sau khi page load
+- **Hậu quả**: HTML ban đầu không chứa danh sách manga, chỉ có empty containers
+- **Giải pháp**: Cần tìm API endpoint hoặc chuyển sang source khác không dùng JS rendering
 
 ### Phase 06: Bundle & Release
 - [ ] Chạy `npm run bundle`
