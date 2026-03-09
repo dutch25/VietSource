@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.1.7',
+    version: '1.1.8',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -540,10 +540,10 @@ class HV2T extends types_1.Source {
     }
     async getHomePageSections(sectionCallback) {
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/?sort=latest` },
-            { id: 'most_followed', title: 'Theo Dõi Nhiều', url: `${BASE_URL}/?sort=follow` },
-            { id: 'most_viewed', title: 'Lượt Xem Nhiều', url: `${BASE_URL}/?sort=view` },
-            { id: 'completed', title: 'Đã Hoàn Thành', url: `${BASE_URL}/?sort=completed` },
+            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/api/comics?sort=latest` },
+            { id: 'most_followed', title: 'Theo Dõi Nhiều', url: `${BASE_URL}/api/comics?sort=follow` },
+            { id: 'most_viewed', title: 'Lượt Xem Nhiều', url: `${BASE_URL}/api/comics?sort=view` },
+            { id: 'completed', title: 'Đã Hoàn Thành', url: `${BASE_URL}/api/comics?sort=completed` },
         ];
         for (const section of sections) {
             sectionCallback(App.createHomeSection({
@@ -551,12 +551,11 @@ class HV2T extends types_1.Source {
                 title: section.title,
                 containsMoreItems: true,
                 type: types_1.HomeSectionType.singleRowNormal,
+                items: [],
             }));
             try {
-                const proxyFetchUrl = `${PROXY_URL}?url=${encodeURIComponent(section.url)}`;
-                const response = await this.requestManager.schedule(this.buildRequest(proxyFetchUrl), 0);
-                const $ = this.cheerio.load(response.data);
-                const items = this.parser.parseHomePage($, PROXY_URL);
+                const json = await this.fetchJSON(section.url);
+                const items = this.parser.parseHomePage(json, PROXY_URL);
                 sectionCallback(App.createHomeSection({
                     id: section.id,
                     title: section.title,
@@ -566,13 +565,7 @@ class HV2T extends types_1.Source {
                 }));
             }
             catch (e) {
-                sectionCallback(App.createHomeSection({
-                    id: section.id,
-                    title: section.title,
-                    containsMoreItems: true,
-                    type: types_1.HomeSectionType.singleRowNormal,
-                    items: [],
-                }));
+                // Ignore errors to allow other sections to load
             }
         }
     }
@@ -585,21 +578,22 @@ class HV2T extends types_1.Source {
             sort = 'view';
         if (homepageSectionId === 'completed')
             sort = 'completed';
-        const url = `${BASE_URL}/?sort=${sort}&page=${page}`;
-        const $ = await this.fetchHTML(url);
-        const items = this.parser.parseHomePage($, PROXY_URL);
+        const url = `${BASE_URL}/api/comics?sort=${sort}&page=${page}`;
+        const json = await this.fetchJSON(url);
+        const items = this.parser.parseHomePage(json, PROXY_URL);
         return App.createPagedResults({
             results: items,
-            metadata: { page: page + 1 },
+            metadata: items.length > 0 ? { page: page + 1 } : undefined,
         });
     }
     async getSearchResults(query, metadata) {
-        const search = encodeURIComponent(query.title ?? '');
-        const url = `${BASE_URL}/tim-kiem?q=${search}`;
-        const $ = await this.fetchHTML(url);
-        const items = this.parser.parseHomePage($, PROXY_URL);
+        const page = metadata?.page ?? 1;
+        const searchUrl = `${BASE_URL}/api/comics?q=${encodeURIComponent(query.title ?? '')}&page=${page}`;
+        const json = await this.fetchJSON(searchUrl);
+        const items = this.parser.parseHomePage(json, PROXY_URL);
         return App.createPagedResults({
             results: items,
+            metadata: items.length > 0 ? { page: page + 1 } : undefined,
         });
     }
     async getMangaDetails(mangaId) {
@@ -647,113 +641,31 @@ class Parser {
             return `https://${defaultDomain}${url}`;
         return `https://${defaultDomain}/${url}`;
     }
-    // ─── Home Page ─────────────────────────────────────────────────────────────
-    parseHomePage($, proxyUrl) {
+    // ─── Home Page / Search ────────────────────────────────────────────────────
+    parseHomePage(json, proxyUrl) {
         const results = [];
-        // Try to parse JSON-LD data first (most reliable for Next.js)
-        const jsonLdScripts = $('script[type="application/ld+json"]');
-        jsonLdScripts.each((_, el) => {
-            try {
-                const jsonContent = $(el).html();
-                if (!jsonContent)
-                    return;
-                const data = JSON.parse(jsonContent);
-                const items = this.extractMangaItems(data);
-                for (const item of items) {
-                    if (item.url && item.name && item.image) {
-                        const isChapter = item.url.includes('/chapter-') || item.url.includes('/chuong-') ||
-                            item.name.toLowerCase().includes('chương') ||
-                            item.name.toLowerCase().includes('chapter');
-                        if (isChapter)
-                            continue;
-                        const match = item.url.match(/\/truyen\/([^/]+)/);
-                        const slug = match ? match[1] : '';
-                        if (!slug || slug.includes('chapter-') || results.some(r => r.mangaId === slug))
-                            continue;
-                        let image = this.normalizeUrl(item.image, this.CDN_DOMAIN);
-                        // Remove webp to jpg conversion as it may cause 404s
-                        // image = image.replace('.webp', '.jpg')
-                        // Only add proxy if proxyUrl is not empty
-                        if (proxyUrl && image) {
-                            image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
-                        }
-                        results.push(App.createPartialSourceManga({
-                            mangaId: slug,
-                            title: item.name,
-                            image
-                        }));
-                    }
-                }
+        const data = json?.data;
+        if (!Array.isArray(data)) {
+            console.log(`[HV2T] parseHomePage: No items found in JSON data`);
+            return [];
+        }
+        for (const item of data) {
+            const slug = item.slug || String(item.id);
+            if (!slug)
+                continue;
+            const title = item.title || item.other_names || slug;
+            let image = this.normalizeUrl(item.cover_image, this.CDN_DOMAIN);
+            if (proxyUrl && image) {
+                image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
             }
-            catch (e) {
-                // Not valid JSON, skip
-            }
-        });
-        // Fallback: try to parse from DOM elements
-        if (results.length === 0) {
-            // Use contains instead of starts with for absolute/relative flexibility
-            $('a[href*="/truyen/"]').each((_, el) => {
-                const $el = $(el);
-                const href = $el.attr('href') || '';
-                const title = $el.attr('title') || $el.text().trim();
-                const titleLower = title.toLowerCase();
-                // Skip if it's a chapter link, just the base link, or has "Chương" in title
-                const isChapter = href.includes('/chapter-') || href.includes('/chuong-') ||
-                    titleLower.includes('chương') || titleLower.includes('chapter');
-                if (!href || isChapter || href.endsWith('/truyen/'))
-                    return;
-                const match = href.match(/\/truyen\/([^/]+)/);
-                const slug = match ? match[1] : '';
-                if (!slug || results.some(r => r.mangaId === slug))
-                    return;
-                // Check if this looks like a manga card link (often has an image or is in a specific container)
-                let image = this.normalizeUrl($el.find('img').attr('src') || $el.find('img').attr('data-src') || '', this.CDN_DOMAIN);
-                if (!image) {
-                    // Try to find image in siblings or parent container
-                    const $container = $el.closest('div, article, section');
-                    image = this.normalizeUrl($container.find('img').attr('src') || $container.find('img').attr('data-src') || '', this.CDN_DOMAIN);
-                }
-                if (image && proxyUrl) {
-                    image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
-                }
-                results.push(App.createPartialSourceManga({
-                    mangaId: slug,
-                    title: title.replace('Truyện ', '').trim() || slug,
-                    image
-                }));
-            });
+            results.push(App.createPartialSourceManga({
+                mangaId: slug,
+                title: title,
+                image: image,
+            }));
         }
         console.log(`[HV2T] parseHomePage: Found ${results.length} items`);
         return results;
-    }
-    extractMangaItems(data) {
-        const items = [];
-        if (Array.isArray(data)) {
-            for (const item of data) {
-                items.push(...this.extractMangaItems(item));
-            }
-        }
-        else if (data && typeof data === 'object') {
-            // Check if this is an ItemList
-            if (data['@type'] === 'ItemList' && Array.isArray(data.itemListElement)) {
-                for (const item of data.itemListElement) {
-                    if (item['@type'] === 'ComicSeries' || item['@type'] === 'ListItem') {
-                        const itemData = item.item || item;
-                        const isChapter = (itemData.url ?? '').includes('/chapter-') || (itemData.url ?? '').includes('/chuong-') ||
-                            (itemData.name ?? '').toLowerCase().includes('chương') ||
-                            (itemData.name ?? '').toLowerCase().includes('chapter');
-                        if (itemData.url && itemData.name && !isChapter) {
-                            items.push({
-                                name: itemData.name,
-                                url: itemData.url,
-                                image: itemData.image || ''
-                            });
-                        }
-                    }
-                }
-            }
-        }
-        return items;
     }
     // ─── Manga Details ─────────────────────────────────────────────────────────
     parseMangaDetails($, mangaId, proxyUrl) {
