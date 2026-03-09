@@ -19,7 +19,7 @@ import { Parser } from './DamCoNuongParser'
 const BASE_URL = 'https://damconuong.city'
 
 export const DamCoNuongInfo: SourceInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
