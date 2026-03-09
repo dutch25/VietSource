@@ -17,10 +17,10 @@ import {
 import { Parser } from './HV2TParser'
 
 const BASE_URL = 'https://hv2t.store'
-const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
+const PROXY_URL = ''
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -68,7 +68,9 @@ export class HV2T extends Source {
     }
 
     private async fetchHTML(url: string) {
+        console.log(`[HV2T] Fetching: ${url}`)
         const response = await this.requestManager.schedule(this.buildRequest(url), 0)
+        console.log(`[HV2T] Response status: ${response.status}, data length: ${(response.data as string).length}`)
         return this.cheerio.load(response.data as string)
     }
 
