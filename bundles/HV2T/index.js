@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.1.9',
+    version: '1.1.10',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -531,7 +531,7 @@ class HV2T extends types_1.Source {
         const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(url)}`;
         try {
             const response = await this.requestManager.schedule(this.buildRequest(proxyUrl), 0);
-            return JSON.parse(response.data);
+            return typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
         }
         catch (e) {
             console.log(`[HV2T] Error fetching JSON: ${e}`);

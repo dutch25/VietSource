@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.1.9',
+    version: '1.1.10',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -91,7 +91,7 @@ export class HV2T extends Source {
 
         try {
             const response = await this.requestManager.schedule(this.buildRequest(proxyUrl), 0)
-            return JSON.parse(response.data as string)
+            return typeof response.data === 'string' ? JSON.parse(response.data) : response.data
         } catch (e) {
             console.log(`[HV2T] Error fetching JSON: ${e}`)
             throw e
