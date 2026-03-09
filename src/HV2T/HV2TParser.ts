@@ -225,94 +225,58 @@ export class Parser {
     }
 
     // ─── Chapters ─────────────────────────────────────────────────────────────
-    parseChapters($: CheerioAPI, mangaId: string): Chapter[] {
+    parseChapters(json: any, mangaId: string): Chapter[] {
         const chapters: Chapter[] = []
+        const data = json?.data?.chapters
 
-        // Try multiple selectors for chapter list
-        const selectors = [
-            `a[href*="/truyen/${mangaId}/"]`,
-            'a[href*="/chapter-"]',
-            'a[href*="/chuong-"]',
-            '[class*="chapter"] a',
-            '.chapter-list a',
-            '.chapters a',
-            'ul.chapters li a'
-        ]
-
-        for (const selector of selectors) {
-            $(selector).each((_: any, el: any) => {
-                const href = $(el).attr('href') || ''
-                const title = $(el).text().trim() || 'Chapter'
-
-                // More flexible check for chapter link belonging to this manga
-                if (!href || !href.includes(mangaId) || (!href.includes('/chapter-') && !href.includes('/chuong-'))) return
-
-                // Extract chapter slug
-                const chapterMatch = href.match(/\/truyen\/[^/]+\/([^/?#]+)/)
-                if (!chapterMatch) return
-
-                const chapterId = chapterMatch[1]!
-
-                // Try to extract chapter number
-                const numMatch = title.match(/(?:chapter|ch|chap)\s*(\d+)/i) || title.match(/(\d+)/)
-                const chapNum = numMatch ? parseFloat(numMatch[1]) : chapters.length + 1
-
-                chapters.push(App.createChapter({
-                    id: chapterId,
-                    name: title,
-                    chapNum,
-                    time: new Date(),
-                    langCode: 'vi'
-                }))
-            })
-
-            if (chapters.length > 0) break
+        if (!Array.isArray(data)) {
+            console.log(`[HV2T] parseChapters: No chapters found in JSON data`)
+            return []
         }
 
-        // Reverse to show newest first
-        return chapters.reverse()
+        for (const item of data) {
+            const chapterId = item.slug || String(item.id)
+            if (!chapterId) continue
+
+            const name = item.title || `Chương ${item.chapter_number || ''}`.trim()
+            const chapNum = item.chapter_number || 0
+
+            chapters.push(App.createChapter({
+                id: chapterId,
+                name: name,
+                chapNum,
+                time: item.published_at ? new Date(item.published_at) : new Date(),
+                langCode: 'vi'
+            }))
+        }
+
+        console.log(`[HV2T] parseChapters: Parsed ${chapters.length} chapters`)
+        return chapters
     }
 
     // ─── Pages ────────────────────────────────────────────────────────────────
-    parseChapterDetails($: CheerioAPI, chapterId: string, mangaId: string, proxyUrl: string): string[] {
+    parseChapterDetails(json: any, chapterId: string, mangaId: string, proxyUrl: string): string[] {
         const pages: string[] = []
+        const images = json?.data?.images
 
-        // Try multiple selectors for page images
-        const selectors = [
-            'img[class*="page"]',
-            'img[class*="chapter"]',
-            '#page img',
-            '.content img',
-            'img[src*="hv2t"]',
-            'img[src*="cdn"]'
-        ]
-
-        for (const selector of selectors) {
-            $(selector).each((_: number, el: any) => {
-                let src = $(el).attr('src') || $(el).attr('data-src') || ''
-
-                // Skip empty, data URI, or placeholder images
-                if (!src || src.startsWith('data:') || src.includes('loading') || src.includes('placeholder')) return
-
-                // Skip non-image files
-                if (!src.match(/\.(jpg|jpeg|png|gif|webp)/i)) return
-
-                // Convert webp to jpg
-                // src = src.replace('.webp', '.jpg')
-
-                src = this.normalizeUrl(src, this.CDN_DOMAIN)
-
-                // Proxy the image
-                src = `${proxyUrl}?url=${encodeURIComponent(src)}`
-
-                if (!pages.includes(src)) {
-                    pages.push(src)
-                }
-            })
-
-            if (pages.length > 0) break
+        if (!Array.isArray(images)) {
+            console.log(`[HV2T] parseChapterDetails: No images found in JSON data`)
+            return []
         }
 
+        for (let src of images) {
+            if (!src || typeof src !== 'string') continue
+
+            // Normalize and proxy
+            src = this.normalizeUrl(src, this.CDN_DOMAIN)
+            src = `${proxyUrl}?url=${encodeURIComponent(src)}`
+
+            if (!pages.includes(src)) {
+                pages.push(src)
+            }
+        }
+
+        console.log(`[HV2T] parseChapterDetails: Found ${pages.length} pages`)
         return pages
     }
 

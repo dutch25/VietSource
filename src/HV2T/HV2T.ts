@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.1.3',
+    version: '1.1.4',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -70,7 +70,7 @@ export class HV2T extends Source {
     }
 
     private async fetchHTML(url: string) {
-        console.log(`[HV2T] Fetching URL: ${url}`)
+        console.log(`[HV2T] Fetching HTML: ${url}`)
 
         // Use proxy for HTML fetching to bypass Cloudflare
         const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(url)}`
@@ -78,15 +78,22 @@ export class HV2T extends Source {
         try {
             const response = await this.requestManager.schedule(this.buildRequest(proxyUrl), 0)
             const data = response.data as string
-            console.log(`[HV2T] Response: status=${response.status}, length=${data.length}`)
-
-            if (data.length < 1000) {
-                console.log(`[HV2T] Warning: Small response, data: ${data.substring(0, 500)}`)
-            }
-
             return this.cheerio.load(data)
         } catch (e) {
-            console.log(`[HV2T] Error fetching: ${e}`)
+            console.log(`[HV2T] Error fetching HTML: ${e}`)
+            throw e
+        }
+    }
+
+    private async fetchJSON(url: string) {
+        console.log(`[HV2T] Fetching JSON: ${url}`)
+        const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(url)}`
+
+        try {
+            const response = await this.requestManager.schedule(this.buildRequest(proxyUrl), 0)
+            return JSON.parse(response.data as string)
+        } catch (e) {
+            console.log(`[HV2T] Error fetching JSON: ${e}`)
             throw e
         }
     }
@@ -174,15 +181,15 @@ export class HV2T extends Source {
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        const url = `${BASE_URL}/truyen/${mangaId}`
-        const $ = await this.fetchHTML(url)
-        return this.parser.parseChapters($, mangaId)
+        const url = `${BASE_URL}/api/comics/${mangaId}`
+        const json = await this.fetchJSON(url)
+        return this.parser.parseChapters(json, mangaId)
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        const url = `${BASE_URL}/truyen/${mangaId}/${chapterId}`
-        const $ = await this.fetchHTML(url)
-        const pages = this.parser.parseChapterDetails($, chapterId, mangaId, PROXY_URL)
+        const url = `${BASE_URL}/api/comics/${mangaId}/${chapterId}/view`
+        const json = await this.fetchJSON(url)
+        const pages = this.parser.parseChapterDetails(json, chapterId, mangaId, PROXY_URL)
         return App.createChapterDetails({ id: chapterId, mangaId, pages })
     }
 
