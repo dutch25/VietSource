@@ -464,9 +464,9 @@ exports.HV2T = exports.HV2TInfo = void 0;
 const types_1 = require("@paperback/types");
 const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
-const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
+const PROXY_URL = '';
 exports.HV2TInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -511,7 +511,9 @@ class HV2T extends types_1.Source {
         return App.createRequest({ url, method: 'GET' });
     }
     async fetchHTML(url) {
+        console.log(`[HV2T] Fetching: ${url}`);
         const response = await this.requestManager.schedule(this.buildRequest(url), 0);
+        console.log(`[HV2T] Response status: ${response.status}, data length: ${response.data.length}`);
         return this.cheerio.load(response.data);
     }
     async getHomePageSections(sectionCallback) {
