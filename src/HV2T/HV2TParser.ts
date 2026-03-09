@@ -30,11 +30,16 @@ export class Parser {
 
                 for (const item of items) {
                     if (item.url && item.name && item.image) {
-                        // More robust slug extraction
+                        const isChapter = item.url.includes('/chapter-') || item.url.includes('/chuong-') ||
+                            item.name.toLowerCase().includes('chương') ||
+                            item.name.toLowerCase().includes('chapter')
+
+                        if (isChapter) continue
+
                         const match = item.url.match(/\/truyen\/([^/]+)/)
                         const slug = match ? match[1] : ''
 
-                        if (!slug || slug.includes('chapter-') || results.some(r => r.mangaId === slug)) continue
+                        if (!slug || results.some(r => r.mangaId === slug)) continue
 
                         let image = item.image
                         // Convert webp to jpg for compatibility
@@ -64,9 +69,13 @@ export class Parser {
                 const $el = $(el)
                 const href = $el.attr('href') || ''
                 const title = $el.attr('title') || $el.text().trim()
+                const titleLower = title.toLowerCase()
 
-                // Skip if it's a chapter link or just the base link
-                if (!href || href.includes('/chapter-') || href.endsWith('/truyen/')) return
+                // Skip if it's a chapter link, just the base link, or has "Chương" in title
+                const isChapter = href.includes('/chapter-') || href.includes('/chuong-') ||
+                    titleLower.includes('chương') || titleLower.includes('chapter')
+
+                if (!href || isChapter || href.endsWith('/truyen/')) return
 
                 const match = href.match(/\/truyen\/([^/]+)/)
                 const slug = match ? match[1] : ''
@@ -111,7 +120,11 @@ export class Parser {
                 for (const item of data.itemListElement) {
                     if (item['@type'] === 'ComicSeries' || item['@type'] === 'ListItem') {
                         const itemData = item.item || item
-                        if (itemData.url && itemData.name && !itemData.url.includes('/chapter-')) {
+                        const isChapter = (itemData.url ?? '').includes('/chapter-') || (itemData.url ?? '').includes('/chuong-') ||
+                            (itemData.name ?? '').toLowerCase().includes('chương') ||
+                            (itemData.name ?? '').toLowerCase().includes('chapter')
+
+                        if (itemData.url && itemData.name && !isChapter) {
                             items.push({
                                 name: itemData.name,
                                 url: itemData.url,
