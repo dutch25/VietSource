@@ -154,7 +154,7 @@ export class Parser {
                 status: status === 'Completed' ? 'completed' : 'ongoing',
                 author: author,
                 desc: desc,
-                tags: [App.createTagSection({ id: 'genres', label: 'Thể Loại', tags })],
+                tags: [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })],
             })
         })
     }
@@ -287,6 +287,6 @@ export class Parser {
             { id: 'yuri', label: 'Yuri' },
         ]
 
-        return [App.createTagSection({ id: '0', label: 'Thể Loại', tags })]
+        return [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })]
     }
 }
