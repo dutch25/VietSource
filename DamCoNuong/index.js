@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const DamCoNuongParser_1 = require("./DamCoNuongParser");
 const BASE_URL = 'https://damconuong.city';
 exports.DamCoNuongInfo = {
-    version: '1.0.6',
+    version: '1.0.7',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -683,10 +683,15 @@ class Parser {
     }
     parseChapterPages($) {
         const pages = [];
-        $('img[data-original-src], img[data-src]').each((_, el) => {
-            const imgSrc = $(el).attr('data-original-src') ?? $(el).attr('data-src') ?? $(el).attr('src') ?? '';
-            if (imgSrc && (imgSrc.includes('/images/') || imgSrc.includes('/chapters/')) && imgSrc.endsWith('.jpg')) {
-                pages.push(imgSrc);
+        $('img[data-original-src], img[data-src], img.chapter-img').each((_, el) => {
+            let imgSrc = ($(el).attr('data-original-src') ?? $(el).attr('data-src') ?? $(el).attr('src') ?? '').trim();
+            if (!imgSrc || imgSrc.includes('logo') || imgSrc.includes('data:image'))
+                return;
+            const isImage = /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(imgSrc);
+            const isChapterFolder = /\/(chapters|images|truyen)\//i.test(imgSrc);
+            if (imgSrc && (isImage || isChapterFolder)) {
+                if (!pages.includes(imgSrc))
+                    pages.push(imgSrc);
             }
         });
         if (pages.length === 0) {
