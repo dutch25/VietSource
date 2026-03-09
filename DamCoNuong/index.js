@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const DamCoNuongParser_1 = require("./DamCoNuongParser");
 const BASE_URL = 'https://damconuong.city';
 exports.DamCoNuongInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -605,10 +605,12 @@ class Parser {
         const results = [];
         $('.cover-frame, [class*="manga"]').closest('a[href*="/truyen/"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
-            const idMatch = href.match(/\/truyen\/([^?#]+)/);
+            if (href.includes('/chapter-'))
+                return;
+            const idMatch = href.match(/\/truyen\/([^/?#]+)/);
             if (!idMatch)
                 return;
-            const id = idMatch[1].replace(/\/$/, '').trim();
+            const id = idMatch[1].trim();
             if (!id)
                 return;
             const img = $(el).find('img').first();
@@ -621,10 +623,12 @@ class Parser {
         if (results.length === 0) {
             $('a[href*="/truyen/"]').each((_, el) => {
                 const href = $(el).attr('href') ?? '';
-                const idMatch = href.match(/\/truyen\/([^?#]+)/);
+                if (href.includes('/chapter-'))
+                    return;
+                const idMatch = href.match(/\/truyen\/([^/?#]+)/);
                 if (!idMatch)
                     return;
-                const id = idMatch[1].replace(/\/$/, '').trim();
+                const id = idMatch[1].trim();
                 if (!id || results.some(r => r.mangaId === id))
                     return;
                 const img = $(el).find('img').first();
