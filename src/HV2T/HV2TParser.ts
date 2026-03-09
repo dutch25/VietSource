@@ -39,11 +39,11 @@ export class Parser {
                         const match = item.url.match(/\/truyen\/([^/]+)/)
                         const slug = match ? match[1] : ''
 
-                        if (!slug || results.some(r => r.mangaId === slug)) continue
+                        if (!slug || slug.includes('chapter-') || results.some(r => r.mangaId === slug)) continue
 
                         let image = item.image
-                        // Convert webp to jpg for compatibility
-                        image = image.replace('.webp', '.jpg')
+                        // Remove webp to jpg conversion as it may cause 404s
+                        // image = image.replace('.webp', '.jpg')
 
                         // Only add proxy if proxyUrl is not empty
                         if (proxyUrl) {
@@ -152,10 +152,12 @@ export class Parser {
         let image =
             $('meta[property="og:image"]').attr('content') ||
             $('img[class*="cover"]').attr('src') ||
+            $('img[class*="cover"]').attr('data-src') ||
+            $('main img').first().attr('src') ||
             ''
 
         if (image) {
-            image = image.replace('.webp', '.jpg')
+            // image = image.replace('.webp', '.jpg')
             image = `${proxyUrl}?url=${encodeURIComponent(image)}`
         }
 
@@ -221,6 +223,8 @@ export class Parser {
         // Try multiple selectors for chapter list
         const selectors = [
             `a[href*="/truyen/${mangaId}/"]`,
+            'a[href*="/chapter-"]',
+            'a[href*="/chuong-"]',
             '[class*="chapter"] a',
             '.chapter-list a',
             '.chapters a',
@@ -232,10 +236,11 @@ export class Parser {
                 const href = $(el).attr('href') || ''
                 const title = $(el).text().trim() || 'Chapter'
 
-                if (!href || !href.includes(`/truyen/${mangaId}/`)) return
+                // More flexible check for chapter link belonging to this manga
+                if (!href || !href.includes(mangaId) || (!href.includes('/chapter-') && !href.includes('/chuong-'))) return
 
                 // Extract chapter slug
-                const chapterMatch = href.match(/\/truyen\/[^/]+\/(.+)/)
+                const chapterMatch = href.match(/\/truyen\/[^/]+\/([^/?#]+)/)
                 if (!chapterMatch) return
 
                 const chapterId = chapterMatch[1]!
@@ -285,7 +290,7 @@ export class Parser {
                 if (!src.match(/\.(jpg|jpeg|png|gif|webp)/i)) return
 
                 // Convert webp to jpg
-                src = src.replace('.webp', '.jpg')
+                // src = src.replace('.webp', '.jpg')
 
                 // Proxy the image
                 src = `${proxyUrl}?url=${encodeURIComponent(src)}`

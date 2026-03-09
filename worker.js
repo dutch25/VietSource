@@ -12,12 +12,14 @@ export default {
     const imageAllowed = [
       'https://vvcz.store/',      // NHentaiClub
       'https://cdn.hv2t.com/',    // HV2T
+      'https://hv2t.store/',      // HV2T Cover/Images
     ]
 
     // Allowed domains for pages (HTML)
     const pageAllowed = [
       'nhentaiclub.site',
       'hv2t.store',
+      'cdn.hv2t.com',
     ]
 
     const isImage = imageAllowed.some(prefix => target.startsWith(prefix))
@@ -29,7 +31,7 @@ export default {
 
     // Determine the referer based on the target URL
     let referer = 'https://nhentaiclub.site'
-    if (target.includes('hv2t.store')) {
+    if (target.includes('hv2t.store') || target.includes('cdn.hv2t.com')) {
       referer = 'https://hv2t.store'
     }
 

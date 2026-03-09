@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.1.0',
+    version: '1.1.1',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -647,11 +647,11 @@ class Parser {
                             continue;
                         const match = item.url.match(/\/truyen\/([^/]+)/);
                         const slug = match ? match[1] : '';
-                        if (!slug || results.some(r => r.mangaId === slug))
+                        if (!slug || slug.includes('chapter-') || results.some(r => r.mangaId === slug))
                             continue;
                         let image = item.image;
-                        // Convert webp to jpg for compatibility
-                        image = image.replace('.webp', '.jpg');
+                        // Remove webp to jpg conversion as it may cause 404s
+                        // image = image.replace('.webp', '.jpg')
                         // Only add proxy if proxyUrl is not empty
                         if (proxyUrl) {
                             image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
@@ -744,9 +744,11 @@ class Parser {
         // Get cover image
         let image = $('meta[property="og:image"]').attr('content') ||
             $('img[class*="cover"]').attr('src') ||
+            $('img[class*="cover"]').attr('data-src') ||
+            $('main img').first().attr('src') ||
             '';
         if (image) {
-            image = image.replace('.webp', '.jpg');
+            // image = image.replace('.webp', '.jpg')
             image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
         }
         // Get description
@@ -803,6 +805,8 @@ class Parser {
         // Try multiple selectors for chapter list
         const selectors = [
             `a[href*="/truyen/${mangaId}/"]`,
+            'a[href*="/chapter-"]',
+            'a[href*="/chuong-"]',
             '[class*="chapter"] a',
             '.chapter-list a',
             '.chapters a',
@@ -812,10 +816,11 @@ class Parser {
             $(selector).each((_, el) => {
                 const href = $(el).attr('href') || '';
                 const title = $(el).text().trim() || 'Chapter';
-                if (!href || !href.includes(`/truyen/${mangaId}/`))
+                // More flexible check for chapter link belonging to this manga
+                if (!href || !href.includes(mangaId) || (!href.includes('/chapter-') && !href.includes('/chuong-')))
                     return;
                 // Extract chapter slug
-                const chapterMatch = href.match(/\/truyen\/[^/]+\/(.+)/);
+                const chapterMatch = href.match(/\/truyen\/[^/]+\/([^/?#]+)/);
                 if (!chapterMatch)
                     return;
                 const chapterId = chapterMatch[1];
@@ -858,7 +863,7 @@ class Parser {
                 if (!src.match(/\.(jpg|jpeg|png|gif|webp)/i))
                     return;
                 // Convert webp to jpg
-                src = src.replace('.webp', '.jpg');
+                // src = src.replace('.webp', '.jpg')
                 // Proxy the image
                 src = `${proxyUrl}?url=${encodeURIComponent(src)}`;
                 if (!pages.includes(src)) {
