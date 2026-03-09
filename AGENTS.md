@@ -2,11 +2,12 @@
 
 ## Project Overview
 
-This is a **Paperback** iOS extension supporting **two Vietnamese hentai manga sources**:
+This is a **Paperback** iOS extension supporting **three Vietnamese hentai manga sources**:
 - **vi-hentai.pro** - Built-in source `ViHentai`
 - **nhentaiclub.space** - Built-in source `NHentaiClub`
+- **damconuong.city** - Built-in source `DamCoNuong`
 
-Users can browse, search, and read manga from both sites through the Paperback app.
+Users can browse, search, and read manga from these sites through the Paperback app.
 
 ## Tech Stack
 
@@ -17,15 +18,19 @@ Users can browse, search, and read manga from both sites through the Paperback a
 ## Project Structure
 
 ```
-vi-hentai/
+dutch-extension/
 ├── src/
 │   ├── ViHentai/
 │   │   ├── ViHentai.ts           ← Main source implementation
 │   │   ├── ViHentaiParser.ts     ← HTML parsing logic
 │   │   └── includes/icon.png     ← Extension icon
-│   └── NHentaiClub/
-│       ├── NHentaiClub.ts        ← Main source implementation
-│       ├── NHentaiClubParser.ts  ← HTML parsing logic
+│   ├── NHentaiClub/
+│   │   ├── NHentaiClub.ts        ← Main source implementation
+│   │   ├── NHentaiClubParser.ts  ← HTML parsing logic
+│   │   └── includes/icon.png     ← Extension icon
+│   └── DamCoNuong/
+│       ├── DamCoNuong.ts         ← Main source implementation
+│       ├── DamCoNuongParser.ts   ← HTML parsing logic
 │       └── includes/icon.png     ← Extension icon
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
@@ -137,6 +142,36 @@ vi-hentai/
 ### Known Issues
 - CDN images (`i*.nhentaiclub.shop`) are behind Cloudflare - proxy can't bypass
 - Shows 403 when loading chapter images
+
+---
+
+# Source 3: DamCoNuong
+
+**Website**: https://damconuong.city
+
+### SourceInfo
+- **Version**: 1.0.9
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
+
+### URL Patterns
+- Homepage: `https://damconuong.city/`
+- Manga: `https://damconuong.city/truyen/{mangaId}`
+- Chapter: `https://damconuong.city/truyen/{mangaId}/{chapterId}`
+- Search: `https://damconuong.city/tim-kiem?q={search}`
+
+### How It Works
+
+1. **getHomePageSections** - Scrapes the homepage sections using `.manga-vertical` containers.
+2. **getSearchResults** - Searches via `/tim-kiem`.
+3. **getMangaDetails** - Parses manga details from `/truyen/{mangaId}`.
+4. **getChapters** - Extracts the chapter list from the individual truyen info page.
+5. **getChapterDetails** - Scrapes high-quality image URLs from chapter reader pages using relaxed image filters. 
+
+### Known Issues
+- **UI Card Pollution**: Some manga cards on the homepage might still show "Chapter 22", "65", "80" etc. incorrectly in the title or subtitle area due to dynamic site layout changes. 
 
 ---
 
