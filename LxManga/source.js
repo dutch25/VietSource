@@ -466,7 +466,7 @@ const LxMangaParser_1 = require("./LxMangaParser");
 const BASE_URL = 'https://lxmanga.space';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.LxMangaInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'LxManga',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -711,15 +711,19 @@ class Parser {
             }
         });
         // Get genres/tags
-        const tags = [];
+        const genres = [];
         $('a[href*="/the-loai/"], a[href*="/tag/"], .genre a, .tags a').each((_, el) => {
             const href = $(el).attr('href') || '';
             const label = $(el).text().trim();
             if (label && !label.includes('Tác giả')) {
                 const id = href.split('/').pop() || label.toLowerCase().replace(/\s+/g, '-');
-                tags.push(App.createTag({ id, label }));
+                genres.push(App.createTag({ id, label }));
             }
         });
+        const tagSections = [];
+        if (genres.length > 0) {
+            tagSections.push(App.createTagSection({ id: 'genre', label: 'Thể Loại', tags: genres }));
+        }
         return App.createSourceManga({
             id: mangaId,
             mangaInfo: App.createMangaInfo({
@@ -728,7 +732,7 @@ class Parser {
                 status: status === 'Completed' ? 'completed' : 'ongoing',
                 author: author,
                 desc: desc,
-                tags: [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })],
+                tags: tagSections,
             })
         });
     }
