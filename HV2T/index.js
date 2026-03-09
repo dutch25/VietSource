@@ -464,9 +464,9 @@ exports.HV2T = exports.HV2TInfo = void 0;
 const types_1 = require("@paperback/types");
 const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
-const PROXY_URL = '';
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
