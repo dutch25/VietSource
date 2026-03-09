@@ -41,14 +41,37 @@ export default {
       referer = 'https://hv2t.store'
     }
 
-    const response = await fetch(target, {
+    // Use manual redirect handling to preserve headers (Referer) across domains
+    let response = await fetch(target, {
       headers: {
         'Referer': referer,
         'Origin': referer,
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      }
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      redirect: 'manual'
     })
+
+    // Handle redirects (up to 3 hops)
+    let hops = 0
+    while ([301, 302, 303, 307, 308].includes(response.status) && hops < 3) {
+      const location = response.headers.get('Location')
+      if (!location) break
+
+      const nextUrl = new URL(location, target).href
+
+      response = await fetch(nextUrl, {
+        headers: {
+          'Referer': referer,
+          'Origin': referer,
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        },
+        redirect: 'manual'
+      })
+      hops++
+    }
 
     if (isImage) {
       return new Response(response.body, {

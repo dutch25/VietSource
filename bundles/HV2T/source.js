@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.1.4',
+    version: '1.1.5',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -855,7 +855,7 @@ class Parser {
             if (!src || typeof src !== 'string')
                 continue;
             // Normalize and proxy
-            src = this.normalizeUrl(src, this.CDN_DOMAIN);
+            src = this.normalizeUrl(src, this.BASE_DOMAIN);
             src = `${proxyUrl}?url=${encodeURIComponent(src)}`;
             if (!pages.includes(src)) {
                 pages.push(src);

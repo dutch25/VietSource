@@ -268,7 +268,7 @@ export class Parser {
             if (!src || typeof src !== 'string') continue
 
             // Normalize and proxy
-            src = this.normalizeUrl(src, this.CDN_DOMAIN)
+            src = this.normalizeUrl(src, this.BASE_DOMAIN)
             src = `${proxyUrl}?url=${encodeURIComponent(src)}`
 
             if (!pages.includes(src)) {
