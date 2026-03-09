@@ -30,10 +30,11 @@ export class Parser {
 
                 for (const item of items) {
                     if (item.url && item.name && item.image) {
-                        const slug = item.url.replace('/truyen/', '').replace('/', '')
+                        // More robust slug extraction
+                        const match = item.url.match(/\/truyen\/([^/]+)/)
+                        const slug = match ? match[1] : ''
 
-                        // Skip if already added
-                        if (results.some(r => r.mangaId === slug)) continue
+                        if (!slug || slug.includes('chapter-') || results.some(r => r.mangaId === slug)) continue
 
                         let image = item.image
                         // Convert webp to jpg for compatibility
@@ -58,22 +59,25 @@ export class Parser {
 
         // Fallback: try to parse from DOM elements
         if (results.length === 0) {
-            $('a[href^="/truyen/"]').each((_, el) => {
+            // Use contains instead of starts with for absolute/relative flexibility
+            $('a[href*="/truyen/"]').each((_, el) => {
                 const $el = $(el)
                 const href = $el.attr('href') || ''
                 const title = $el.attr('title') || $el.text().trim()
 
-                // Skip if empty, not a truyen link, or a chapter link
-                if (!href || href === '/truyen/' || href.includes('/chapter-')) return
+                // Skip if it's a chapter link or just the base link
+                if (!href || href.includes('/chapter-') || href.endsWith('/truyen/')) return
 
-                const slug = href.replace('/truyen/', '').replace('/', '')
+                const match = href.match(/\/truyen\/([^/]+)/)
+                const slug = match ? match[1] : ''
+
                 if (!slug || results.some(r => r.mangaId === slug)) return
 
-                // Try to find the image within this link or a sibling/parent
+                // Check if this looks like a manga card link (often has an image or is in a specific container)
                 let image = $el.find('img').attr('src') || $el.find('img').attr('data-src') || ''
 
-                // If not found in the link, try looking in siblings/parents (common in some layouts)
                 if (!image) {
+                    // Try to find image in siblings or parent container
                     const $container = $el.closest('div, article, section')
                     image = $container.find('img').attr('src') || $container.find('img').attr('data-src') || ''
                 }
@@ -84,7 +88,7 @@ export class Parser {
 
                 results.push(App.createPartialSourceManga({
                     mangaId: slug,
-                    title: title.replace('Truyện ', '').trim(),
+                    title: title.replace('Truyện ', '').trim() || slug, // Fallback to slug if title is empty
                     image
                 }))
             })
