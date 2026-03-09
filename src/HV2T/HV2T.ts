@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -71,8 +71,12 @@ export class HV2T extends Source {
 
     private async fetchHTML(url: string) {
         console.log(`[HV2T] Fetching URL: ${url}`)
+        
+        // Use proxy for HTML fetching to bypass Cloudflare
+        const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(url)}`
+        
         try {
-            const response = await this.requestManager.schedule(this.buildRequest(url), 0)
+            const response = await this.requestManager.schedule(this.buildRequest(proxyUrl), 0)
             const data = response.data as string
             console.log(`[HV2T] Response: status=${response.status}, length=${data.length}`)
             

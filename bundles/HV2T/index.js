@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -514,8 +514,10 @@ class HV2T extends types_1.Source {
     }
     async fetchHTML(url) {
         console.log(`[HV2T] Fetching URL: ${url}`);
+        // Use proxy for HTML fetching to bypass Cloudflare
+        const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(url)}`;
         try {
-            const response = await this.requestManager.schedule(this.buildRequest(url), 0);
+            const response = await this.requestManager.schedule(this.buildRequest(proxyUrl), 0);
             const data = response.data;
             console.log(`[HV2T] Response: status=${response.status}, length=${data.length}`);
             if (data.length < 1000) {
