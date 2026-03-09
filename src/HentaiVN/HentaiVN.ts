@@ -20,7 +20,7 @@ const BASE_URL = 'https://hentaivn.college'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev' // Reuse proxy if images are blocked
 
 export const HentaiVNInfo: SourceInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -79,8 +79,8 @@ export class HentaiVN extends Source {
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const sections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: BASE_URL },
-            { id: 'full', title: 'Truyện Full', url: `${BASE_URL}/truyen-full` },
-            { id: 'top', title: 'Top View', url: `${BASE_URL}/top-view` },
+            { id: 'full', title: 'Truyện Full', url: `${BASE_URL}/tim-truyen?status=completed` },
+            { id: 'top', title: 'Top View', url: `${BASE_URL}/tim-truyen?sort=view` },
         ]
 
         for (const section of sections) {

@@ -466,7 +466,7 @@ const HentaiVNParser_1 = require("./HentaiVNParser");
 const BASE_URL = 'https://hentaivn.college';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'; // Reuse proxy if images are blocked
 exports.HentaiVNInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -520,8 +520,8 @@ class HentaiVN extends types_1.Source {
     async getHomePageSections(sectionCallback) {
         const sections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: BASE_URL },
-            { id: 'full', title: 'Truyện Full', url: `${BASE_URL}/truyen-full` },
-            { id: 'top', title: 'Top View', url: `${BASE_URL}/top-view` },
+            { id: 'full', title: 'Truyện Full', url: `${BASE_URL}/tim-truyen?status=completed` },
+            { id: 'top', title: 'Top View', url: `${BASE_URL}/tim-truyen?sort=view` },
         ];
         for (const section of sections) {
             sectionCallback(App.createHomeSection({
@@ -607,69 +607,63 @@ exports.HentaiVN = HentaiVN;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
 class Parser {
+    constructor() {
+        this.BASE_DOMAIN = 'hentaivn.college';
+    }
     // ─── Home Page ─────────────────────────────────────────────────────────────
     parseHomePage($, proxyUrl) {
         const results = [];
-        // Try multiple selectors for manga items - sites vary in structure
+        // Primary: .items-slide .owl-item .item (carousel on homepage)
+        // Also check for .manga-vertical .item (list view)
         const selectors = [
+            '.items-slide .owl-item .item',
             '.manga-vertical .item',
-            '.manga-item',
-            '.story-item',
             '.comic-item',
-            '.post-item',
-            '.item',
-            '.card-item',
-            'div[data-manga]'
+            '.story-item'
         ];
         for (const selector of selectors) {
             $(selector).each((_, el) => {
                 const $el = $(el);
-                // Try to find title link
-                const titleLink = $el.find('a[href*="truyen"], a[href*="/hentai"], a[href*="-doc-"]').first();
-                const href = titleLink.attr('href') || $el.find('a').first().attr('href') || '';
-                // Skip if no valid href or if it's a chapter link
-                if (!href || href.includes('/chapter') || href.includes('-xem-'))
+                // Find manga link - pattern: /truyen-hentai/slug-id
+                const titleLink = $el.find('a[href*="/truyen-hentai/"]').first();
+                const href = titleLink.attr('href') || '';
+                // Skip if no valid href
+                if (!href || !href.includes('/truyen-hentai/'))
                     return;
-                // Extract manga ID from URL
-                // Pattern: /12345-doc-truyen-name.html or /truyen-hentai/name
-                let id = '';
-                const docMatch = href.match(/\/(\d+)-doc-truyen/);
-                const truyenMatch = href.match(/\/truyen[/-]?hentai?\/(.+?)(?:\.html|$|\?)/);
-                if (docMatch) {
-                    id = docMatch[1];
-                }
-                else if (truyenMatch) {
-                    id = truyenMatch[1];
+                // Extract manga ID from URL pattern: /truyen-hentai/slug-12345
+                // Store the full path (without domain) as ID so we can reconstruct the URL
+                const pathMatch = href.match(/\/truyen-hentai\/([^-]+-[^/?#]+)/);
+                let mangaId = '';
+                if (pathMatch) {
+                    mangaId = pathMatch[1]; // e.g., "tinh-duc-ngot-ngao-voi-nguoi-yeu-9"
                 }
                 else {
-                    // Use the path as ID
-                    id = href.replace(/https?:\/\/hentaivn\.college/, '').replace(/^\//, '').replace(/\.html$/, '');
+                    // Fallback: just use the numeric ID
+                    const idMatch = href.match(/-(\d+)(?:\/|$|\?)/);
+                    if (idMatch)
+                        mangaId = idMatch[1];
                 }
-                if (!id)
+                if (!mangaId)
                     return;
-                // Get title
-                let title = titleLink.attr('title') || titleLink.text().trim() || $el.find('img').attr('alt') || '';
-                if (!title)
-                    title = $el.find('h3, h4, .title, .name').text().trim();
-                if (!title)
-                    return;
-                // Get image
-                let image = $el.find('img').attr('src') || $el.find('img').attr('data-src') || $el.find('img').attr('data-lazy-src') || '';
-                // Try background image
-                if (!image) {
-                    const bg = $el.find('[style*="background"]').attr('style');
-                    if (bg) {
-                        const match = bg.match(/url\(['"]?(.*?)['"]?\)/);
-                        if (match)
-                            image = match[1];
-                    }
+                // Get title from img alt attribute
+                const img = $el.find('img.lazy').first();
+                let title = img.attr('alt') || titleLink.attr('title') || '';
+                // Fallback to slide-caption title
+                if (!title) {
+                    title = $el.find('.slide-caption h3 a').text().trim();
                 }
+                if (!title)
+                    return;
+                // Get image - use data-original for lazy loaded images
+                let image = img.attr('data-original') || img.attr('src') || '';
                 if (!image)
                     return;
-                // Proxy the image
-                image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
+                // Add domain if relative URL
+                if (!image.startsWith('http')) {
+                    image = `https://www.${this.BASE_DOMAIN}${image.startsWith('/') ? '' : '/'}${image}`;
+                }
                 results.push(App.createPartialSourceManga({
-                    mangaId: id,
+                    mangaId: mangaId,
                     title,
                     image
                 }));
@@ -677,7 +671,7 @@ class Parser {
             if (results.length > 0)
                 break;
         }
-        console.log(`[HentaiVN] ParseHomePage: Found ${results.length} manga items`);
+        console.log(`[HentaiVN] parseHomePage: Found ${results.length} items`);
         return results;
     }
     // ─── Manga Details ─────────────────────────────────────────────────────────
