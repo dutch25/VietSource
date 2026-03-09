@@ -38,7 +38,11 @@ export class Parser {
                         let image = item.image
                         // Convert webp to jpg for compatibility
                         image = image.replace('.webp', '.jpg')
-                        image = `${proxyUrl}?url=${encodeURIComponent(image)}`
+                        
+                        // Only add proxy if proxyUrl is not empty
+                        if (proxyUrl) {
+                            image = `${proxyUrl}?url=${encodeURIComponent(image)}`
+                        }
 
                         results.push(App.createPartialSourceManga({
                             mangaId: slug,

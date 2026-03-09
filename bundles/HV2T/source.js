@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = '';
 exports.HV2TInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -529,25 +529,41 @@ class HV2T extends types_1.Source {
         }
     }
     async getHomePageSections(sectionCallback) {
+        console.log('[HV2T] getHomePageSections called');
         const sections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: BASE_URL },
         ];
         for (const section of sections) {
+            console.log(`[HV2T] Processing section: ${section.id}`);
             sectionCallback(App.createHomeSection({
                 id: section.id,
                 title: section.title,
                 containsMoreItems: true,
                 type: types_1.HomeSectionType.singleRowNormal,
             }));
-            const $ = await this.fetchHTML(section.url);
-            const items = this.parser.parseHomePage($, PROXY_URL);
-            sectionCallback(App.createHomeSection({
-                id: section.id,
-                title: section.title,
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal,
-                items,
-            }));
+            try {
+                const $ = await this.fetchHTML(section.url);
+                console.log('[HV2T] HTML fetched, parsing...');
+                const items = this.parser.parseHomePage($, PROXY_URL);
+                console.log(`[HV2T] Parsed ${items.length} items`);
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: types_1.HomeSectionType.singleRowNormal,
+                    items,
+                }));
+            }
+            catch (e) {
+                console.log(`[HV2T] Error: ${e}`);
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: types_1.HomeSectionType.singleRowNormal,
+                    items: [],
+                }));
+            }
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
@@ -624,7 +640,10 @@ class Parser {
                         let image = item.image;
                         // Convert webp to jpg for compatibility
                         image = image.replace('.webp', '.jpg');
-                        image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
+                        // Only add proxy if proxyUrl is not empty
+                        if (proxyUrl) {
+                            image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
+                        }
                         results.push(App.createPartialSourceManga({
                             mangaId: slug,
                             title: item.name,

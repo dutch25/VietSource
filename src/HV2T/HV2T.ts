@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = ''
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -88,11 +88,14 @@ export class HV2T extends Source {
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
+        console.log('[HV2T] getHomePageSections called')
         const sections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: BASE_URL },
         ]
 
         for (const section of sections) {
+            console.log(`[HV2T] Processing section: ${section.id}`)
+            
             sectionCallback(App.createHomeSection({
                 id: section.id,
                 title: section.title,
@@ -100,16 +103,29 @@ export class HV2T extends Source {
                 type: HomeSectionType.singleRowNormal,
             }))
 
-            const $ = await this.fetchHTML(section.url)
-            const items = this.parser.parseHomePage($, PROXY_URL)
+            try {
+                const $ = await this.fetchHTML(section.url)
+                console.log('[HV2T] HTML fetched, parsing...')
+                const items = this.parser.parseHomePage($, PROXY_URL)
+                console.log(`[HV2T] Parsed ${items.length} items`)
 
-            sectionCallback(App.createHomeSection({
-                id: section.id,
-                title: section.title,
-                containsMoreItems: true,
-                type: HomeSectionType.singleRowNormal,
-                items,
-            }))
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items,
+                }))
+            } catch (e) {
+                console.log(`[HV2T] Error: ${e}`)
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items: [],
+                }))
+            }
         }
     }
 
