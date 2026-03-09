@@ -16,6 +16,14 @@ export class Parser {
     parseHomePage($: CheerioAPI, proxyUrl: string): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
 
+        // Debug: Check how many manga-vertical elements exist
+        const count = $('.manga-vertical').length
+        console.log(`[LxManga Parser] Found ${count} .manga-vertical elements`)
+        
+        // Debug: Check first few links
+        const links = $('a[href^="/truyen/"]').map((_, el) => $(el).attr('href')).get()
+        console.log(`[LxManga Parser] Found ${links.length} /truyen/ links, first 3:`, links.slice(0, 3))
+
         // Main manga list is in .manga-vertical elements
         // Each item has:
         // - a[href^="/truyen/"] for the title link

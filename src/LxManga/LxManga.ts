@@ -20,7 +20,7 @@ const BASE_URL = 'https://lxmanga.space'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const LxMangaInfo: SourceInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'LxManga',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -68,7 +68,9 @@ export class LxManga extends Source {
     }
 
     private async fetchHTML(url: string) {
+        console.log(`[LxManga] Fetching: ${url}`)
         const response = await this.requestManager.schedule(this.buildRequest(url), 0)
+        console.log(`[LxManga] Response status: ${response.status}, data length: ${(response.data as string).length}`)
         return this.cheerio.load(response.data as string)
     }
 
@@ -79,6 +81,8 @@ export class LxManga extends Source {
         ]
 
         for (const section of sections) {
+            console.log(`[LxManga] Processing section: ${section.id}`)
+            
             sectionCallback(App.createHomeSection({
                 id: section.id,
                 title: section.title,
@@ -86,16 +90,28 @@ export class LxManga extends Source {
                 type: HomeSectionType.singleRowNormal,
             }))
 
-            const $ = await this.fetchHTML(section.url)
-            const items = this.parser.parseHomePage($, PROXY_URL)
+            try {
+                const $ = await this.fetchHTML(section.url)
+                const items = this.parser.parseHomePage($, PROXY_URL)
+                console.log(`[LxManga] Section ${section.id} found ${items.length} items`)
 
-            sectionCallback(App.createHomeSection({
-                id: section.id,
-                title: section.title,
-                containsMoreItems: true,
-                type: HomeSectionType.singleRowNormal,
-                items,
-            }))
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items,
+                }))
+            } catch (e) {
+                console.log(`[LxManga] Error in section ${section.id}: ${e}`)
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items: [],
+                }))
+            }
         }
     }
 
