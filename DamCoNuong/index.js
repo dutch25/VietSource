@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const DamCoNuongParser_1 = require("./DamCoNuongParser");
 const BASE_URL = 'https://damconuong.city';
 exports.DamCoNuongInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -603,12 +603,12 @@ exports.Parser = void 0;
 class Parser {
     parseHomePage($) {
         const results = [];
-        $('.cover-frame, [class*="manga"]').closest('a[href^="/truyen/"]').each((_, el) => {
+        $('.cover-frame, [class*="manga"]').closest('a[href*="/truyen/"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
             const idMatch = href.match(/\/truyen\/([^?#]+)/);
             if (!idMatch)
                 return;
-            const id = idMatch[1].trim();
+            const id = idMatch[1].replace(/\/$/, '').trim();
             if (!id)
                 return;
             const img = $(el).find('img').first();
@@ -619,12 +619,12 @@ class Parser {
             results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }));
         });
         if (results.length === 0) {
-            $('a[href^="/truyen/"]').each((_, el) => {
+            $('a[href*="/truyen/"]').each((_, el) => {
                 const href = $(el).attr('href') ?? '';
                 const idMatch = href.match(/\/truyen\/([^?#]+)/);
                 if (!idMatch)
                     return;
-                const id = idMatch[1].trim();
+                const id = idMatch[1].replace(/\/$/, '').trim();
                 if (!id || results.some(r => r.mangaId === id))
                     return;
                 const img = $(el).find('img').first();
@@ -665,7 +665,7 @@ class Parser {
         const chapters = [];
         $('a[href*="/chapter-"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
-            const match = href.match(/\/chapter-(\d+)/);
+            const match = href.match(/\/chapter-([\d.]+)/);
             if (!match)
                 return;
             const chapterId = match[1];
