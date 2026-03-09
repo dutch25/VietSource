@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.1.7',
+    version: '1.1.8',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -100,10 +100,10 @@ export class HV2T extends Source {
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/?sort=latest` },
-            { id: 'most_followed', title: 'Theo Dõi Nhiều', url: `${BASE_URL}/?sort=follow` },
-            { id: 'most_viewed', title: 'Lượt Xem Nhiều', url: `${BASE_URL}/?sort=view` },
-            { id: 'completed', title: 'Đã Hoàn Thành', url: `${BASE_URL}/?sort=completed` },
+            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/api/comics?sort=latest` },
+            { id: 'most_followed', title: 'Theo Dõi Nhiều', url: `${BASE_URL}/api/comics?sort=follow` },
+            { id: 'most_viewed', title: 'Lượt Xem Nhiều', url: `${BASE_URL}/api/comics?sort=view` },
+            { id: 'completed', title: 'Đã Hoàn Thành', url: `${BASE_URL}/api/comics?sort=completed` },
         ]
 
         for (const section of sections) {
@@ -112,13 +112,12 @@ export class HV2T extends Source {
                 title: section.title,
                 containsMoreItems: true,
                 type: HomeSectionType.singleRowNormal,
+                items: [],
             }))
 
             try {
-                const proxyFetchUrl = `${PROXY_URL}?url=${encodeURIComponent(section.url)}`
-                const response = await this.requestManager.schedule(this.buildRequest(proxyFetchUrl), 0)
-                const $ = this.cheerio.load(response.data as string)
-                const items = this.parser.parseHomePage($, PROXY_URL)
+                const json = await this.fetchJSON(section.url)
+                const items = this.parser.parseHomePage(json, PROXY_URL)
 
                 sectionCallback(App.createHomeSection({
                     id: section.id,
@@ -128,13 +127,7 @@ export class HV2T extends Source {
                     items,
                 }))
             } catch (e: any) {
-                sectionCallback(App.createHomeSection({
-                    id: section.id,
-                    title: section.title,
-                    containsMoreItems: true,
-                    type: HomeSectionType.singleRowNormal,
-                    items: [],
-                }))
+                // Ignore errors to allow other sections to load
             }
         }
     }
@@ -146,26 +139,27 @@ export class HV2T extends Source {
         if (homepageSectionId === 'most_viewed') sort = 'view'
         if (homepageSectionId === 'completed') sort = 'completed'
 
-        const url = `${BASE_URL}/?sort=${sort}&page=${page}`
+        const url = `${BASE_URL}/api/comics?sort=${sort}&page=${page}`
 
-        const $ = await this.fetchHTML(url)
-        const items = this.parser.parseHomePage($, PROXY_URL)
+        const json = await this.fetchJSON(url)
+        const items = this.parser.parseHomePage(json, PROXY_URL)
 
         return App.createPagedResults({
             results: items,
-            metadata: { page: page + 1 },
+            metadata: items.length > 0 ? { page: page + 1 } : undefined,
         })
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
-        const search = encodeURIComponent(query.title ?? '')
-        const url = `${BASE_URL}/tim-kiem?q=${search}`
+        const page = metadata?.page ?? 1
+        const searchUrl = `${BASE_URL}/api/comics?q=${encodeURIComponent(query.title ?? '')}&page=${page}`
 
-        const $ = await this.fetchHTML(url)
-        const items = this.parser.parseHomePage($, PROXY_URL)
+        const json = await this.fetchJSON(searchUrl)
+        const items = this.parser.parseHomePage(json, PROXY_URL)
 
         return App.createPagedResults({
             results: items,
+            metadata: items.length > 0 ? { page: page + 1 } : undefined,
         })
     }
 

@@ -21,130 +21,36 @@ export class Parser {
         return `https://${defaultDomain}/${url}`
     }
 
-    // ─── Home Page ─────────────────────────────────────────────────────────────
-    parseHomePage($: CheerioAPI, proxyUrl: string): PartialSourceManga[] {
+    // ─── Home Page / Search ────────────────────────────────────────────────────
+    parseHomePage(json: any, proxyUrl: string): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
+        const data = json?.data
 
-        // Try to parse JSON-LD data first (most reliable for Next.js)
-        const jsonLdScripts = $('script[type="application/ld+json"]')
+        if (!Array.isArray(data)) {
+            console.log(`[HV2T] parseHomePage: No items found in JSON data`)
+            return []
+        }
 
-        jsonLdScripts.each((_, el) => {
-            try {
-                const jsonContent = $(el).html()
-                if (!jsonContent) return
+        for (const item of data) {
+            const slug = item.slug || String(item.id)
+            if (!slug) continue
 
-                const data = JSON.parse(jsonContent)
-                const items = this.extractMangaItems(data)
+            const title = item.title || item.other_names || slug
 
-                for (const item of items) {
-                    if (item.url && item.name && item.image) {
-                        const isChapter = item.url.includes('/chapter-') || item.url.includes('/chuong-') ||
-                            item.name.toLowerCase().includes('chương') ||
-                            item.name.toLowerCase().includes('chapter')
-
-                        if (isChapter) continue
-
-                        const match = item.url.match(/\/truyen\/([^/]+)/)
-                        const slug = match ? match[1] : ''
-
-                        if (!slug || slug.includes('chapter-') || results.some(r => r.mangaId === slug)) continue
-
-                        let image = this.normalizeUrl(item.image, this.CDN_DOMAIN)
-                        // Remove webp to jpg conversion as it may cause 404s
-                        // image = image.replace('.webp', '.jpg')
-
-                        // Only add proxy if proxyUrl is not empty
-                        if (proxyUrl && image) {
-                            image = `${proxyUrl}?url=${encodeURIComponent(image)}`
-                        }
-
-                        results.push(App.createPartialSourceManga({
-                            mangaId: slug,
-                            title: item.name,
-                            image
-                        }))
-                    }
-                }
-            } catch (e) {
-                // Not valid JSON, skip
+            let image = this.normalizeUrl(item.cover_image, this.CDN_DOMAIN)
+            if (proxyUrl && image) {
+                image = `${proxyUrl}?url=${encodeURIComponent(image)}`
             }
-        })
 
-        // Fallback: try to parse from DOM elements
-        if (results.length === 0) {
-            // Use contains instead of starts with for absolute/relative flexibility
-            $('a[href*="/truyen/"]').each((_, el) => {
-                const $el = $(el)
-                const href = $el.attr('href') || ''
-                const title = $el.attr('title') || $el.text().trim()
-                const titleLower = title.toLowerCase()
-
-                // Skip if it's a chapter link, just the base link, or has "Chương" in title
-                const isChapter = href.includes('/chapter-') || href.includes('/chuong-') ||
-                    titleLower.includes('chương') || titleLower.includes('chapter')
-
-                if (!href || isChapter || href.endsWith('/truyen/')) return
-
-                const match = href.match(/\/truyen\/([^/]+)/)
-                const slug = match ? match[1] : ''
-
-                if (!slug || results.some(r => r.mangaId === slug)) return
-
-                // Check if this looks like a manga card link (often has an image or is in a specific container)
-                let image = this.normalizeUrl($el.find('img').attr('src') || $el.find('img').attr('data-src') || '', this.CDN_DOMAIN)
-
-                if (!image) {
-                    // Try to find image in siblings or parent container
-                    const $container = $el.closest('div, article, section')
-                    image = this.normalizeUrl($container.find('img').attr('src') || $container.find('img').attr('data-src') || '', this.CDN_DOMAIN)
-                }
-
-                if (image && proxyUrl) {
-                    image = `${proxyUrl}?url=${encodeURIComponent(image)}`
-                }
-
-                results.push(App.createPartialSourceManga({
-                    mangaId: slug,
-                    title: title.replace('Truyện ', '').trim() || slug, // Fallback to slug if title is empty
-                    image
-                }))
-            })
+            results.push(App.createPartialSourceManga({
+                mangaId: slug,
+                title: title,
+                image: image,
+            }))
         }
 
         console.log(`[HV2T] parseHomePage: Found ${results.length} items`)
         return results
-    }
-
-    private extractMangaItems(data: any): Array<{ name: string; url: string; image: string }> {
-        const items: Array<{ name: string; url: string; image: string }> = []
-
-        if (Array.isArray(data)) {
-            for (const item of data) {
-                items.push(...this.extractMangaItems(item))
-            }
-        } else if (data && typeof data === 'object') {
-            // Check if this is an ItemList
-            if (data['@type'] === 'ItemList' && Array.isArray(data.itemListElement)) {
-                for (const item of data.itemListElement) {
-                    if (item['@type'] === 'ComicSeries' || item['@type'] === 'ListItem') {
-                        const itemData = item.item || item
-                        const isChapter = (itemData.url ?? '').includes('/chapter-') || (itemData.url ?? '').includes('/chuong-') ||
-                            (itemData.name ?? '').toLowerCase().includes('chương') ||
-                            (itemData.name ?? '').toLowerCase().includes('chapter')
-
-                        if (itemData.url && itemData.name && !isChapter) {
-                            items.push({
-                                name: itemData.name,
-                                url: itemData.url,
-                                image: itemData.image || ''
-                            })
-                        }
-                    }
-                }
-            }
-        }
-
-        return items
     }
 
     // ─── Manga Details ─────────────────────────────────────────────────────────
