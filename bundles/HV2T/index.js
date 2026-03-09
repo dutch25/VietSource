@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.1.11',
+    version: '1.1.12',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -588,7 +588,11 @@ class HV2T extends types_1.Source {
     }
     async getSearchResults(query, metadata) {
         const page = metadata?.page ?? 1;
-        const searchUrl = `${BASE_URL}/api/comics?q=${encodeURIComponent(query.title ?? '')}&page=${page}`;
+        let searchUrl = `${BASE_URL}/api/comics?q=${encodeURIComponent(query.title ?? '')}&page=${page}`;
+        const tags = query.includedTags?.map(tag => tag.id) || [];
+        if (tags.length > 0) {
+            searchUrl += `&tag=${tags.join(',')}`;
+        }
         const json = await this.fetchJSON(searchUrl);
         const items = this.parser.parseHomePage(json, PROXY_URL);
         return App.createPagedResults({

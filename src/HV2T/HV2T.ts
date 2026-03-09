@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.1.11',
+    version: '1.1.12',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -152,7 +152,12 @@ export class HV2T extends Source {
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
-        const searchUrl = `${BASE_URL}/api/comics?q=${encodeURIComponent(query.title ?? '')}&page=${page}`
+        let searchUrl = `${BASE_URL}/api/comics?q=${encodeURIComponent(query.title ?? '')}&page=${page}`
+
+        const tags = query.includedTags?.map(tag => tag.id) || []
+        if (tags.length > 0) {
+            searchUrl += `&tag=${tags.join(',')}`
+        }
 
         const json = await this.fetchJSON(searchUrl)
         const items = this.parser.parseHomePage(json, PROXY_URL)
