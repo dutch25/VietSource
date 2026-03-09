@@ -6,9 +6,8 @@ A **Paperback 0.8** extension supporting **Vietnamese manga sources**:
 |--------|---------|--------|
 | **NHentaiClub** | nhentaiclub.space | ✅ Working |
 | **DamCoNuong** | damconuong.city | ✅ Working |
-| **HV2T** | hv2t.store | ⚠️ Needs Cloudflare bypass |
-| **HentaiVN** | hentaivn.college | ⚠️ Needs testing |
-| **ViHentai** | vi-hentai.pro | ⚠️ Broken (Livewire) |
+| **HV2T** | hv2t.store | ✅ Working (API + Proxy) |
+| **HentaiVN** | hentaivn.college | ⚠️ ISP Blocked (Pending test) |
 
 ## Add to Paperback
 
@@ -33,10 +32,10 @@ A **Paperback 0.8** extension supporting **Vietnamese manga sources**:
 - Chapter reading
 
 ### HV2T (hv2t.store)
-- ⚠️ Currently blocked by Cloudflare - needs worker proxy to work
+- Browse: Latest, Most Followed, Most Viewed, Completed
+- Search with 29 exact scraped genre tags
+- Manga details with chapter list
+- Chapter reading via Cloudflare proxy worker (`worker.js`)
 
 ### HentaiVN (hentaivn.college)
-- ⚠️ Testing needed
-
-### ViHentai (vi-hentai.pro)
-- ⚠️ Broken - Site uses Livewire (AJAX rendering), chapter images don't load
+- ⚠️ Pending testing (Currently blocked by some ISPs)
