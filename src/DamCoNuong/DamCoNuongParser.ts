@@ -13,11 +13,11 @@ export class Parser {
     parseHomePage($: CheerioAPI): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
 
-        $('.cover-frame, [class*="manga"]').closest('a[href^="/truyen/"]').each((_: any, el: any) => {
+        $('.cover-frame, [class*="manga"]').closest('a[href*="/truyen/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
             const idMatch = href.match(/\/truyen\/([^?#]+)/)
             if (!idMatch) return
-            const id = idMatch[1].trim()
+            const id = idMatch[1].replace(/\/$/, '').trim()
             if (!id) return
 
             const img = $(el).find('img').first()
@@ -30,11 +30,11 @@ export class Parser {
         })
 
         if (results.length === 0) {
-            $('a[href^="/truyen/"]').each((_: any, el: any) => {
+            $('a[href*="/truyen/"]').each((_: any, el: any) => {
                 const href = $(el).attr('href') ?? ''
                 const idMatch = href.match(/\/truyen\/([^?#]+)/)
                 if (!idMatch) return
-                const id = idMatch[1].trim()
+                const id = idMatch[1].replace(/\/$/, '').trim()
                 if (!id || results.some(r => r.mangaId === id)) return
 
                 const img = $(el).find('img').first()
@@ -83,11 +83,13 @@ export class Parser {
 
         $('a[href*="/chapter-"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
-            const match = href.match(/\/chapter-(\d+)/)
+            const match = href.match(/\/chapter-([\d.]+)/)
             if (!match) return
 
             const chapterId = match[1]
-            const title = $(el).text().trim() || `Chapter ${chapterId}`
+            const title = $(el).find('.text-ellipsis').first().text().trim()
+                || $(el).text().trim()
+                || `Chapter ${chapterId}`
 
             chapters.push(App.createChapter({
                 id: chapterId,
@@ -103,9 +105,9 @@ export class Parser {
     parseChapterPages($: CheerioAPI): string[] {
         const pages: string[] = []
 
-        $('img[data-original-src], img[ data-original-src]').each((_: any, el: any) => {
-            const imgSrc = $(el).attr('data-original-src') ?? $(el).attr('src') ?? ''
-            if (imgSrc && imgSrc.includes('/images/') && imgSrc.endsWith('.jpg')) {
+        $('img[data-original-src], img[data-src]').each((_: any, el: any) => {
+            const imgSrc = $(el).attr('data-original-src') ?? $(el).attr('data-src') ?? $(el).attr('src') ?? ''
+            if (imgSrc && (imgSrc.includes('/images/') || imgSrc.includes('/chapters/')) && imgSrc.endsWith('.jpg')) {
                 pages.push(imgSrc)
             }
         })
