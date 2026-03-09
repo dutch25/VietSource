@@ -136,15 +136,20 @@ export class Parser {
         })
 
         // Get genres/tags
-        const tags: Tag[] = []
+        const genres: Tag[] = []
         $('a[href*="/the-loai/"], a[href*="/tag/"], .genre a, .tags a').each((_: any, el: any) => {
             const href = $(el).attr('href') || ''
             const label = $(el).text().trim()
             if (label && !label.includes('Tác giả')) {
                 const id = href.split('/').pop() || label.toLowerCase().replace(/\s+/g, '-')
-                tags.push(App.createTag({ id, label }))
+                genres.push(App.createTag({ id, label }))
             }
         })
+
+        const tagSections: TagSection[] = []
+        if (genres.length > 0) {
+            tagSections.push(App.createTagSection({ id: 'genre', label: 'Thể Loại', tags: genres }))
+        }
 
         return App.createSourceManga({
             id: mangaId,
@@ -154,7 +159,7 @@ export class Parser {
                 status: status === 'Completed' ? 'completed' : 'ongoing',
                 author: author,
                 desc: desc,
-                tags: [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })],
+                tags: tagSections,
             })
         })
     }
