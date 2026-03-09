@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.0.6',
+    version: '1.0.7',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -71,19 +71,19 @@ export class HV2T extends Source {
 
     private async fetchHTML(url: string) {
         console.log(`[HV2T] Fetching URL: ${url}`)
-        
+
         // Use proxy for HTML fetching to bypass Cloudflare
         const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(url)}`
-        
+
         try {
             const response = await this.requestManager.schedule(this.buildRequest(proxyUrl), 0)
             const data = response.data as string
             console.log(`[HV2T] Response: status=${response.status}, length=${data.length}`)
-            
+
             if (data.length < 1000) {
                 console.log(`[HV2T] Warning: Small response, data: ${data.substring(0, 500)}`)
             }
-            
+
             return this.cheerio.load(data)
         } catch (e) {
             console.log(`[HV2T] Error fetching: ${e}`)
@@ -93,14 +93,14 @@ export class HV2T extends Source {
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         console.log('🎯 HV2T getHomePageSections CALLED')
-        
+
         const sections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: BASE_URL },
         ]
 
         for (const section of sections) {
             console.log(`🎯 Processing section: ${section.id} with url: ${section.url}`)
-            
+
             sectionCallback(App.createHomeSection({
                 id: section.id,
                 title: section.title,
@@ -111,13 +111,13 @@ export class HV2T extends Source {
             try {
                 const proxyFetchUrl = `${PROXY_URL}?url=${encodeURIComponent(section.url)}`
                 console.log(`🎯 Fetching via proxy: ${proxyFetchUrl}`)
-                
+
                 const response = await this.requestManager.schedule(this.buildRequest(proxyFetchUrl), 0)
                 console.log(`🎯 Response status: ${response.status}, length: ${(response.data as string).length}`)
-                
+
                 const $ = this.cheerio.load(response.data as string)
                 console.log(`🎯 HTML loaded, parsing...`)
-                
+
                 const items = this.parser.parseHomePage($, PROXY_URL)
                 console.log(`🎯 Parsed ${items.length} items`)
                 console.log(`🎯 First item:`, items[0])
@@ -144,11 +144,11 @@ export class HV2T extends Source {
 
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
-        const url = `${BASE_URL}?page=${page}`
-        
+        const url = `${BASE_URL}/danh-sach?page=${page}`
+
         const $ = await this.fetchHTML(url)
         const items = this.parser.parseHomePage($, PROXY_URL)
-        
+
         return App.createPagedResults({
             results: items,
             metadata: { page: page + 1 },
@@ -157,8 +157,8 @@ export class HV2T extends Source {
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const search = encodeURIComponent(query.title ?? '')
-        const url = `${BASE_URL}/?q=${search}`
-        
+        const url = `${BASE_URL}/tim-kiem?q=${search}`
+
         const $ = await this.fetchHTML(url)
         const items = this.parser.parseHomePage($, PROXY_URL)
 
@@ -168,26 +168,26 @@ export class HV2T extends Source {
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
-        const url = `${BASE_URL}/comics/${mangaId}`
+        const url = `${BASE_URL}/truyen/${mangaId}`
         const $ = await this.fetchHTML(url)
         return this.parser.parseMangaDetails($, mangaId, PROXY_URL)
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        const url = `${BASE_URL}/comics/${mangaId}`
+        const url = `${BASE_URL}/truyen/${mangaId}`
         const $ = await this.fetchHTML(url)
         return this.parser.parseChapters($, mangaId)
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        const url = `${BASE_URL}/comics/${mangaId}/${chapterId}`
+        const url = `${BASE_URL}/truyen/${mangaId}/${chapterId}`
         const $ = await this.fetchHTML(url)
         const pages = this.parser.parseChapterDetails($, chapterId, mangaId, PROXY_URL)
         return App.createChapterDetails({ id: chapterId, mangaId, pages })
     }
 
     getMangaShareUrl(mangaId: string): string {
-        return `${BASE_URL}/comics/${mangaId}`
+        return `${BASE_URL}/truyen/${mangaId}`
     }
 
     async getSearchTags(): Promise<TagSection[]> {

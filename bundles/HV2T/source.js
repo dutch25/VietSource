@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.0.6',
+    version: '1.0.7',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -575,7 +575,7 @@ class HV2T extends types_1.Source {
     }
     async getViewMoreItems(homepageSectionId, metadata) {
         const page = metadata?.page ?? 1;
-        const url = `${BASE_URL}?page=${page}`;
+        const url = `${BASE_URL}/danh-sach?page=${page}`;
         const $ = await this.fetchHTML(url);
         const items = this.parser.parseHomePage($, PROXY_URL);
         return App.createPagedResults({
@@ -585,7 +585,7 @@ class HV2T extends types_1.Source {
     }
     async getSearchResults(query, metadata) {
         const search = encodeURIComponent(query.title ?? '');
-        const url = `${BASE_URL}/?q=${search}`;
+        const url = `${BASE_URL}/tim-kiem?q=${search}`;
         const $ = await this.fetchHTML(url);
         const items = this.parser.parseHomePage($, PROXY_URL);
         return App.createPagedResults({
@@ -593,23 +593,23 @@ class HV2T extends types_1.Source {
         });
     }
     async getMangaDetails(mangaId) {
-        const url = `${BASE_URL}/comics/${mangaId}`;
+        const url = `${BASE_URL}/truyen/${mangaId}`;
         const $ = await this.fetchHTML(url);
         return this.parser.parseMangaDetails($, mangaId, PROXY_URL);
     }
     async getChapters(mangaId) {
-        const url = `${BASE_URL}/comics/${mangaId}`;
+        const url = `${BASE_URL}/truyen/${mangaId}`;
         const $ = await this.fetchHTML(url);
         return this.parser.parseChapters($, mangaId);
     }
     async getChapterDetails(mangaId, chapterId) {
-        const url = `${BASE_URL}/comics/${mangaId}/${chapterId}`;
+        const url = `${BASE_URL}/truyen/${mangaId}/${chapterId}`;
         const $ = await this.fetchHTML(url);
         const pages = this.parser.parseChapterDetails($, chapterId, mangaId, PROXY_URL);
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     getMangaShareUrl(mangaId) {
-        return `${BASE_URL}/comics/${mangaId}`;
+        return `${BASE_URL}/truyen/${mangaId}`;
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
@@ -640,7 +640,7 @@ class Parser {
                 const items = this.extractMangaItems(data);
                 for (const item of items) {
                     if (item.url && item.name && item.image) {
-                        const slug = item.url.replace('/comics/', '').replace('/', '');
+                        const slug = item.url.replace('/truyen/', '').replace('/', '');
                         // Skip if already added
                         if (results.some(r => r.mangaId === slug))
                             continue;
@@ -665,13 +665,13 @@ class Parser {
         });
         // Fallback: try to parse from DOM elements
         if (results.length === 0) {
-            $('a[href^="/comics/"]').each((_, el) => {
+            $('a[href^="/truyen/"]').each((_, el) => {
                 const $el = $(el);
                 const href = $el.attr('href') || '';
                 const title = $el.text().trim();
-                if (!href || href === '/comics/')
+                if (!href || href === '/truyen/')
                     return;
-                const slug = href.replace('/comics/', '').replace('/', '');
+                const slug = href.replace('/truyen/', '').replace('/', '');
                 if (!title || results.some(r => r.mangaId === slug))
                     return;
                 // Try to find associated image
@@ -781,7 +781,7 @@ class Parser {
         const chapters = [];
         // Try multiple selectors for chapter list
         const selectors = [
-            `a[href*="/comics/${mangaId}/"]`,
+            `a[href*="/truyen/${mangaId}/"]`,
             '[class*="chapter"] a',
             '.chapter-list a',
             '.chapters a',
@@ -791,10 +791,10 @@ class Parser {
             $(selector).each((_, el) => {
                 const href = $(el).attr('href') || '';
                 const title = $(el).text().trim() || 'Chapter';
-                if (!href || !href.includes(`/comics/${mangaId}/`))
+                if (!href || !href.includes(`/truyen/${mangaId}/`))
                     return;
                 // Extract chapter slug
-                const chapterMatch = href.match(/\/comics\/[^/]+\/(.+)/);
+                const chapterMatch = href.match(/\/truyen\/[^/]+\/(.+)/);
                 if (!chapterMatch)
                     return;
                 const chapterId = chapterMatch[1];

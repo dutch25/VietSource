@@ -19,7 +19,7 @@ export class Parser {
 
         // Try to parse JSON-LD data first (most reliable for Next.js)
         const jsonLdScripts = $('script[type="application/ld+json"]')
-        
+
         jsonLdScripts.each((_, el) => {
             try {
                 const jsonContent = $(el).html()
@@ -27,18 +27,18 @@ export class Parser {
 
                 const data = JSON.parse(jsonContent)
                 const items = this.extractMangaItems(data)
-                
+
                 for (const item of items) {
                     if (item.url && item.name && item.image) {
-                        const slug = item.url.replace('/comics/', '').replace('/', '')
-                        
+                        const slug = item.url.replace('/truyen/', '').replace('/', '')
+
                         // Skip if already added
                         if (results.some(r => r.mangaId === slug)) continue
 
                         let image = item.image
                         // Convert webp to jpg for compatibility
                         image = image.replace('.webp', '.jpg')
-                        
+
                         // Only add proxy if proxyUrl is not empty
                         if (proxyUrl) {
                             image = `${proxyUrl}?url=${encodeURIComponent(image)}`
@@ -58,20 +58,20 @@ export class Parser {
 
         // Fallback: try to parse from DOM elements
         if (results.length === 0) {
-            $('a[href^="/comics/"]').each((_, el) => {
+            $('a[href^="/truyen/"]').each((_, el) => {
                 const $el = $(el)
                 const href = $el.attr('href') || ''
                 const title = $el.text().trim()
-                
-                if (!href || href === '/comics/') return
-                
-                const slug = href.replace('/comics/', '').replace('/', '')
+
+                if (!href || href === '/truyen/') return
+
+                const slug = href.replace('/truyen/', '').replace('/', '')
                 if (!title || results.some(r => r.mangaId === slug)) return
 
                 // Try to find associated image
                 const $parent = $el.closest('[class*="manga"], [class*="comic"], [class*="card"]')
                 let image = ''
-                
+
                 results.push(App.createPartialSourceManga({
                     mangaId: slug,
                     title,
@@ -115,14 +115,14 @@ export class Parser {
     // ─── Manga Details ─────────────────────────────────────────────────────────
     parseMangaDetails($: CheerioAPI, mangaId: string, proxyUrl: string): SourceManga {
         // Try to get title from various selectors
-        const title = 
+        const title =
             $('h1').first().text().trim() ||
             $('meta[property="og:title"]').attr('content')?.replace(' - HV2T', '').trim() ||
             $('title').text().replace(' - HV2T', '').trim() ||
             'Unknown Title'
 
         // Get cover image
-        let image = 
+        let image =
             $('meta[property="og:image"]').attr('content') ||
             $('img[class*="cover"]').attr('src') ||
             ''
@@ -133,7 +133,7 @@ export class Parser {
         }
 
         // Get description
-        const desc = 
+        const desc =
             $('meta[property="og:description"]').attr('content') ||
             $('meta[name="description"]').attr('content') ||
             ''
@@ -193,7 +193,7 @@ export class Parser {
 
         // Try multiple selectors for chapter list
         const selectors = [
-            `a[href*="/comics/${mangaId}/"]`,
+            `a[href*="/truyen/${mangaId}/"]`,
             '[class*="chapter"] a',
             '.chapter-list a',
             '.chapters a',
@@ -205,10 +205,10 @@ export class Parser {
                 const href = $(el).attr('href') || ''
                 const title = $(el).text().trim() || 'Chapter'
 
-                if (!href || !href.includes(`/comics/${mangaId}/`)) return
+                if (!href || !href.includes(`/truyen/${mangaId}/`)) return
 
                 // Extract chapter slug
-                const chapterMatch = href.match(/\/comics\/[^/]+\/(.+)/)
+                const chapterMatch = href.match(/\/truyen\/[^/]+\/(.+)/)
                 if (!chapterMatch) return
 
                 const chapterId = chapterMatch[1]!
@@ -250,7 +250,7 @@ export class Parser {
         for (const selector of selectors) {
             $(selector).each((_: number, el: any) => {
                 let src = $(el).attr('src') || $(el).attr('data-src') || ''
-                
+
                 // Skip empty, data URI, or placeholder images
                 if (!src || src.startsWith('data:') || src.includes('loading') || src.includes('placeholder')) return
 
@@ -262,7 +262,7 @@ export class Parser {
 
                 // Proxy the image
                 src = `${proxyUrl}?url=${encodeURIComponent(src)}`
-                
+
                 if (!pages.includes(src)) {
                     pages.push(src)
                 }
