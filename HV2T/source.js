@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.1.3',
+    version: '1.1.4',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -513,20 +513,28 @@ class HV2T extends types_1.Source {
         return App.createRequest({ url, method: 'GET' });
     }
     async fetchHTML(url) {
-        console.log(`[HV2T] Fetching URL: ${url}`);
+        console.log(`[HV2T] Fetching HTML: ${url}`);
         // Use proxy for HTML fetching to bypass Cloudflare
         const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(url)}`;
         try {
             const response = await this.requestManager.schedule(this.buildRequest(proxyUrl), 0);
             const data = response.data;
-            console.log(`[HV2T] Response: status=${response.status}, length=${data.length}`);
-            if (data.length < 1000) {
-                console.log(`[HV2T] Warning: Small response, data: ${data.substring(0, 500)}`);
-            }
             return this.cheerio.load(data);
         }
         catch (e) {
-            console.log(`[HV2T] Error fetching: ${e}`);
+            console.log(`[HV2T] Error fetching HTML: ${e}`);
+            throw e;
+        }
+    }
+    async fetchJSON(url) {
+        console.log(`[HV2T] Fetching JSON: ${url}`);
+        const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(url)}`;
+        try {
+            const response = await this.requestManager.schedule(this.buildRequest(proxyUrl), 0);
+            return JSON.parse(response.data);
+        }
+        catch (e) {
+            console.log(`[HV2T] Error fetching JSON: ${e}`);
             throw e;
         }
     }
@@ -598,14 +606,14 @@ class HV2T extends types_1.Source {
         return this.parser.parseMangaDetails($, mangaId, PROXY_URL);
     }
     async getChapters(mangaId) {
-        const url = `${BASE_URL}/truyen/${mangaId}`;
-        const $ = await this.fetchHTML(url);
-        return this.parser.parseChapters($, mangaId);
+        const url = `${BASE_URL}/api/comics/${mangaId}`;
+        const json = await this.fetchJSON(url);
+        return this.parser.parseChapters(json, mangaId);
     }
     async getChapterDetails(mangaId, chapterId) {
-        const url = `${BASE_URL}/truyen/${mangaId}/${chapterId}`;
-        const $ = await this.fetchHTML(url);
-        const pages = this.parser.parseChapterDetails($, chapterId, mangaId, PROXY_URL);
+        const url = `${BASE_URL}/api/comics/${mangaId}/${chapterId}/view`;
+        const json = await this.fetchJSON(url);
+        const pages = this.parser.parseChapterDetails(json, chapterId, mangaId, PROXY_URL);
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     getMangaShareUrl(mangaId) {
@@ -811,80 +819,49 @@ class Parser {
         });
     }
     // ─── Chapters ─────────────────────────────────────────────────────────────
-    parseChapters($, mangaId) {
+    parseChapters(json, mangaId) {
         const chapters = [];
-        // Try multiple selectors for chapter list
-        const selectors = [
-            `a[href*="/truyen/${mangaId}/"]`,
-            'a[href*="/chapter-"]',
-            'a[href*="/chuong-"]',
-            '[class*="chapter"] a',
-            '.chapter-list a',
-            '.chapters a',
-            'ul.chapters li a'
-        ];
-        for (const selector of selectors) {
-            $(selector).each((_, el) => {
-                const href = $(el).attr('href') || '';
-                const title = $(el).text().trim() || 'Chapter';
-                // More flexible check for chapter link belonging to this manga
-                if (!href || !href.includes(mangaId) || (!href.includes('/chapter-') && !href.includes('/chuong-')))
-                    return;
-                // Extract chapter slug
-                const chapterMatch = href.match(/\/truyen\/[^/]+\/([^/?#]+)/);
-                if (!chapterMatch)
-                    return;
-                const chapterId = chapterMatch[1];
-                // Try to extract chapter number
-                const numMatch = title.match(/(?:chapter|ch|chap)\s*(\d+)/i) || title.match(/(\d+)/);
-                const chapNum = numMatch ? parseFloat(numMatch[1]) : chapters.length + 1;
-                chapters.push(App.createChapter({
-                    id: chapterId,
-                    name: title,
-                    chapNum,
-                    time: new Date(),
-                    langCode: 'vi'
-                }));
-            });
-            if (chapters.length > 0)
-                break;
+        const data = json?.data?.chapters;
+        if (!Array.isArray(data)) {
+            console.log(`[HV2T] parseChapters: No chapters found in JSON data`);
+            return [];
         }
-        // Reverse to show newest first
-        return chapters.reverse();
+        for (const item of data) {
+            const chapterId = item.slug || String(item.id);
+            if (!chapterId)
+                continue;
+            const name = item.title || `Chương ${item.chapter_number || ''}`.trim();
+            const chapNum = item.chapter_number || 0;
+            chapters.push(App.createChapter({
+                id: chapterId,
+                name: name,
+                chapNum,
+                time: item.published_at ? new Date(item.published_at) : new Date(),
+                langCode: 'vi'
+            }));
+        }
+        console.log(`[HV2T] parseChapters: Parsed ${chapters.length} chapters`);
+        return chapters;
     }
     // ─── Pages ────────────────────────────────────────────────────────────────
-    parseChapterDetails($, chapterId, mangaId, proxyUrl) {
+    parseChapterDetails(json, chapterId, mangaId, proxyUrl) {
         const pages = [];
-        // Try multiple selectors for page images
-        const selectors = [
-            'img[class*="page"]',
-            'img[class*="chapter"]',
-            '#page img',
-            '.content img',
-            'img[src*="hv2t"]',
-            'img[src*="cdn"]'
-        ];
-        for (const selector of selectors) {
-            $(selector).each((_, el) => {
-                let src = $(el).attr('src') || $(el).attr('data-src') || '';
-                // Skip empty, data URI, or placeholder images
-                if (!src || src.startsWith('data:') || src.includes('loading') || src.includes('placeholder'))
-                    return;
-                // Skip non-image files
-                if (!src.match(/\.(jpg|jpeg|png|gif|webp)/i))
-                    return;
-                // Convert webp to jpg
-                // src = src.replace('.webp', '.jpg')
-                src = this.normalizeUrl(src, this.CDN_DOMAIN);
-                // Proxy the image
-                src = `${proxyUrl}?url=${encodeURIComponent(src)}`;
-                if (!pages.includes(src)) {
-                    pages.push(src);
-                }
-            });
-            if (pages.length > 0)
-                break;
+        const images = json?.data?.images;
+        if (!Array.isArray(images)) {
+            console.log(`[HV2T] parseChapterDetails: No images found in JSON data`);
+            return [];
         }
+        for (let src of images) {
+            if (!src || typeof src !== 'string')
+                continue;
+            // Normalize and proxy
+            src = this.normalizeUrl(src, this.CDN_DOMAIN);
+            src = `${proxyUrl}?url=${encodeURIComponent(src)}`;
+            if (!pages.includes(src)) {
+                pages.push(src);
+            }
+        }
+        console.log(`[HV2T] parseChapterDetails: Found ${pages.length} pages`);
         return pages;
     }
     // ─── Search Tags ──────────────────────────────────────────────────────────
