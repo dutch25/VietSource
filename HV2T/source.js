@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.1.13',
+    version: '1.1.14',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -505,6 +505,9 @@ class HV2T extends types_1.Source {
                 },
             }
         });
+    }
+    getMangaSlug(mangaId) {
+        return mangaId.split('/').filter(p => !!p).pop() || mangaId;
     }
     async getCloudflareBypassRequestAsync() {
         return App.createRequest({ url: BASE_URL, method: 'GET' });
@@ -601,17 +604,20 @@ class HV2T extends types_1.Source {
         });
     }
     async getMangaDetails(mangaId) {
-        const url = `${BASE_URL}/api/comics/${mangaId}`;
+        const slug = this.getMangaSlug(mangaId);
+        const url = `${BASE_URL}/api/comics/${slug}`;
         const json = await this.fetchJSON(url);
         return this.parser.parseMangaDetails(json, mangaId, PROXY_URL);
     }
     async getChapters(mangaId) {
-        const url = `${BASE_URL}/api/comics/${mangaId}`;
+        const slug = this.getMangaSlug(mangaId);
+        const url = `${BASE_URL}/api/comics/${slug}`;
         const json = await this.fetchJSON(url);
         return this.parser.parseChapters(json, mangaId);
     }
     async getChapterDetails(mangaId, chapterId) {
-        const url = `${BASE_URL}/api/comics/${mangaId}/${chapterId}/view`;
+        const slug = this.getMangaSlug(mangaId);
+        const url = `${BASE_URL}/api/comics/${slug}/${chapterId}/view`;
         const json = await this.fetchJSON(url);
         const pages = this.parser.parseChapterDetails(json, chapterId, mangaId, PROXY_URL);
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
@@ -711,7 +717,7 @@ class Parser {
     // ─── Chapters ─────────────────────────────────────────────────────────────
     parseChapters(json, mangaId) {
         const chapters = [];
-        const data = json?.data?.chapters;
+        const data = json?.chapters || json?.data?.chapters;
         if (!Array.isArray(data)) {
             console.log(`[HV2T] parseChapters: No chapters found in JSON data`);
             return [];
