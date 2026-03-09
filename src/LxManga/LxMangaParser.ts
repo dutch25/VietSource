@@ -292,6 +292,7 @@ export class Parser {
             { id: 'yuri', label: 'Yuri' },
         ]
 
-        return [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })]
+        const tagsList = tags.map((tag) => App.createTag({ id: tag.id, label: tag.label }))
+        return [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags: tagsList })]
     }
 }
