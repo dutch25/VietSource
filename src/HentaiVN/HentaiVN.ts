@@ -20,7 +20,7 @@ const BASE_URL = 'https://hentaivn.college'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev' // Reuse proxy if images are blocked
 
 export const HentaiVNInfo: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',

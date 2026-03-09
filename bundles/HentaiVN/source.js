@@ -466,7 +466,7 @@ const HentaiVNParser_1 = require("./HentaiVNParser");
 const BASE_URL = 'https://hentaivn.college';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'; // Reuse proxy if images are blocked
 exports.HentaiVNInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -610,66 +610,142 @@ class Parser {
     // ─── Home Page ─────────────────────────────────────────────────────────────
     parseHomePage($, proxyUrl) {
         const results = [];
-        $('.item').each((_, el) => {
-            const aObj = $(el).find('a').first();
-            const href = aObj.attr('href') || '';
-            // Expected: /truyen-hentai/kakutou-jk-wakara-sex-53488.html
-            // Or /12345-doc-truyen-name.html
-            // The cleanest ID is just the URL path excluding the domain to avoid regex headaches
-            let id = href.replace('https://hentaivn.college', '').replace('https://www.hentaivn.college', '');
-            if (!id || id === '/')
-                return;
-            const imgObj = $(el).find('img').first();
-            const title = imgObj.attr('alt') || aObj.attr('title') || aObj.text().trim();
-            let image = imgObj.attr('data-src') || imgObj.attr('src') || '';
-            if (!image) {
-                const style = $(el).find('.b-cover').attr('style');
-                if (style) {
-                    const match = style.match(/url\(['"]?(.*?)['"]?\)/);
-                    if (match)
-                        image = match[1];
+        // Try multiple selectors for manga items - sites vary in structure
+        const selectors = [
+            '.manga-vertical .item',
+            '.manga-item',
+            '.story-item',
+            '.comic-item',
+            '.post-item',
+            '.item',
+            '.card-item',
+            'div[data-manga]'
+        ];
+        for (const selector of selectors) {
+            $(selector).each((_, el) => {
+                const $el = $(el);
+                // Try to find title link
+                const titleLink = $el.find('a[href*="truyen"], a[href*="/hentai"], a[href*="-doc-"]').first();
+                const href = titleLink.attr('href') || $el.find('a').first().attr('href') || '';
+                // Skip if no valid href or if it's a chapter link
+                if (!href || href.includes('/chapter') || href.includes('-xem-'))
+                    return;
+                // Extract manga ID from URL
+                // Pattern: /12345-doc-truyen-name.html or /truyen-hentai/name
+                let id = '';
+                const docMatch = href.match(/\/(\d+)-doc-truyen/);
+                const truyenMatch = href.match(/\/truyen[/-]?hentai?\/(.+?)(?:\.html|$|\?)/);
+                if (docMatch) {
+                    id = docMatch[1];
                 }
-            }
-            if (!title || !image)
-                return;
-            // Proxy the image to bypass restrictions
-            image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
-            results.push(App.createPartialSourceManga({
-                mangaId: id,
-                title,
-                image
-            }));
-        });
+                else if (truyenMatch) {
+                    id = truyenMatch[1];
+                }
+                else {
+                    // Use the path as ID
+                    id = href.replace(/https?:\/\/hentaivn\.college/, '').replace(/^\//, '').replace(/\.html$/, '');
+                }
+                if (!id)
+                    return;
+                // Get title
+                let title = titleLink.attr('title') || titleLink.text().trim() || $el.find('img').attr('alt') || '';
+                if (!title)
+                    title = $el.find('h3, h4, .title, .name').text().trim();
+                if (!title)
+                    return;
+                // Get image
+                let image = $el.find('img').attr('src') || $el.find('img').attr('data-src') || $el.find('img').attr('data-lazy-src') || '';
+                // Try background image
+                if (!image) {
+                    const bg = $el.find('[style*="background"]').attr('style');
+                    if (bg) {
+                        const match = bg.match(/url\(['"]?(.*?)['"]?\)/);
+                        if (match)
+                            image = match[1];
+                    }
+                }
+                if (!image)
+                    return;
+                // Proxy the image
+                image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
+                results.push(App.createPartialSourceManga({
+                    mangaId: id,
+                    title,
+                    image
+                }));
+            });
+            if (results.length > 0)
+                break;
+        }
+        console.log(`[HentaiVN] ParseHomePage: Found ${results.length} manga items`);
         return results;
     }
     // ─── Manga Details ─────────────────────────────────────────────────────────
     parseMangaDetails($, mangaId, proxyUrl) {
-        const title = $('.page-info h1').text().trim() || $('.itemcrumb.active span').text().trim() || 'Unknown Title';
-        let image = $('.col-image img').attr('src') || $('.image-manga img').attr('src') || '';
-        image = image.startsWith('http') ? image : `https://hentaivn.college${image}`;
-        image = `${proxyUrl}?url=${encodeURIComponent(image)}&source=hentaivn.college`;
+        // Try multiple selectors for title
+        const title = $('.page-info h1').text().trim() ||
+            $('.manga-title').text().trim() ||
+            $('h1.title').text().trim() ||
+            $('meta[property="og:title"]').attr('content')?.trim() ||
+            $('.itemcrumb.active span').text().trim() ||
+            'Unknown Title';
+        // Try multiple selectors for image
+        let image = $('.col-image img').attr('src') ||
+            $('.image-manga img').attr('src') ||
+            $('meta[property="og:image"]').attr('content') ||
+            $('.cover img').attr('src') ||
+            $('.manga-cover img').attr('src') ||
+            '';
+        if (image && !image.startsWith('http')) {
+            image = `https://hentaivn.college${image.startsWith('/') ? '' : '/'}${image}`;
+        }
+        if (image) {
+            image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
+        }
         let author = 'Unknown';
         let status = 'Ongoing';
-        $('p').each((_, el) => {
+        // Try multiple selectors for author and status
+        $('p, .info-item, .detail-info li').each((_, el) => {
             const text = $(el).text();
-            if (text.includes('Tác giả')) {
-                author = $(el).find('a').text().trim() || text.replace('Tác giả', '').replace(':', '').trim() || 'Unknown';
+            if (text.includes('Tác giả') || text.includes('Author')) {
+                author = $(el).find('a').text().trim() || text.replace(/Tác giả|Author|:/g, '').trim();
+                if (!author || author === 'Unknown')
+                    author = 'Unknown';
             }
-            if (text.includes('Tình trạng')) {
-                const statusText = $(el).find('span').text().trim() || text.replace('Tình trạng', '').replace(':', '').trim();
-                if (statusText.toLowerCase().includes('đã hoàn thành') || statusText.toLowerCase().includes('completed')) {
+            if (text.includes('Tình trạng') || text.includes('Status')) {
+                const statusText = $(el).find('span').text().trim() || text.replace(/Tình trạng|Status|:/g, '').trim();
+                if (statusText.toLowerCase().includes('đã hoàn thành') || statusText.toLowerCase().includes('completed') || statusText.toLowerCase().includes('full')) {
                     status = 'Completed';
                 }
             }
         });
         const tags = [];
-        $('a[href*="tim-truyen/"]').each((_, el) => {
-            tags.push(App.createTag({
-                id: $(el).attr('href')?.split('/').pop() || $(el).attr('href') || '',
-                label: $(el).text().trim()
-            }));
-        });
-        const desc = $('.detail-content').text().trim() || $('.summary').text().trim() || '';
+        // Try multiple selectors for genres/tags
+        const tagSelectors = [
+            'a[href*="tim-truyen/"]',
+            'a[href*="/the-loai/"]',
+            'a[href*="/genre/"]',
+            '.genre a',
+            '.tags a',
+            '.taxonomy a'
+        ];
+        for (const selector of tagSelectors) {
+            $(selector).each((_, el) => {
+                const href = $(el).attr('href') || '';
+                const label = $(el).text().trim();
+                if (label && !label.includes('Tác giả') && !label.includes('Tình trạng')) {
+                    const id = href.split('/').pop()?.replace(/\?.*$/, '') || label.toLowerCase().replace(/\s+/g, '-');
+                    tags.push(App.createTag({ id, label }));
+                }
+            });
+            if (tags.length > 0)
+                break;
+        }
+        const desc = $('.detail-content').text().trim() ||
+            $('.summary').text().trim() ||
+            $('.description').text().trim() ||
+            $('meta[property="og:description"]').attr('content')?.trim() ||
+            '';
         return App.createSourceManga({
             id: mangaId,
             mangaInfo: App.createMangaInfo({
@@ -685,26 +761,67 @@ class Parser {
     // ─── Chapters ─────────────────────────────────────────────────────────────
     parseChapters($, mangaId) {
         const chapters = [];
-        $('.list-chapter a, a[href*="-doc-truyen-"], a[href*="-xem-truyen-"]').each((_, el) => {
-            const href = $(el).attr('href') || '';
-            const title = $(el).text().trim() || 'Chapter';
-            let idMatch = href.match(/(\d+)-doc-truyen/);
-            if (!idMatch)
-                idMatch = href.match(/(\d+)-xem-truyen/);
-            let id = idMatch ? idMatch[1] : href.replace('https://hentaivn.college', '').replace('https://www.hentaivn.college', '');
-            if (id.startsWith('/'))
-                id = id.substring(1);
-            const dateStr = $(el).closest('tr').find('td').last().text().trim() || $(el).parent().find('.time').text().trim();
-            if (id && id !== '/') {
+        // Try multiple selectors for chapter list
+        const selectors = [
+            '.list-chapter a',
+            'a[href*="-doc-truyen-"]',
+            'a[href*="-xem-truyen-"]',
+            '.chapter-list a',
+            '.chapters a',
+            '.episode-list a',
+            'ul.chapters li a',
+            '.chapter-item a'
+        ];
+        for (const selector of selectors) {
+            $(selector).each((_, el) => {
+                const href = $(el).attr('href') || '';
+                const title = $(el).text().trim() || 'Chapter';
+                // Skip if no href
+                if (!href)
+                    return;
+                // Extract chapter ID from URL
+                // Pattern: /12345-60558-xem-truyen-name.html or /manga-id/chapter-id
+                let id = '';
+                // Match: 12345-60558-xem-truyen -> chapter ID is 60558
+                const xemMatch = href.match(/-(\d+)-xem-truyen/);
+                // Match: /12345-doc-truyen -> manga ID from doc (but we need chapter)
+                const docMatch = href.match(/\/(\d+)-doc-truyen/);
+                if (xemMatch) {
+                    id = xemMatch[1];
+                }
+                else if (docMatch) {
+                    // Use the full path minus domain as ID
+                    id = href.replace(/https?:\/\/hentaivn\.college/, '').replace(/^\//, '').replace(/\.html$/, '');
+                }
+                else {
+                    // Use the path as is
+                    id = href.replace(/https?:\/\/hentaivn\.college/, '').replace(/^\//, '').replace(/\.html$/, '');
+                }
+                if (!id)
+                    return;
+                // Try to extract chapter number
+                const numMatch = title.match(/chapter\s*(\d+)/i) || title.match(/ch\.?\s*(\d+)/i) || title.match(/(\d+)/);
+                const chapNum = numMatch ? parseFloat(numMatch[1]) : chapters.length + 1;
+                // Try to get date
+                let time = new Date();
+                const dateText = $(el).parent().find('.time, .date, .chapter-date').text().trim();
+                if (dateText) {
+                    const parsed = new Date(dateText);
+                    if (!isNaN(parsed.getTime()))
+                        time = parsed;
+                }
                 chapters.push(App.createChapter({
                     id: id,
                     name: title,
-                    chapNum: chapters.length + 1,
-                    time: new Date(),
+                    chapNum,
+                    time,
                     langCode: 'vi'
                 }));
-            }
-        });
+            });
+            if (chapters.length > 0)
+                break;
+        }
+        // Reverse to show newest first
         return chapters.reverse();
     }
     // ─── Pages ────────────────────────────────────────────────────────────────
