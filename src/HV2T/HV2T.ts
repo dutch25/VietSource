@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',

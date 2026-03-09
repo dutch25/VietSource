@@ -61,20 +61,30 @@ export class Parser {
             $('a[href^="/truyen/"]').each((_, el) => {
                 const $el = $(el)
                 const href = $el.attr('href') || ''
-                const title = $el.text().trim()
+                const title = $el.attr('title') || $el.text().trim()
 
-                if (!href || href === '/truyen/') return
+                // Skip if empty, not a truyen link, or a chapter link
+                if (!href || href === '/truyen/' || href.includes('/chapter-')) return
 
                 const slug = href.replace('/truyen/', '').replace('/', '')
-                if (!title || results.some(r => r.mangaId === slug)) return
+                if (!slug || results.some(r => r.mangaId === slug)) return
 
-                // Try to find associated image
-                const $parent = $el.closest('[class*="manga"], [class*="comic"], [class*="card"]')
-                let image = ''
+                // Try to find the image within this link or a sibling/parent
+                let image = $el.find('img').attr('src') || $el.find('img').attr('data-src') || ''
+
+                // If not found in the link, try looking in siblings/parents (common in some layouts)
+                if (!image) {
+                    const $container = $el.closest('div, article, section')
+                    image = $container.find('img').attr('src') || $container.find('img').attr('data-src') || ''
+                }
+
+                if (image && proxyUrl) {
+                    image = `${proxyUrl}?url=${encodeURIComponent(image)}`
+                }
 
                 results.push(App.createPartialSourceManga({
                     mangaId: slug,
-                    title,
+                    title: title.replace('Truyện ', '').trim(),
                     image
                 }))
             })
@@ -97,7 +107,7 @@ export class Parser {
                 for (const item of data.itemListElement) {
                     if (item['@type'] === 'ComicSeries' || item['@type'] === 'ListItem') {
                         const itemData = item.item || item
-                        if (itemData.url && itemData.name) {
+                        if (itemData.url && itemData.name && !itemData.url.includes('/chapter-')) {
                             items.push({
                                 name: itemData.name,
                                 url: itemData.url,

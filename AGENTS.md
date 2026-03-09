@@ -113,31 +113,7 @@ dutch-extension/
 
 ---
 
-# Nguồn Không Khả Thi
-
-## LxManga
-
-**Website**: https://lxmanga.space
-
-### SourceInfo
-- **Version**: 1.0.6
-- **Author**: Dutch25
-- **Content Rating**: ADULT (18+)
-- **Tags**: "Adult" (RED), "18+" (YELLOW)
-- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
-
-### URL Patterns
-- Homepage: `https://lxmanga.space`
-- Manga: `https://lxmanga.space/truyen/{manga_id}`
-- Chapter: `https://lxmanga.space/truyen/{manga_id}/{chapter_id}`
-- Search: `https://lxmanga.space/tim-kiem?q={search}`
-
-### Known Issues
-- ⚠️ **KHÔNG KHẢ THI**: Website sử dụng **Livewire** (JavaScript rendering)
-- Nội dung được load động bằng JS sau khi page load
-- HTML ban đầu không chứa danh sách manga
-- Paperback không xử lý được JS rendering như ViHentai
-- **Giải pháp**: Cần tìm API endpoint hoặc từ bỏ source này
+# Source: NHentaiClub
 
 **Website**: https://nhentaiclub.space
 
