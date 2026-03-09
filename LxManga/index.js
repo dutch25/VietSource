@@ -466,7 +466,7 @@ const LxMangaParser_1 = require("./LxMangaParser");
 const BASE_URL = 'https://lxmanga.space';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.LxMangaInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'LxManga',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -511,7 +511,9 @@ class LxManga extends types_1.Source {
         return App.createRequest({ url, method: 'GET' });
     }
     async fetchHTML(url) {
+        console.log(`[LxManga] Fetching: ${url}`);
         const response = await this.requestManager.schedule(this.buildRequest(url), 0);
+        console.log(`[LxManga] Response status: ${response.status}, data length: ${response.data.length}`);
         return this.cheerio.load(response.data);
     }
     async getHomePageSections(sectionCallback) {
@@ -520,21 +522,35 @@ class LxManga extends types_1.Source {
             { id: 'top', title: 'Top View', url: `${BASE_URL}/top` },
         ];
         for (const section of sections) {
+            console.log(`[LxManga] Processing section: ${section.id}`);
             sectionCallback(App.createHomeSection({
                 id: section.id,
                 title: section.title,
                 containsMoreItems: true,
                 type: types_1.HomeSectionType.singleRowNormal,
             }));
-            const $ = await this.fetchHTML(section.url);
-            const items = this.parser.parseHomePage($, PROXY_URL);
-            sectionCallback(App.createHomeSection({
-                id: section.id,
-                title: section.title,
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal,
-                items,
-            }));
+            try {
+                const $ = await this.fetchHTML(section.url);
+                const items = this.parser.parseHomePage($, PROXY_URL);
+                console.log(`[LxManga] Section ${section.id} found ${items.length} items`);
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: types_1.HomeSectionType.singleRowNormal,
+                    items,
+                }));
+            }
+            catch (e) {
+                console.log(`[LxManga] Error in section ${section.id}: ${e}`);
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: types_1.HomeSectionType.singleRowNormal,
+                    items: [],
+                }));
+            }
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
@@ -606,6 +622,12 @@ class Parser {
     // ─── Home Page ─────────────────────────────────────────────────────────────
     parseHomePage($, proxyUrl) {
         const results = [];
+        // Debug: Check how many manga-vertical elements exist
+        const count = $('.manga-vertical').length;
+        console.log(`[LxManga Parser] Found ${count} .manga-vertical elements`);
+        // Debug: Check first few links
+        const links = $('a[href^="/truyen/"]').map((_, el) => $(el).attr('href')).get();
+        console.log(`[LxManga Parser] Found ${links.length} /truyen/ links, first 3:`, links.slice(0, 3));
         // Main manga list is in .manga-vertical elements
         // Each item has:
         // - a[href^="/truyen/"] for the title link
