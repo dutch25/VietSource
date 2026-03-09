@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = ''
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -43,13 +43,15 @@ export class HV2T extends Source {
 
     requestManager = App.createRequestManager({
         requestsPerSecond: 3,
-        requestTimeout: 30000,
+        requestTimeout: 60000,
         interceptor: {
             interceptRequest: async (request) => {
                 request.headers = {
                     ...(request.headers ?? {}),
                     'referer': BASE_URL,
-                    'user-agent': await this.requestManager.getDefaultUserAgent(),
+                    'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+                    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'accept-language': 'en-US,en;q=0.5',
                 }
                 return request
             },
@@ -68,10 +70,21 @@ export class HV2T extends Source {
     }
 
     private async fetchHTML(url: string) {
-        console.log(`[HV2T] Fetching: ${url}`)
-        const response = await this.requestManager.schedule(this.buildRequest(url), 0)
-        console.log(`[HV2T] Response status: ${response.status}, data length: ${(response.data as string).length}`)
-        return this.cheerio.load(response.data as string)
+        console.log(`[HV2T] Fetching URL: ${url}`)
+        try {
+            const response = await this.requestManager.schedule(this.buildRequest(url), 0)
+            const data = response.data as string
+            console.log(`[HV2T] Response: status=${response.status}, length=${data.length}`)
+            
+            if (data.length < 1000) {
+                console.log(`[HV2T] Warning: Small response, data: ${data.substring(0, 500)}`)
+            }
+            
+            return this.cheerio.load(data)
+        } catch (e) {
+            console.log(`[HV2T] Error fetching: ${e}`)
+            throw e
+        }
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
