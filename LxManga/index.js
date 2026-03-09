@@ -466,7 +466,7 @@ const LxMangaParser_1 = require("./LxMangaParser");
 const BASE_URL = 'https://lxmanga.space';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.LxMangaInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'LxManga',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -728,7 +728,7 @@ class Parser {
                 status: status === 'Completed' ? 'completed' : 'ongoing',
                 author: author,
                 desc: desc,
-                tags: [App.createTagSection({ id: 'genres', label: 'Thể Loại', tags })],
+                tags: [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })],
             })
         });
     }
@@ -845,7 +845,7 @@ class Parser {
             { id: 'yaoi', label: 'Yaoi' },
             { id: 'yuri', label: 'Yuri' },
         ];
-        return [App.createTagSection({ id: '0', label: 'Thể Loại', tags })];
+        return [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })];
     }
 }
 exports.Parser = Parser;
