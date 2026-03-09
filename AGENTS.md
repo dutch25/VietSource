@@ -90,6 +90,29 @@ dutch-extension/
 
 ---
 
+# Source: HV2T
+
+**Website**: https://hv2t.store
+
+### SourceInfo
+- **Version**: 1.0.3
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
+
+### URL Patterns
+- Homepage: `https://hv2t.store`
+- Manga: `https://hv2t.store/comics/{mangaId}`
+- Chapter: `https://hv2t.store/comics/{mangaId}/{chapterId}`
+- Search: `https://hv2t.store/?q={search}`
+
+### Known Issues
+- ⚠️ **CLOUDLARE BLOCK**: Website đang bị Cloudflare chặn, cần tạo worker proxy để bypass
+- **Giải pháp**: Cần tạo Cloudflare worker riêng cho HV2T hoặc dùng chung worker với các source khác
+
+---
+
 # Nguồn Không Khả Thi
 
 ## LxManga
