@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -531,12 +531,12 @@ class HV2T extends types_1.Source {
         }
     }
     async getHomePageSections(sectionCallback) {
-        console.log('[HV2T] getHomePageSections called');
+        console.log('🎯 HV2T getHomePageSections CALLED');
         const sections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: BASE_URL },
         ];
         for (const section of sections) {
-            console.log(`[HV2T] Processing section: ${section.id}`);
+            console.log(`🎯 Processing section: ${section.id} with url: ${section.url}`);
             sectionCallback(App.createHomeSection({
                 id: section.id,
                 title: section.title,
@@ -544,10 +544,15 @@ class HV2T extends types_1.Source {
                 type: types_1.HomeSectionType.singleRowNormal,
             }));
             try {
-                const $ = await this.fetchHTML(section.url);
-                console.log('[HV2T] HTML fetched, parsing...');
+                const proxyFetchUrl = `${PROXY_URL}?url=${encodeURIComponent(section.url)}`;
+                console.log(`🎯 Fetching via proxy: ${proxyFetchUrl}`);
+                const response = await this.requestManager.schedule(this.buildRequest(proxyFetchUrl), 0);
+                console.log(`🎯 Response status: ${response.status}, length: ${response.data.length}`);
+                const $ = this.cheerio.load(response.data);
+                console.log(`🎯 HTML loaded, parsing...`);
                 const items = this.parser.parseHomePage($, PROXY_URL);
-                console.log(`[HV2T] Parsed ${items.length} items`);
+                console.log(`🎯 Parsed ${items.length} items`);
+                console.log(`🎯 First item:`, items[0]);
                 sectionCallback(App.createHomeSection({
                     id: section.id,
                     title: section.title,
@@ -557,7 +562,7 @@ class HV2T extends types_1.Source {
                 }));
             }
             catch (e) {
-                console.log(`[HV2T] Error: ${e}`);
+                console.log(`🎯 Error: ${e.message || e}`);
                 sectionCallback(App.createHomeSection({
                     id: section.id,
                     title: section.title,
