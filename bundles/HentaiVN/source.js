@@ -466,7 +466,7 @@ const HentaiVNParser_1 = require("./HentaiVNParser");
 const BASE_URL = 'https://hentaivn.college';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'; // Reuse proxy if images are blocked
 exports.HentaiVNInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -507,6 +507,40 @@ class HentaiVN extends types_1.Source {
     async getCloudflareBypassRequestAsync() {
         return App.createRequest({ url: BASE_URL, method: 'GET' });
     }
+    buildRequest(url) {
+        return App.createRequest({ url, method: 'GET' });
+    }
+    slugFromUrl(url) {
+        return url.replace(/\/$/, '').split('/').pop() ?? url;
+    }
+    async fetchHTML(url) {
+        const response = await this.requestManager.schedule(this.buildRequest(url), 0);
+        return this.cheerio.load(response.data);
+    }
+    async getHomePageSections(sectionCallback) {
+        const sections = [
+            { id: 'latest', title: 'Mới Cập Nhật', url: BASE_URL },
+            { id: 'full', title: 'Truyện Full', url: `${BASE_URL}/truyen-full` },
+            { id: 'top', title: 'Top View', url: `${BASE_URL}/top-view` },
+        ];
+        for (const section of sections) {
+            sectionCallback(App.createHomeSection({
+                id: section.id,
+                title: section.title,
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+            }));
+            const $ = await this.fetchHTML(section.url);
+            const items = this.parser.parseHomePage($, PROXY_URL);
+            sectionCallback(App.createHomeSection({
+                id: section.id,
+                title: section.title,
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+                items,
+            }));
+        }
+    }
     async getMangaDetails(mangaId) {
         const url = `${BASE_URL}/truyen-hentai/${mangaId}`;
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
@@ -515,20 +549,55 @@ class HentaiVN extends types_1.Source {
     }
     async getChapters(mangaId) {
         const url = `${BASE_URL}/truyen-hentai/${mangaId}`;
-        const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
-        // parser expects raw HTML string for chapters
-        return this.parser.parseChapters(response.data);
+        const $ = await this.fetchHTML(url);
+        return this.parser.parseChapters($, mangaId);
     }
     async getSearchResults(query, metadata) {
         const page = metadata?.page ?? 1;
         const url = `${BASE_URL}/tim-truyen?keyword=${encodeURIComponent(query.title ?? '')}&page=${page}`;
-        const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
-        const $ = this.cheerio.load(response.data);
+        const $ = await this.fetchHTML(url);
         const manga = this.parser.parseHomePage($, PROXY_URL);
-        return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
+        const hasNextPage = $('a[rel="next"], .next, .page-next, .pagination next').length > 0;
+        return App.createPagedResults({
+            results: manga,
+            metadata: hasNextPage ? { page: page + 1 } : undefined
+        });
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
+    }
+    async getChapterDetails(mangaId, chapterId) {
+        const url = `${BASE_URL}/${chapterId}-doc-truyen-${mangaId}.html`;
+        const $ = await this.fetchHTML(url);
+        const pages = this.parser.parseChapterDetails($, chapterId, mangaId, PROXY_URL);
+        return App.createChapterDetails({ id: chapterId, mangaId, pages });
+    }
+    async getViewMoreItems(homepageSectionId, metadata) {
+        const page = metadata?.page ?? 1;
+        let url;
+        switch (homepageSectionId) {
+            case 'latest':
+                url = `${BASE_URL}/trang/${page}`;
+                break;
+            case 'full':
+                url = `${BASE_URL}/truyen-full/trang/${page}`;
+                break;
+            case 'top':
+                url = `${BASE_URL}/top-view/trang/${page}`;
+                break;
+            default:
+                throw new Error(`Unknown section: ${homepageSectionId}`);
+        }
+        const $ = await this.fetchHTML(url);
+        const items = this.parser.parseHomePage($, PROXY_URL);
+        const hasNextPage = $('a[rel="next"], .next, .page-next').length > 0;
+        return App.createPagedResults({
+            results: items,
+            metadata: hasNextPage ? { page: page + 1 } : undefined,
+        });
+    }
+    getMangaShareUrl(mangaId) {
+        return `${BASE_URL}/truyen-hentai/${mangaId}`;
     }
 }
 exports.HentaiVN = HentaiVN;
@@ -640,13 +709,85 @@ class Parser {
     }
     // ─── Pages ────────────────────────────────────────────────────────────────
     parseChapterDetails($, chapterId, mangaId, proxyUrl) {
-        // TODO: Implement actual HentaiVN DOM parsing here
-        return [];
+        const pages = [];
+        // HentaiVN typically has images in .page-image img or similar selectors
+        // Common patterns: .page-image img, #page img, .content img
+        const selectors = [
+            '.page-image img',
+            '#page img',
+            '.content img',
+            '.chapter-content img',
+            'div[data-index] img',
+            'img[src*="hentaivn"]',
+            'img.chapter-img'
+        ];
+        for (const selector of selectors) {
+            $(selector).each((_, el) => {
+                let src = $(el).attr('data-src') || $(el).attr('src') || '';
+                if (src && !src.startsWith('data:') && src.includes('.')) {
+                    src = `${proxyUrl}?url=${encodeURIComponent(src)}`;
+                    if (!pages.includes(src)) {
+                        pages.push(src);
+                    }
+                }
+            });
+            if (pages.length > 0)
+                break;
+        }
+        // Fallback: try to find all images with numeric src patterns
+        if (pages.length === 0) {
+            $('img').each((_, el) => {
+                let src = $(el).attr('data-src') || $(el).attr('src') || '';
+                if (src && !src.startsWith('data:') && (src.match(/\.(jpg|jpeg|png|gif|webp)/i) || src.match(/\/\d+\//))) {
+                    src = `${proxyUrl}?url=${encodeURIComponent(src)}`;
+                    if (!pages.includes(src)) {
+                        pages.push(src);
+                    }
+                }
+            });
+        }
+        return pages;
     }
     // ─── Search Tags ──────────────────────────────────────────────────────────
     getSearchTags() {
-        // TODO: Extract HentaiVN's specific tag list
-        return [];
+        const tags = [
+            { id: 'action', label: 'Hành Động' },
+            { id: 'adventure', label: 'Phiêu Lưu' },
+            { id: 'comedy', label: 'Hài Hước' },
+            { id: 'doujinshi', label: 'Doujinshi' },
+            { id: 'drama', label: 'Drama' },
+            { id: 'ecchi', label: 'Ecchi' },
+            { id: 'fantasy', label: 'Fantasy' },
+            { id: 'gender-bender', label: 'Gender Bender' },
+            { id: 'harem', label: 'Harem' },
+            { id: 'historical', label: 'Lịch Sử' },
+            { id: 'horror', label: 'Kinh Dị' },
+            { id: 'joshi', label: 'Joshi' },
+            { id: 'lolicon', label: 'Lolicon' },
+            { id: 'manga', label: 'Manga' },
+            { id: 'manhwa', label: 'Manhwa' },
+            { id: 'martial-arts', label: 'Võ Thuật' },
+            { id: 'mature', label: 'Mature' },
+            { id: 'mecha', label: 'Mecha' },
+            { id: 'mystery', label: ' Bí Ẩn' },
+            { id: 'netorare', label: 'Netorare' },
+            { id: 'ntr', label: 'NTR' },
+            { id: 'psychological', label: 'Tâm Lý' },
+            { id: 'romance', label: 'Lãng Mạn' },
+            { id: 'school-life', label: 'School Life' },
+            { id: 'sci-fi', label: 'Khoa Học' },
+            { id: 'seinen', label: 'Seinen' },
+            { id: 'shoujo', label: 'Shoujo' },
+            { id: 'shounen', label: 'Shounen' },
+            { id: 'slice-of-life', label: 'Đời Thường' },
+            { id: 'smut', label: 'Smut' },
+            { id: 'sports', label: 'Thể Thao' },
+            { id: 'supernatural', label: 'Siêu Nhiên' },
+            { id: 'tragedy', label: 'Bi Kịch' },
+            { id: 'yaoi', label: 'Yaoi' },
+            { id: 'yuri', label: 'Yuri' },
+        ];
+        return [App.createTagSection({ id: '0', label: 'Thể Loại', tags })];
     }
 }
 exports.Parser = Parser;

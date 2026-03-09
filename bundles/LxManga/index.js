@@ -463,7 +463,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LxManga = exports.LxMangaInfo = void 0;
 const types_1 = require("@paperback/types");
 const LxMangaParser_1 = require("./LxMangaParser");
-const BASE_URL = 'https://lxmanga.net'; // Primary domain, may change
+const BASE_URL = 'https://lxmanga.space';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.LxMangaInfo = {
     version: '1.0.0',
