@@ -6,7 +6,13 @@ export default {
       return new Response('Not found', { status: 404 })
     }
 
-    const target = url.searchParams.get('url')
+    let target = url.searchParams.get('url')
+    if (!target) return new Response('Missing URL', { status: 400 })
+
+    // Normalize target URL (handle // prefix)
+    if (target.startsWith('//')) {
+      target = `https:${target}`
+    }
 
     // Allowed domains for images (CDN)
     const imageAllowed = [
@@ -21,11 +27,6 @@ export default {
       'hv2t.store',
       'cdn.hv2t.com',
     ]
-
-    // Normalize target URL (handle // prefix)
-    if (target.startsWith('//')) {
-      target = `https:${target}`
-    }
 
     const isImage = imageAllowed.some(prefix => target.startsWith(prefix))
     const isPage = pageAllowed.some(domain => target.includes(domain)) && !isImage
