@@ -84,10 +84,15 @@ class Parser {
     }
     parseChapterPages($) {
         const pages = [];
-        $('img[data-original-src], img[data-src]').each((_, el) => {
-            const imgSrc = $(el).attr('data-original-src') ?? $(el).attr('data-src') ?? $(el).attr('src') ?? '';
-            if (imgSrc && (imgSrc.includes('/images/') || imgSrc.includes('/chapters/')) && imgSrc.endsWith('.jpg')) {
-                pages.push(imgSrc);
+        $('img[data-original-src], img[data-src], img.chapter-img').each((_, el) => {
+            let imgSrc = ($(el).attr('data-original-src') ?? $(el).attr('data-src') ?? $(el).attr('src') ?? '').trim();
+            if (!imgSrc || imgSrc.includes('logo') || imgSrc.includes('data:image'))
+                return;
+            const isImage = /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(imgSrc);
+            const isChapterFolder = /\/(chapters|images|truyen)\//i.test(imgSrc);
+            if (imgSrc && (isImage || isChapterFolder)) {
+                if (!pages.includes(imgSrc))
+                    pages.push(imgSrc);
             }
         });
         if (pages.length === 0) {
