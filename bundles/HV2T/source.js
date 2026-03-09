@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.1.8',
+    version: '1.1.9',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -597,9 +597,9 @@ class HV2T extends types_1.Source {
         });
     }
     async getMangaDetails(mangaId) {
-        const url = `${BASE_URL}/truyen/${mangaId}`;
-        const $ = await this.fetchHTML(url);
-        return this.parser.parseMangaDetails($, mangaId, PROXY_URL);
+        const url = `${BASE_URL}/api/comics/${mangaId}`;
+        const json = await this.fetchJSON(url);
+        return this.parser.parseMangaDetails(json, mangaId, PROXY_URL);
     }
     async getChapters(mangaId) {
         const url = `${BASE_URL}/api/comics/${mangaId}`;
@@ -668,54 +668,26 @@ class Parser {
         return results;
     }
     // ─── Manga Details ─────────────────────────────────────────────────────────
-    parseMangaDetails($, mangaId, proxyUrl) {
-        // Try to get title from various selectors
-        const title = $('h1').first().text().trim() ||
-            $('meta[property="og:title"]').attr('content')?.replace(' - HV2T', '').trim() ||
-            $('title').text().replace(' - HV2T', '').trim() ||
-            'Unknown Title';
-        // Get cover image
-        let image = $('meta[property="og:image"]').attr('content') ||
-            $('img[class*="cover"]').attr('src') ||
-            $('img[class*="cover"]').attr('data-src') ||
-            $('main img').first().attr('src') ||
-            '';
+    parseMangaDetails(json, mangaId, proxyUrl) {
+        const data = json?.data || json;
+        const title = data.title || 'Unknown Title';
+        let image = data.cover_image || '';
         if (image) {
             image = this.normalizeUrl(image, this.CDN_DOMAIN);
             image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
         }
-        // Get description
-        const desc = $('meta[property="og:description"]').attr('content') ||
-            $('meta[name="description"]').attr('content') ||
-            '';
-        // Get author
-        let author = 'Unknown';
-        $('[class*="author"], [class*="tac-gia"], a[href*="/author/"]').each((_, el) => {
-            const text = $(el).text().trim();
-            if (text && text !== 'Unknown') {
-                author = text;
-                return false;
-            }
-        });
-        // Get status
-        let status = 'Ongoing';
-        $('[class*="status"], [class*="tinh-trang"]').each((_, el) => {
-            const text = $(el).text().toLowerCase();
-            if (text.includes('hoàn thành') || text.includes('completed') || text.includes('full')) {
-                status = 'Completed';
-                return false;
-            }
-        });
-        // Get genres/tags
+        const desc = data.description || '';
+        const author = data.author || data.uploader?.username || 'Unknown';
+        const statusStr = (data.status || '').toLowerCase();
+        const status = statusStr === 'completed' ? 'completed' : 'ongoing';
         const tags = [];
-        $('a[href*="/tags/"], a[href*="/genre/"], [class*="genre"] a, [class*="tag"] a').each((_, el) => {
-            const href = $(el).attr('href') || '';
-            const label = $(el).text().trim();
-            if (label && !label.includes('Tác giả')) {
-                const id = href.split('/').pop() || label.toLowerCase().replace(/\s+/g, '-');
-                tags.push(App.createTag({ id, label }));
+        if (Array.isArray(data.tags)) {
+            for (const tag of data.tags) {
+                if (tag.slug && tag.name) {
+                    tags.push(App.createTag({ id: tag.slug, label: tag.name }));
+                }
             }
-        });
+        }
         const tagSections = [];
         if (tags.length > 0) {
             tagSections.push(App.createTagSection({ id: 'genre', label: 'Thể Loại', tags }));
@@ -725,7 +697,7 @@ class Parser {
             mangaInfo: App.createMangaInfo({
                 titles: [title],
                 image: image,
-                status: status === 'Completed' ? 'completed' : 'ongoing',
+                status: status,
                 author: author,
                 desc: desc,
                 tags: tagSections,

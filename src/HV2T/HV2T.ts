@@ -20,7 +20,7 @@ const BASE_URL = 'https://hv2t.store'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const HV2TInfo: SourceInfo = {
-    version: '1.1.8',
+    version: '1.1.9',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -164,9 +164,9 @@ export class HV2T extends Source {
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
-        const url = `${BASE_URL}/truyen/${mangaId}`
-        const $ = await this.fetchHTML(url)
-        return this.parser.parseMangaDetails($, mangaId, PROXY_URL)
+        const url = `${BASE_URL}/api/comics/${mangaId}`
+        const json = await this.fetchJSON(url)
+        return this.parser.parseMangaDetails(json, mangaId, PROXY_URL)
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {

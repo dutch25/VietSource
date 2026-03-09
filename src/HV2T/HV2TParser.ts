@@ -54,63 +54,31 @@ export class Parser {
     }
 
     // ─── Manga Details ─────────────────────────────────────────────────────────
-    parseMangaDetails($: CheerioAPI, mangaId: string, proxyUrl: string): SourceManga {
-        // Try to get title from various selectors
-        const title =
-            $('h1').first().text().trim() ||
-            $('meta[property="og:title"]').attr('content')?.replace(' - HV2T', '').trim() ||
-            $('title').text().replace(' - HV2T', '').trim() ||
-            'Unknown Title'
+    parseMangaDetails(json: any, mangaId: string, proxyUrl: string): SourceManga {
+        const data = json?.data || json
 
-        // Get cover image
-        let image =
-            $('meta[property="og:image"]').attr('content') ||
-            $('img[class*="cover"]').attr('src') ||
-            $('img[class*="cover"]').attr('data-src') ||
-            $('main img').first().attr('src') ||
-            ''
+        const title = data.title || 'Unknown Title'
 
+        let image = data.cover_image || ''
         if (image) {
             image = this.normalizeUrl(image, this.CDN_DOMAIN)
             image = `${proxyUrl}?url=${encodeURIComponent(image)}`
         }
 
-        // Get description
-        const desc =
-            $('meta[property="og:description"]').attr('content') ||
-            $('meta[name="description"]').attr('content') ||
-            ''
+        const desc = data.description || ''
+        const author = data.author || data.uploader?.username || 'Unknown'
 
-        // Get author
-        let author = 'Unknown'
-        $('[class*="author"], [class*="tac-gia"], a[href*="/author/"]').each((_: any, el: any) => {
-            const text = $(el).text().trim()
-            if (text && text !== 'Unknown') {
-                author = text
-                return false
-            }
-        })
+        const statusStr = (data.status || '').toLowerCase()
+        const status = statusStr === 'completed' ? 'completed' : 'ongoing'
 
-        // Get status
-        let status = 'Ongoing'
-        $('[class*="status"], [class*="tinh-trang"]').each((_: any, el: any) => {
-            const text = $(el).text().toLowerCase()
-            if (text.includes('hoàn thành') || text.includes('completed') || text.includes('full')) {
-                status = 'Completed'
-                return false
-            }
-        })
-
-        // Get genres/tags
         const tags: Tag[] = []
-        $('a[href*="/tags/"], a[href*="/genre/"], [class*="genre"] a, [class*="tag"] a').each((_: any, el: any) => {
-            const href = $(el).attr('href') || ''
-            const label = $(el).text().trim()
-            if (label && !label.includes('Tác giả')) {
-                const id = href.split('/').pop() || label.toLowerCase().replace(/\s+/g, '-')
-                tags.push(App.createTag({ id, label }))
+        if (Array.isArray(data.tags)) {
+            for (const tag of data.tags) {
+                if (tag.slug && tag.name) {
+                    tags.push(App.createTag({ id: tag.slug, label: tag.name }))
+                }
             }
-        })
+        }
 
         const tagSections: TagSection[] = []
         if (tags.length > 0) {
@@ -122,7 +90,7 @@ export class Parser {
             mangaInfo: App.createMangaInfo({
                 titles: [title],
                 image: image,
-                status: status === 'Completed' ? 'completed' : 'ongoing',
+                status: status,
                 author: author,
                 desc: desc,
                 tags: tagSections,
