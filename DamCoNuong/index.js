@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const DamCoNuongParser_1 = require("./DamCoNuongParser");
 const BASE_URL = 'https://damconuong.city';
 exports.DamCoNuongInfo = {
-    version: '1.0.8',
+    version: '1.0.9',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -603,9 +603,11 @@ exports.Parser = void 0;
 class Parser {
     parseHomePage($) {
         const results = [];
-        $('.cover-frame, [class*="manga"]').closest('a[href*="/truyen/"]').each((_, el) => {
-            const href = $(el).attr('href') ?? '';
-            if (href.includes('/chapter-'))
+        $('.manga-vertical').each((_, el) => {
+            const titleLink = $('h3 a', el).first();
+            const title = titleLink.text().trim();
+            const href = titleLink.attr('href') ?? '';
+            if (!href || href.includes('/chapter-'))
                 return;
             const idMatch = href.match(/\/truyen\/([^/?#]+)/);
             if (!idMatch)
@@ -613,10 +615,9 @@ class Parser {
             const id = idMatch[1].trim();
             if (!id)
                 return;
-            const img = $(el).find('img').first();
-            const title = img.attr('alt')?.trim() ?? '';
+            const img = $('.cover-frame img', el).first();
             const rawImage = img.attr('src') ?? img.attr('data-src') ?? '';
-            if (!title || title.length < 2 || !rawImage)
+            if (!title || !rawImage)
                 return;
             results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }));
         });
@@ -629,12 +630,12 @@ class Parser {
                 if (!idMatch)
                     return;
                 const id = idMatch[1].trim();
-                if (!id || results.some(r => r.mangaId === id))
+                if (!id || id.includes('/chapter-') || results.some(r => r.mangaId === id))
                     return;
                 const img = $(el).find('img').first();
-                const title = img.attr('alt')?.trim() ?? $(el).text().trim() ?? '';
+                const title = $(el).attr('title')?.trim() ?? img.attr('alt')?.trim() ?? $(el).text().trim() ?? '';
                 const rawImage = img.attr('src') ?? img.attr('data-src') ?? '';
-                if (!title || title.length < 2)
+                if (!title || title.length < 2 || !rawImage)
                     return;
                 results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }));
             });
