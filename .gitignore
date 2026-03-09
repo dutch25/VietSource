@@ -7,3 +7,4 @@ vendor/
 *.log
 AGENTS.md
 .brain/
+worker.js

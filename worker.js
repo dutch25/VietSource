@@ -41,15 +41,26 @@ export default {
       referer = 'https://hv2t.store'
     }
 
-    // Use manual redirect handling to preserve headers (Referer) across domains
+    // HARDCODED AUTH COOKIES (from browser session)
+    // NOTE: These may expire eventually. Update them if access is lost.
+    const AUTH_COOKIES = 'access_token=Bearer%20eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxNjkxNCIsImFkbWluIjpmYWxzZSwiaWF0IjoxNzczMDU1MDE5LCJleHAiOjE3NzM2NTk4MTl9.8fxPlfp_wRQ_iBWp5nm0VIFvb92M3nnR6_X6H0WvL0Y; cf_clearance=RwXPQ_Fxw6VPzCo1KAPg60FCTYZ.L5FAMJQGm1IqFPQ-1773059004-1.2.1.1-k3YJEfif8DCORlcVYgOsSCE1iPksiKVbvrNaAGc5f5soBIsj5oZhfxfIXJ2Xb1U1cf5JlLWnnMPDng.BGh15CKx_IG0Y5DTcNhsw4PoqSc9FVMHCh9LTYDv3zj_CiwT0HXmUDwRXSgJ0QLaNYdpCY_hM0uy1d2jdmP9Mr7zMAfjj1mtJTaKMva26q7d.ACT7dREVAWOWCOJyRkiPU8TkmyZFUHBW7UUWriu0bYOqQ_Y'
+
+    const fetchHeaders = {
+      'Referer': referer,
+      'Origin': referer,
+      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+    }
+
+    // Apply auth cookies for HV2T requests
+    if (target.includes('hv2t.store') || target.includes('cdn.hv2t.com')) {
+      fetchHeaders['Cookie'] = AUTH_COOKIES
+    }
+
+    // Use manual redirect handling to preserve headers (Referer & Cookies) across domains
     let response = await fetch(target, {
-      headers: {
-        'Referer': referer,
-        'Origin': referer,
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
+      headers: fetchHeaders,
       redirect: 'manual'
     })
 
@@ -62,12 +73,7 @@ export default {
       const nextUrl = new URL(location, target).href
 
       response = await fetch(nextUrl, {
-        headers: {
-          'Referer': referer,
-          'Origin': referer,
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        },
+        headers: fetchHeaders,
         redirect: 'manual'
       })
       hops++
