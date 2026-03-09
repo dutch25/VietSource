@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.1.6',
+    version: '1.1.7',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -539,12 +539,13 @@ class HV2T extends types_1.Source {
         }
     }
     async getHomePageSections(sectionCallback) {
-        console.log('🎯 HV2T getHomePageSections CALLED');
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: BASE_URL },
+            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/?sort=latest` },
+            { id: 'most_followed', title: 'Theo Dõi Nhiều', url: `${BASE_URL}/?sort=follow` },
+            { id: 'most_viewed', title: 'Lượt Xem Nhiều', url: `${BASE_URL}/?sort=view` },
+            { id: 'completed', title: 'Đã Hoàn Thành', url: `${BASE_URL}/?sort=completed` },
         ];
         for (const section of sections) {
-            console.log(`🎯 Processing section: ${section.id} with url: ${section.url}`);
             sectionCallback(App.createHomeSection({
                 id: section.id,
                 title: section.title,
@@ -553,14 +554,9 @@ class HV2T extends types_1.Source {
             }));
             try {
                 const proxyFetchUrl = `${PROXY_URL}?url=${encodeURIComponent(section.url)}`;
-                console.log(`🎯 Fetching via proxy: ${proxyFetchUrl}`);
                 const response = await this.requestManager.schedule(this.buildRequest(proxyFetchUrl), 0);
-                console.log(`🎯 Response status: ${response.status}, length: ${response.data.length}`);
                 const $ = this.cheerio.load(response.data);
-                console.log(`🎯 HTML loaded, parsing...`);
                 const items = this.parser.parseHomePage($, PROXY_URL);
-                console.log(`🎯 Parsed ${items.length} items`);
-                console.log(`🎯 First item:`, items[0]);
                 sectionCallback(App.createHomeSection({
                     id: section.id,
                     title: section.title,
@@ -570,7 +566,6 @@ class HV2T extends types_1.Source {
                 }));
             }
             catch (e) {
-                console.log(`🎯 Error: ${e.message || e}`);
                 sectionCallback(App.createHomeSection({
                     id: section.id,
                     title: section.title,
@@ -583,7 +578,14 @@ class HV2T extends types_1.Source {
     }
     async getViewMoreItems(homepageSectionId, metadata) {
         const page = metadata?.page ?? 1;
-        const url = `${BASE_URL}/danh-sach?page=${page}`;
+        let sort = 'latest';
+        if (homepageSectionId === 'most_followed')
+            sort = 'follow';
+        if (homepageSectionId === 'most_viewed')
+            sort = 'view';
+        if (homepageSectionId === 'completed')
+            sort = 'completed';
+        const url = `${BASE_URL}/?sort=${sort}&page=${page}`;
         const $ = await this.fetchHTML(url);
         const items = this.parser.parseHomePage($, PROXY_URL);
         return App.createPagedResults({
