@@ -13,6 +13,14 @@ export class Parser {
     private readonly BASE_DOMAIN = 'hv2t.store'
     private readonly CDN_DOMAIN = 'cdn.hv2t.com'
 
+    private normalizeUrl(url: string, defaultDomain: string = this.BASE_DOMAIN): string {
+        if (!url) return ''
+        if (url.startsWith('http')) return url
+        if (url.startsWith('//')) return `https:${url}`
+        if (url.startsWith('/')) return `https://${defaultDomain}${url}`
+        return `https://${defaultDomain}/${url}`
+    }
+
     // ─── Home Page ─────────────────────────────────────────────────────────────
     parseHomePage($: CheerioAPI, proxyUrl: string): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
@@ -41,12 +49,12 @@ export class Parser {
 
                         if (!slug || slug.includes('chapter-') || results.some(r => r.mangaId === slug)) continue
 
-                        let image = item.image
+                        let image = this.normalizeUrl(item.image, this.CDN_DOMAIN)
                         // Remove webp to jpg conversion as it may cause 404s
                         // image = image.replace('.webp', '.jpg')
 
                         // Only add proxy if proxyUrl is not empty
-                        if (proxyUrl) {
+                        if (proxyUrl && image) {
                             image = `${proxyUrl}?url=${encodeURIComponent(image)}`
                         }
 
@@ -83,12 +91,12 @@ export class Parser {
                 if (!slug || results.some(r => r.mangaId === slug)) return
 
                 // Check if this looks like a manga card link (often has an image or is in a specific container)
-                let image = $el.find('img').attr('src') || $el.find('img').attr('data-src') || ''
+                let image = this.normalizeUrl($el.find('img').attr('src') || $el.find('img').attr('data-src') || '', this.CDN_DOMAIN)
 
                 if (!image) {
                     // Try to find image in siblings or parent container
                     const $container = $el.closest('div, article, section')
-                    image = $container.find('img').attr('src') || $container.find('img').attr('data-src') || ''
+                    image = this.normalizeUrl($container.find('img').attr('src') || $container.find('img').attr('data-src') || '', this.CDN_DOMAIN)
                 }
 
                 if (image && proxyUrl) {
@@ -157,7 +165,7 @@ export class Parser {
             ''
 
         if (image) {
-            // image = image.replace('.webp', '.jpg')
+            image = this.normalizeUrl(image, this.CDN_DOMAIN)
             image = `${proxyUrl}?url=${encodeURIComponent(image)}`
         }
 
@@ -291,6 +299,8 @@ export class Parser {
 
                 // Convert webp to jpg
                 // src = src.replace('.webp', '.jpg')
+
+                src = this.normalizeUrl(src, this.CDN_DOMAIN)
 
                 // Proxy the image
                 src = `${proxyUrl}?url=${encodeURIComponent(src)}`

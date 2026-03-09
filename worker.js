@@ -22,6 +22,11 @@ export default {
       'cdn.hv2t.com',
     ]
 
+    // Normalize target URL (handle // prefix)
+    if (target.startsWith('//')) {
+      target = `https:${target}`
+    }
+
     const isImage = imageAllowed.some(prefix => target.startsWith(prefix))
     const isPage = pageAllowed.some(domain => target.includes(domain)) && !isImage
 
