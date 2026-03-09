@@ -466,7 +466,7 @@ const HV2TParser_1 = require("./HV2TParser");
 const BASE_URL = 'https://hv2t.store';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.HV2TInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'HV2T',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -626,6 +626,17 @@ class Parser {
         this.BASE_DOMAIN = 'hv2t.store';
         this.CDN_DOMAIN = 'cdn.hv2t.com';
     }
+    normalizeUrl(url, defaultDomain = this.BASE_DOMAIN) {
+        if (!url)
+            return '';
+        if (url.startsWith('http'))
+            return url;
+        if (url.startsWith('//'))
+            return `https:${url}`;
+        if (url.startsWith('/'))
+            return `https://${defaultDomain}${url}`;
+        return `https://${defaultDomain}/${url}`;
+    }
     // ─── Home Page ─────────────────────────────────────────────────────────────
     parseHomePage($, proxyUrl) {
         const results = [];
@@ -649,11 +660,11 @@ class Parser {
                         const slug = match ? match[1] : '';
                         if (!slug || slug.includes('chapter-') || results.some(r => r.mangaId === slug))
                             continue;
-                        let image = item.image;
+                        let image = this.normalizeUrl(item.image, this.CDN_DOMAIN);
                         // Remove webp to jpg conversion as it may cause 404s
                         // image = image.replace('.webp', '.jpg')
                         // Only add proxy if proxyUrl is not empty
-                        if (proxyUrl) {
+                        if (proxyUrl && image) {
                             image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
                         }
                         results.push(App.createPartialSourceManga({
@@ -686,11 +697,11 @@ class Parser {
                 if (!slug || results.some(r => r.mangaId === slug))
                     return;
                 // Check if this looks like a manga card link (often has an image or is in a specific container)
-                let image = $el.find('img').attr('src') || $el.find('img').attr('data-src') || '';
+                let image = this.normalizeUrl($el.find('img').attr('src') || $el.find('img').attr('data-src') || '', this.CDN_DOMAIN);
                 if (!image) {
                     // Try to find image in siblings or parent container
                     const $container = $el.closest('div, article, section');
-                    image = $container.find('img').attr('src') || $container.find('img').attr('data-src') || '';
+                    image = this.normalizeUrl($container.find('img').attr('src') || $container.find('img').attr('data-src') || '', this.CDN_DOMAIN);
                 }
                 if (image && proxyUrl) {
                     image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
@@ -748,7 +759,7 @@ class Parser {
             $('main img').first().attr('src') ||
             '';
         if (image) {
-            // image = image.replace('.webp', '.jpg')
+            image = this.normalizeUrl(image, this.CDN_DOMAIN);
             image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
         }
         // Get description
@@ -864,6 +875,7 @@ class Parser {
                     return;
                 // Convert webp to jpg
                 // src = src.replace('.webp', '.jpg')
+                src = this.normalizeUrl(src, this.CDN_DOMAIN);
                 // Proxy the image
                 src = `${proxyUrl}?url=${encodeURIComponent(src)}`;
                 if (!pages.includes(src)) {
