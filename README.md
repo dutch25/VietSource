@@ -1,11 +1,14 @@
 # Vietnamese Extension for Paperback
 
-A **Paperback 0.8** extension supporting **two Vietnamese manga sources**:
+A **Paperback 0.8** extension supporting **Vietnamese manga sources**:
 
 | Source | Website | Status |
 |--------|---------|--------|
-| **ViHentai** | vi-hentai.pro | ⚠️ Broken (Livewire/AJAX) |
 | **NHentaiClub** | nhentaiclub.space | ✅ Working |
+| **DamCoNuong** | damconuong.city | ✅ Working |
+| **HV2T** | hv2t.store | ⚠️ Needs Cloudflare bypass |
+| **HentaiVN** | hentaivn.college | ⚠️ Needs testing |
+| **ViHentai** | vi-hentai.pro | ⚠️ Broken (Livewire) |
 
 ## Add to Paperback
 
@@ -15,13 +18,7 @@ A **Paperback 0.8** extension supporting **two Vietnamese manga sources**:
 2. Add this URL: `https://dutch25.github.io/VietSource/`
 3. Install **VietSource** extensions
 
-## Features
-
-### ViHentai
-- Browse: Latest, Popular, New manga
-- Search with genre filtering
-- Manga details with chapter list
-- ⚠️ Chapter images not loading (site uses Livewire - AJAX rendering)
+## Sources
 
 ### NHentaiClub
 - Browse: Latest, All-Time/Day/Week/Month rankings
@@ -29,19 +26,17 @@ A **Paperback 0.8** extension supporting **two Vietnamese manga sources**:
 - Manga details with chapter list
 - Chapter reading with page images
 
-## Development
+### DamCoNuong
+- Browse: Latest manga
+- Search functionality
+- Manga details with chapter list
+- Chapter reading
 
-```bash
-# Install dependencies
-npm install
+### HV2T (hv2t.store)
+- ⚠️ Currently blocked by Cloudflare - needs worker proxy to work
 
-# Build
-npm run bundle
+### HentaiVN (hentaivn.college)
+- ⚠️ Testing needed
 
-# Serve locally
-npm run serve
-```
-
-## Deploy
-
-Push to main branch to auto-deploy to GitHub Pages.
+### ViHentai (vi-hentai.pro)
+- ⚠️ Broken - Site uses Livewire (AJAX rendering), chapter images don't load
