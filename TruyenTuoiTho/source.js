@@ -464,7 +464,7 @@ exports.TruyenTuoiTho = exports.TruyenTuoiThoInfo = void 0;
 const types_1 = require("@paperback/types");
 const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
-const WORKER_URL = 'https://YOUR-WORKER.workers.dev'; // Replace with your Cloudflare Worker URL
+const WORKER_URL = 'https://YOUR-WORKER.workers.dev/chapters';
 exports.TruyenTuoiThoInfo = {
     version: '1.0.7',
     name: 'TruyenTuoiTho',
