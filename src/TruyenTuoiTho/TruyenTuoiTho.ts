@@ -19,7 +19,7 @@ import { Parser } from './TruyenTuoiThoParser'
 const BASE_URL = 'https://truyentuoitho.com'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',

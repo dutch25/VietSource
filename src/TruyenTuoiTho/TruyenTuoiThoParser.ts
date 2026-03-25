@@ -85,24 +85,35 @@ export class Parser {
                 || $(el).text().trim()
                 || chapterId
 
-            const dateText = $(el).parents('.chapter-item, li').find('.post-on').first().text().trim()
             let time = new Date()
-            if (dateText) {
-                const parsed = new Date(dateText)
-                if (!isNaN(parsed.getTime())) {
-                    time = parsed
+            const parentEl = $(el).parents('.chapter-item, li, .wp-manga-chapter').first()
+            if (parentEl.length) {
+                const dateText = parentEl.find('.post-on, .chapter-release-date').first().text().trim()
+                if (dateText) {
+                    const parsed = new Date(dateText)
+                    if (!isNaN(parsed.getTime())) {
+                        time = parsed
+                    }
                 }
             }
 
             chapters.push(App.createChapter({
                 id: chapterId,
-                chapNum: chapters.length + 1,
+                chapNum: this.extractChapterNumber(chapterId),
                 name: title,
                 time: time,
             }))
         })
 
         return chapters.reverse()
+    }
+
+    private extractChapterNumber(chapterId: string): number {
+        const numMatch = chapterId.match(/(\d+)/)
+        if (numMatch) {
+            return parseFloat(numMatch[1])
+        }
+        return 0
     }
 
     parseChapterPages($: CheerioAPI): string[] {
