@@ -108,6 +108,49 @@ export class Parser {
         return chapters.reverse()
     }
 
+    parseChaptersFromAjax($: CheerioAPI, mangaId: string): Chapter[] {
+        const chapters: Chapter[] = []
+        const seenUrls = new Set<string>()
+
+        $('a[href*="/tap-"], a[href*="/chuong-"]').each((_: any, el: any) => {
+            const href = $(el).attr('href') ?? ''
+            if (!href || seenUrls.has(href)) return
+            seenUrls.add(href)
+            
+            const match = href.match(/\/manga\/([^/]+)\/([^/]+)\/?$/)
+            if (!match) return
+
+            const mangaSlug = match[1]
+            if (mangaSlug !== mangaId) return
+
+            const chapterId = match[2]
+            const title = $(el).find('.chapter-title').first().text().trim()
+                || $(el).text().trim()
+                || chapterId
+
+            let time = new Date()
+            const parentEl = $(el).parents('li, .chapter-item, .wp-manga-chapter').first()
+            if (parentEl.length) {
+                const dateText = parentEl.find('.post-on, .chapter-release-date').first().text().trim()
+                if (dateText) {
+                    const parsed = new Date(dateText)
+                    if (!isNaN(parsed.getTime())) {
+                        time = parsed
+                    }
+                }
+            }
+
+            chapters.push(App.createChapter({
+                id: chapterId,
+                chapNum: this.extractChapterNumber(chapterId),
+                name: title,
+                time: time,
+            }))
+        })
+
+        return chapters.reverse()
+    }
+
     private extractChapterNumber(chapterId: string): number {
         const numMatch = chapterId.match(/(\d+)/)
         if (numMatch) {

@@ -19,7 +19,7 @@ import { Parser } from './TruyenTuoiThoParser'
 const BASE_URL = 'https://truyentuoitho.com'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -147,6 +147,25 @@ export class TruyenTuoiTho extends Source {
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
+        try {
+            const ajaxResponse = await this.requestManager.schedule(
+                App.createRequest({
+                    url: `${BASE_URL}/wp-admin/admin-ajax.php`,
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    data: `action=wp_manga_get_chapters&manga_id=${mangaId}`
+                }), 0
+            )
+            const ajaxData = JSON.parse(ajaxResponse.data as string)
+            if (ajaxData && ajaxData.html) {
+                const $ = this.cheerio.load(ajaxData.html)
+                return this.parser.parseChaptersFromAjax($, mangaId)
+            }
+        } catch (e) {
+        }
+
         const response = await this.requestManager.schedule(
             App.createRequest({ url: `${BASE_URL}/manga/${mangaId}`, method: 'GET' }), 0
         )
