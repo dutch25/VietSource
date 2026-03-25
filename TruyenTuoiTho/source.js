@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 exports.TruyenTuoiThoInfo = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -664,22 +664,32 @@ class Parser {
             const title = $(el).find('.chapter-title').first().text().trim()
                 || $(el).text().trim()
                 || chapterId;
-            const dateText = $(el).parents('.chapter-item, li').find('.post-on').first().text().trim();
             let time = new Date();
-            if (dateText) {
-                const parsed = new Date(dateText);
-                if (!isNaN(parsed.getTime())) {
-                    time = parsed;
+            const parentEl = $(el).parents('.chapter-item, li, .wp-manga-chapter').first();
+            if (parentEl.length) {
+                const dateText = parentEl.find('.post-on, .chapter-release-date').first().text().trim();
+                if (dateText) {
+                    const parsed = new Date(dateText);
+                    if (!isNaN(parsed.getTime())) {
+                        time = parsed;
+                    }
                 }
             }
             chapters.push(App.createChapter({
                 id: chapterId,
-                chapNum: chapters.length + 1,
+                chapNum: this.extractChapterNumber(chapterId),
                 name: title,
                 time: time,
             }));
         });
         return chapters.reverse();
+    }
+    extractChapterNumber(chapterId) {
+        const numMatch = chapterId.match(/(\d+)/);
+        if (numMatch) {
+            return parseFloat(numMatch[1]);
+        }
+        return 0;
     }
     parseChapterPages($) {
         const pages = [];
