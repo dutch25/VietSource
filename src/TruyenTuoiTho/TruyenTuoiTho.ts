@@ -17,10 +17,10 @@ import {
 import { Parser } from './TruyenTuoiThoParser'
 
 const BASE_URL = 'https://truyentuoitho.com'
-const WORKER_URL = 'https://YOUR-WORKER.workers.dev/chapters'
+const WORKER_URL = 'https://truyentuoitho-worker.feedandafk2018.workers.dev'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
-    version: '1.0.7',
+    version: '1.0.9',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
