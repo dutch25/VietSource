@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 exports.TruyenTuoiThoInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -573,26 +573,9 @@ class TruyenTuoiTho extends types_1.Source {
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
-        try {
-            const ajaxResponse = await this.requestManager.schedule(App.createRequest({
-                url: `${BASE_URL}/wp-admin/admin-ajax.php`,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                data: `action=wp_manga_get_chapters&manga_id=${mangaId}`
-            }), 0);
-            const ajaxData = JSON.parse(ajaxResponse.data);
-            if (ajaxData && ajaxData.html) {
-                const $ = this.cheerio.load(ajaxData.html);
-                return this.parser.parseChaptersFromAjax($);
-            }
-        }
-        catch (e) {
-        }
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}`, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
-        return this.parser.parseChapters($);
+        return this.parser.parseChapters($, mangaId);
     }
     async getChapterDetails(mangaId, chapterId) {
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/${chapterId}`, method: 'GET' }), 1);
@@ -663,47 +646,25 @@ class Parser {
             mangaInfo: App.createMangaInfo({ titles: [title], image: rawImage, desc, author: '', artist: '', status: '', tags: tagSections }),
         });
     }
-    parseChapters($) {
+    parseChapters($, mangaId) {
         const chapters = [];
+        const seenUrls = new Set();
         $('a[href*="/tap-"], a[href*="/chuong-"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
-            const match = href.match(/\/manga\/[^/]+\/([^/]+)\/?$/);
+            if (!href || seenUrls.has(href))
+                return;
+            seenUrls.add(href);
+            const match = href.match(/\/manga\/([^/]+)\/([^/]+)\/?$/);
             if (!match)
                 return;
-            const chapterId = match[1];
+            const mangaSlug = match[1];
+            if (mangaSlug !== mangaId)
+                return;
+            const chapterId = match[2];
             const title = $(el).find('.chapter-title').first().text().trim()
                 || $(el).text().trim()
                 || chapterId;
-            const dateText = $(el).parents('.chapter-item').find('.post-on').first().text().trim();
-            let time = new Date();
-            if (dateText) {
-                const parsed = new Date(dateText);
-                if (!isNaN(parsed.getTime())) {
-                    time = parsed;
-                }
-            }
-            chapters.push(App.createChapter({
-                id: chapterId,
-                chapNum: chapters.length + 1,
-                name: title,
-                time: time,
-            }));
-        });
-        return chapters.reverse();
-    }
-    parseChaptersFromAjax($) {
-        const chapters = [];
-        $('a[href*="/tap-"], a[href*="/chuong-"]').each((_, el) => {
-            const href = $(el).attr('href') ?? '';
-            const match = href.match(/\/manga\/[^/]+\/([^/]+)\/?$/);
-            if (!match)
-                return;
-            const chapterId = match[1];
-            const title = $(el).find('.chapter-title').first().text().trim()
-                || $(el).text().trim()
-                || chapterId;
-            const dateText = $(el).parents('li').find('.post-on').first().text().trim()
-                || $(el).parents('.chapter-item').find('.post-on').first().text().trim();
+            const dateText = $(el).parents('.chapter-item, li').find('.post-on').first().text().trim();
             let time = new Date();
             if (dateText) {
                 const parsed = new Date(dateText);
