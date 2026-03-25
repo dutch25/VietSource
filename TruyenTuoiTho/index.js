@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 exports.TruyenTuoiThoInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -674,9 +674,6 @@ class Parser {
             const match = href.match(/\/manga\/([^/]+)\/([^/]+)\/?$/);
             if (!match)
                 return;
-            const mangaSlug = match[1];
-            if (mangaSlug !== mangaId)
-                return;
             const chapterId = match[2];
             const title = $(el).find('.chapter-title').first().text().trim()
                 || $(el).text().trim()
@@ -704,7 +701,7 @@ class Parser {
     parseChaptersFromAjax($, mangaId) {
         const chapters = [];
         const seenUrls = new Set();
-        $('a[href*="/tap-"], a[href*="/chuong-"]').each((_, el) => {
+        $('a[href*="/tap-"], a[href*="/chuong-"], a[href*="/chapter-"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
             if (!href || seenUrls.has(href))
                 return;
@@ -712,17 +709,16 @@ class Parser {
             const match = href.match(/\/manga\/([^/]+)\/([^/]+)\/?$/);
             if (!match)
                 return;
-            const mangaSlug = match[1];
-            if (mangaSlug !== mangaId)
-                return;
             const chapterId = match[2];
-            const title = $(el).find('.chapter-title').first().text().trim()
-                || $(el).text().trim()
-                || chapterId;
+            let title = $(el).find('.chapter-title').first().text().trim();
+            if (!title)
+                title = $(el).text().trim();
+            if (!title)
+                title = chapterId;
             let time = new Date();
-            const parentEl = $(el).parents('li, .chapter-item, .wp-manga-chapter').first();
+            const parentEl = $(el).parents('li, .chapter-item, .wp-manga-chapter, .chapter').first();
             if (parentEl.length) {
-                const dateText = parentEl.find('.post-on, .chapter-release-date').first().text().trim();
+                const dateText = parentEl.find('.post-on, .chapter-release-date, time').first().text().trim();
                 if (dateText) {
                     const parsed = new Date(dateText);
                     if (!isNaN(parsed.getTime())) {
