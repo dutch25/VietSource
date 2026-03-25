@@ -71,15 +71,13 @@ export class Parser {
         $('a[href*="/tap-"], a[href*="/chuong-"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
             
-            const tapMatch = href.match(/\/tap-([\d.]+)/)
-            const chuongMatch = href.match(/\/chuong-([\d.]+)/)
-            
-            if (!tapMatch && !chuongMatch) return
+            const match = href.match(/\/manga\/[^/]+\/([^/]+)\/?$/)
+            if (!match) return
 
-            const chapterId = tapMatch ? tapMatch[1] : chuongMatch![1]
+            const chapterId = match[1]
             const title = $(el).find('.chapter-title').first().text().trim()
                 || $(el).text().trim()
-                || `Chapter ${chapterId}`
+                || chapterId
 
             const dateText = $(el).parents('.chapter-item').find('.post-on').first().text().trim()
             let time = new Date()
@@ -92,7 +90,7 @@ export class Parser {
 
             chapters.push(App.createChapter({
                 id: chapterId,
-                chapNum: parseFloat(chapterId) || chapters.length + 1,
+                chapNum: chapters.length + 1,
                 name: title,
                 time: time,
             }))
