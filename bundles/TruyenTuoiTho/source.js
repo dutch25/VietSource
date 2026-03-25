@@ -464,8 +464,9 @@ exports.TruyenTuoiTho = exports.TruyenTuoiThoInfo = void 0;
 const types_1 = require("@paperback/types");
 const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
+const WORKER_URL = 'https://YOUR-WORKER.workers.dev'; // Replace with your Cloudflare Worker URL
 exports.TruyenTuoiThoInfo = {
-    version: '1.0.6',
+    version: '1.0.7',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -573,23 +574,27 @@ class TruyenTuoiTho extends types_1.Source {
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
+        // Try Cloudflare Worker first
         try {
-            const ajaxResponse = await this.requestManager.schedule(App.createRequest({
-                url: `${BASE_URL}/wp-admin/admin-ajax.php`,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                data: `action=wp_manga_get_chapters&manga_id=${mangaId}`
+            const workerResponse = await this.requestManager.schedule(App.createRequest({
+                url: `${WORKER_URL}/?url=${BASE_URL}/manga/${mangaId}`,
+                method: 'GET'
             }), 0);
-            const ajaxData = JSON.parse(ajaxResponse.data);
-            if (ajaxData && ajaxData.html) {
-                const $ = this.cheerio.load(ajaxData.html);
-                return this.parser.parseChaptersFromAjax($, mangaId);
+            if (workerResponse.status === 200) {
+                const workerData = JSON.parse(workerResponse.data);
+                if (workerData.chapters && workerData.chapters.length > 0) {
+                    return workerData.chapters.map((ch, index) => App.createChapter({
+                        id: ch.id,
+                        chapNum: ch.chapNum || index + 1,
+                        name: ch.name || ch.id,
+                        time: new Date(),
+                    }));
+                }
             }
         }
         catch (e) {
         }
+        // Fallback to HTML parsing
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}`, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseChapters($, mangaId);
