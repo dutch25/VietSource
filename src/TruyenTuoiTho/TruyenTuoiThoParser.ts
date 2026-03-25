@@ -99,11 +99,46 @@ export class Parser {
         return chapters.reverse()
     }
 
+    parseChaptersFromAjax($: CheerioAPI): Chapter[] {
+        const chapters: Chapter[] = []
+
+        $('a[href*="/tap-"], a[href*="/chuong-"]').each((_: any, el: any) => {
+            const href = $(el).attr('href') ?? ''
+            
+            const match = href.match(/\/manga\/[^/]+\/([^/]+)\/?$/)
+            if (!match) return
+
+            const chapterId = match[1]
+            const title = $(el).find('.chapter-title').first().text().trim()
+                || $(el).text().trim()
+                || chapterId
+
+            const dateText = $(el).parents('li').find('.post-on').first().text().trim()
+                || $(el).parents('.chapter-item').find('.post-on').first().text().trim()
+            let time = new Date()
+            if (dateText) {
+                const parsed = new Date(dateText)
+                if (!isNaN(parsed.getTime())) {
+                    time = parsed
+                }
+            }
+
+            chapters.push(App.createChapter({
+                id: chapterId,
+                chapNum: chapters.length + 1,
+                name: title,
+                time: time,
+            }))
+        })
+
+        return chapters.reverse()
+    }
+
     parseChapterPages($: CheerioAPI): string[] {
         const pages: string[] = []
 
-        $('img[data-original-src], img[data-src], img.chapter-img, .reading-content img').each((_: any, el: any) => {
-            let imgSrc = ($(el).attr('data-original-src') ?? $(el).attr('data-src') ?? $(el).attr('src') ?? '').trim()
+        $('.reading-content img').each((_: any, el: any) => {
+            let imgSrc = ($(el).attr('src') ?? $(el).attr('data-src') ?? $(el).attr('data-original-src') ?? '').trim()
             if (!imgSrc || imgSrc.includes('logo') || imgSrc.includes('data:image')) return
 
             const isImage = /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(imgSrc)
@@ -112,6 +147,16 @@ export class Parser {
                 if (!pages.includes(imgSrc)) pages.push(imgSrc)
             }
         })
+
+        if (pages.length === 0) {
+            $('img').each((_: any, el: any) => {
+                let imgSrc = ($(el).attr('src') ?? '').trim()
+                if (!imgSrc || imgSrc.includes('logo') || imgSrc.includes('data:image')) return
+                if (imgSrc.includes('resourcehub.shop') || imgSrc.includes('wp-content/uploads')) {
+                    if (!pages.includes(imgSrc)) pages.push(imgSrc)
+                }
+            })
+        }
 
         return pages
     }
