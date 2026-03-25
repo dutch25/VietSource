@@ -65,56 +65,27 @@ export class Parser {
         })
     }
 
-    parseChapters($: CheerioAPI): Chapter[] {
+    parseChapters($: CheerioAPI, mangaId: string): Chapter[] {
         const chapters: Chapter[] = []
+        const seenUrls = new Set<string>()
 
         $('a[href*="/tap-"], a[href*="/chuong-"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
+            if (!href || seenUrls.has(href)) return
+            seenUrls.add(href)
             
-            const match = href.match(/\/manga\/[^/]+\/([^/]+)\/?$/)
+            const match = href.match(/\/manga\/([^/]+)\/([^/]+)\/?$/)
             if (!match) return
 
-            const chapterId = match[1]
+            const mangaSlug = match[1]
+            if (mangaSlug !== mangaId) return
+
+            const chapterId = match[2]
             const title = $(el).find('.chapter-title').first().text().trim()
                 || $(el).text().trim()
                 || chapterId
 
-            const dateText = $(el).parents('.chapter-item').find('.post-on').first().text().trim()
-            let time = new Date()
-            if (dateText) {
-                const parsed = new Date(dateText)
-                if (!isNaN(parsed.getTime())) {
-                    time = parsed
-                }
-            }
-
-            chapters.push(App.createChapter({
-                id: chapterId,
-                chapNum: chapters.length + 1,
-                name: title,
-                time: time,
-            }))
-        })
-
-        return chapters.reverse()
-    }
-
-    parseChaptersFromAjax($: CheerioAPI): Chapter[] {
-        const chapters: Chapter[] = []
-
-        $('a[href*="/tap-"], a[href*="/chuong-"]').each((_: any, el: any) => {
-            const href = $(el).attr('href') ?? ''
-            
-            const match = href.match(/\/manga\/[^/]+\/([^/]+)\/?$/)
-            if (!match) return
-
-            const chapterId = match[1]
-            const title = $(el).find('.chapter-title').first().text().trim()
-                || $(el).text().trim()
-                || chapterId
-
-            const dateText = $(el).parents('li').find('.post-on').first().text().trim()
-                || $(el).parents('.chapter-item').find('.post-on').first().text().trim()
+            const dateText = $(el).parents('.chapter-item, li').find('.post-on').first().text().trim()
             let time = new Date()
             if (dateText) {
                 const parsed = new Date(dateText)
