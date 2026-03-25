@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 exports.TruyenTuoiThoInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -650,14 +650,13 @@ class Parser {
         const chapters = [];
         $('a[href*="/tap-"], a[href*="/chuong-"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
-            const tapMatch = href.match(/\/tap-([\d.]+)/);
-            const chuongMatch = href.match(/\/chuong-([\d.]+)/);
-            if (!tapMatch && !chuongMatch)
+            const match = href.match(/\/manga\/[^/]+\/([^/]+)\/?$/);
+            if (!match)
                 return;
-            const chapterId = tapMatch ? tapMatch[1] : chuongMatch[1];
+            const chapterId = match[1];
             const title = $(el).find('.chapter-title').first().text().trim()
                 || $(el).text().trim()
-                || `Chapter ${chapterId}`;
+                || chapterId;
             const dateText = $(el).parents('.chapter-item').find('.post-on').first().text().trim();
             let time = new Date();
             if (dateText) {
@@ -668,7 +667,7 @@ class Parser {
             }
             chapters.push(App.createChapter({
                 id: chapterId,
-                chapNum: parseFloat(chapterId) || chapters.length + 1,
+                chapNum: chapters.length + 1,
                 name: title,
                 time: time,
             }));
