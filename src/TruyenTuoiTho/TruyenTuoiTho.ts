@@ -17,7 +17,7 @@ import {
 import { Parser } from './TruyenTuoiThoParser'
 
 const BASE_URL = 'https://truyentuoitho.com'
-const WORKER_URL = 'https://YOUR-WORKER.workers.dev' // Replace with your Cloudflare Worker URL
+const WORKER_URL = 'https://YOUR-WORKER.workers.dev/chapters'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
     version: '1.0.7',
