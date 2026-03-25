@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 exports.TruyenTuoiThoInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -573,6 +573,23 @@ class TruyenTuoiTho extends types_1.Source {
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
+        try {
+            const ajaxResponse = await this.requestManager.schedule(App.createRequest({
+                url: `${BASE_URL}/wp-admin/admin-ajax.php`,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                data: `action=wp_manga_get_chapters&manga_id=${mangaId}`
+            }), 0);
+            const ajaxData = JSON.parse(ajaxResponse.data);
+            if (ajaxData && ajaxData.html) {
+                const $ = this.cheerio.load(ajaxData.html);
+                return this.parser.parseChaptersFromAjax($, mangaId);
+            }
+        }
+        catch (e) {
+        }
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}`, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseChapters($, mangaId);
@@ -666,6 +683,44 @@ class Parser {
                 || chapterId;
             let time = new Date();
             const parentEl = $(el).parents('.chapter-item, li, .wp-manga-chapter').first();
+            if (parentEl.length) {
+                const dateText = parentEl.find('.post-on, .chapter-release-date').first().text().trim();
+                if (dateText) {
+                    const parsed = new Date(dateText);
+                    if (!isNaN(parsed.getTime())) {
+                        time = parsed;
+                    }
+                }
+            }
+            chapters.push(App.createChapter({
+                id: chapterId,
+                chapNum: this.extractChapterNumber(chapterId),
+                name: title,
+                time: time,
+            }));
+        });
+        return chapters.reverse();
+    }
+    parseChaptersFromAjax($, mangaId) {
+        const chapters = [];
+        const seenUrls = new Set();
+        $('a[href*="/tap-"], a[href*="/chuong-"]').each((_, el) => {
+            const href = $(el).attr('href') ?? '';
+            if (!href || seenUrls.has(href))
+                return;
+            seenUrls.add(href);
+            const match = href.match(/\/manga\/([^/]+)\/([^/]+)\/?$/);
+            if (!match)
+                return;
+            const mangaSlug = match[1];
+            if (mangaSlug !== mangaId)
+                return;
+            const chapterId = match[2];
+            const title = $(el).find('.chapter-title').first().text().trim()
+                || $(el).text().trim()
+                || chapterId;
+            let time = new Date();
+            const parentEl = $(el).parents('li, .chapter-item, .wp-manga-chapter').first();
             if (parentEl.length) {
                 const dateText = parentEl.find('.post-on, .chapter-release-date').first().text().trim();
                 if (dateText) {
