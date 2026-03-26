@@ -11,6 +11,7 @@ import {
     SourceInfo,
     SourceIntents,
     SourceManga,
+    Tag,
     TagSection,
 } from '@paperback/types'
 
@@ -18,7 +19,7 @@ const BASE_URL = 'https://suicaodex.com'
 const API_BASE = 'https://api.weebdex.com'
 
 export const SuicaoDexInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'SuicaoDex',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -171,13 +172,16 @@ export class SuicaoDex extends Source {
         }
         const status = statusMap[attrs.status] || attrs.status || ''
 
-        const tags: any[] = []
+        const tags: Tag[] = []
         if (attrs.tags) {
             for (const tag of attrs.tags) {
-                tags.push(App.createTag({
-                    id: tag.id,
-                    label: tag.attributes.name.en || tag.attributes.name['ja-ro'] || Object.values(tag.attributes.name)[0],
-                }))
+                const label = tag.attributes.name?.en || tag.attributes.name?.['ja-ro'] || Object.values(tag.attributes.name || {})[0] || ''
+                if (label) {
+                    tags.push(App.createTag({
+                        id: tag.id,
+                        label: label,
+                    }))
+                }
             }
         }
 
@@ -259,21 +263,21 @@ export class SuicaoDex extends Source {
     }
 
     async getSearchTags(): Promise<TagSection[]> {
-        const tags: any[] = [
-            { id: '4aa2b1ce-0347-4d2a-b3a7-59576dbf40f3', label: 'Action' },
-            { id: 'b873d54d-9d8d-458c-b3fc-4d3d34d34f3e', label: 'Adventure' },
-            { id: 'e64f6749-e7f3-45a2-a4e2-68d7751d4c8b', label: 'Comedy' },
-            { id: '0a39b5a1-4f20-4a54-9d84-5c8a78c2b1b0', label: 'Drama' },
-            { id: 'c8c5b547-8fb7-4e7e-a6e5-1c8d8f9c4e1a', label: 'Fantasy' },
-            { id: '87c8c05d-a9d7-435d-9edf-b96f0d5c8c5d', label: 'Horror' },
-            { id: 'fbe6d9d8-4e6a-4e1e-9c1c-8f7e3a6b5c4d', label: 'Romance' },
-            { id: '3e4a8d7e-5c6b-4a8e-9d2f-6e7c8b5a4d3e', label: 'Sci-Fi' },
-            { id: '2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6a', label: 'Slice of Life' },
-            { id: '5a6b7c8d-9e0f-4a1b-2c3d-4e5f6a7b8c9d', label: 'Sports' },
-            { id: '9d8e7f6a-5b4c-3d2e-1f0a-9b8c7d6e5f4a', label: 'Supernatural' },
-            { id: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d', label: 'Mystery' },
-            { id: '6c7d8e9f-0a1b-2c3d-4e5f-6a7b8c9d0e1f', label: 'Psychological' },
-            { id: '0f1e2d3c-4b5a-6e7f-8a9b-0c1d2e3f4a5b', label: 'Thriller' },
+        const tags: Tag[] = [
+            App.createTag({ id: '4aa2b1ce-0347-4d2a-b3a7-59576dbf40f3', label: 'Action' }),
+            App.createTag({ id: 'b873d54d-9d8d-458c-b3fc-4d3d34d34f3e', label: 'Adventure' }),
+            App.createTag({ id: 'e64f6749-e7f3-45a2-a4e2-68d7751d4c8b', label: 'Comedy' }),
+            App.createTag({ id: '0a39b5a1-4f20-4a54-9d84-5c8a78c2b1b0', label: 'Drama' }),
+            App.createTag({ id: 'c8c5b547-8fb7-4e7e-a6e5-1c8d8f9c4e1a', label: 'Fantasy' }),
+            App.createTag({ id: '87c8c05d-a9d7-435d-9edf-b96f0d5c8c5d', label: 'Horror' }),
+            App.createTag({ id: 'fbe6d9d8-4e6a-4e1e-9c1c-8f7e3a6b5c4d', label: 'Romance' }),
+            App.createTag({ id: '3e4a8d7e-5c6b-4a8e-9d2f-6e7c8b5a4d3e', label: 'Sci-Fi' }),
+            App.createTag({ id: '2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6a', label: 'Slice of Life' }),
+            App.createTag({ id: '5a6b7c8d-9e0f-4a1b-2c3d-4e5f6a7b8c9d', label: 'Sports' }),
+            App.createTag({ id: '9d8e7f6a-5b4c-3d2e-1f0a-9b8c7d6e5f4a', label: 'Supernatural' }),
+            App.createTag({ id: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d', label: 'Mystery' }),
+            App.createTag({ id: '6c7d8e9f-0a1b-2c3d-4e5f-6a7b8c9d0e1f', label: 'Psychological' }),
+            App.createTag({ id: '0f1e2d3c-4b5a-6e7f-8a9b-0c1d2e3f4a5b', label: 'Thriller' }),
         ]
 
         return [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })]
