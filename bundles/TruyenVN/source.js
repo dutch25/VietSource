@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenVNParser_1 = require("./TruyenVNParser");
 const BASE_URL = 'https://truyenvn.shop';
 exports.TruyenVNInfo = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -605,13 +605,20 @@ class Parser {
         $('.page-listing-item').each((_, el) => {
             const titleLink = $('.post-title h3 a', el).first();
             const title = titleLink.text().trim();
-            const href = titleLink.attr('href') ?? '';
+            let href = titleLink.attr('href') ?? '';
             if (!href || !title)
                 return;
             const idMatch = href.match(/\/truyen-tranh\/([^/]+)\/?$/);
-            if (!idMatch)
-                return;
-            const id = idMatch[1].trim();
+            if (!idMatch) {
+                const khotruyenMatch = href.match(/khotruyen\.ac\/truyen-tranh\/([^/]+)\/?$/);
+                if (khotruyenMatch) {
+                    href = `https://truyenvn.shop/truyen-tranh/${khotruyenMatch[1]}`;
+                }
+                else {
+                    return;
+                }
+            }
+            const id = idMatch ? idMatch[1].trim() : '';
             if (!id)
                 return;
             const img = $('.item-thumb img', el).first();
