@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenVNParser_1 = require("./TruyenVNParser");
 const BASE_URL = 'https://truyenvn.shop';
 exports.TruyenVNInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -508,7 +508,7 @@ class TruyenVN extends types_1.Source {
         const sections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/truyen-tranh/` },
             { id: 'manhwa', title: 'Manhwa', url: `${BASE_URL}/the-loai/manhwa/` },
-            { id: 'dam-my', title: 'Đam Mỹ', url: `${BASE_URL}/the-loai/dam-my/` },
+            { id: 'boylove', title: 'BoyLove', url: `${BASE_URL}/the-loai/boylove/` },
             { id: '18+', title: 'Truyện tranh 18+', url: `${BASE_URL}/the-loai/truyen-tranh-18/` },
         ];
         for (const section of sections) {
@@ -543,7 +543,7 @@ class TruyenVN extends types_1.Source {
         const urlMap = {
             'latest': `${BASE_URL}/truyen-tranh/page/${page}/`,
             'manhwa': `${BASE_URL}/the-loai/manhwa/page/${page}/`,
-            'dam-my': `${BASE_URL}/the-loai/dam-my/page/${page}/`,
+            'boylove': `${BASE_URL}/the-loai/boylove/page/${page}/`,
             '18+': `${BASE_URL}/the-loai/truyen-tranh-18/page/${page}/`,
         };
         const url = urlMap[homepageSectionId] ?? `${BASE_URL}/the-loai/${homepageSectionId}/page/${page}/`;
