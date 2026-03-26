@@ -19,7 +19,7 @@ import { Parser } from './TruyenVNParser'
 const BASE_URL = 'https://truyenvn.shop'
 
 export const TruyenVNInfo: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -64,7 +64,7 @@ export class TruyenVN extends Source {
         const sections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/truyen-tranh/` },
             { id: 'manhwa', title: 'Manhwa', url: `${BASE_URL}/the-loai/manhwa/` },
-            { id: 'boylove', title: 'BoyLove', url: `${BASE_URL}/the-loai/boylove/` },
+            { id: 'manhua', title: 'Manhua', url: `${BASE_URL}/the-loai/manhua/` },
             { id: '18+', title: 'Truyện tranh 18+', url: `${BASE_URL}/the-loai/truyen-tranh-18/` },
         ]
 
@@ -104,7 +104,7 @@ export class TruyenVN extends Source {
         const urlMap: Record<string, string> = {
             'latest': `${BASE_URL}/truyen-tranh/page/${page}/`,
             'manhwa': `${BASE_URL}/the-loai/manhwa/page/${page}/`,
-            'boylove': `${BASE_URL}/the-loai/boylove/page/${page}/`,
+            'manhua': `${BASE_URL}/the-loai/manhua/page/${page}/`,
             '18+': `${BASE_URL}/the-loai/truyen-tranh-18/page/${page}/`,
         }
 
