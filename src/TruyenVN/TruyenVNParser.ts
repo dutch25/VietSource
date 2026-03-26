@@ -27,9 +27,17 @@ export class Parser {
             if (!id) return
 
             const img = $('.item-thumb img', el).first()
-            const rawImage = img.attr('src') ?? img.attr('data-src') ?? ''
+            let rawImage = img.attr('src') ?? img.attr('data-src') ?? img.attr('data-lazy-src') ?? ''
+            
+            if (!rawImage || rawImage.includes('data:image')) {
+                const styleBg = $('.item-thumb', el).css('background-image')
+                if (styleBg && styleBg !== 'none') {
+                    const match = styleBg.match(/url\(["']?(.+?)["']?\)/)
+                    if (match) rawImage = match[1]
+                }
+            }
 
-            if (!rawImage) return
+            if (!rawImage || rawImage.includes('data:image')) return
 
             results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }))
         })

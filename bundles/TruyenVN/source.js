@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenVNParser_1 = require("./TruyenVNParser");
 const BASE_URL = 'https://truyenvn.shop';
 exports.TruyenVNInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -615,8 +615,16 @@ class Parser {
             if (!id)
                 return;
             const img = $('.item-thumb img', el).first();
-            const rawImage = img.attr('src') ?? img.attr('data-src') ?? '';
-            if (!rawImage)
+            let rawImage = img.attr('src') ?? img.attr('data-src') ?? img.attr('data-lazy-src') ?? '';
+            if (!rawImage || rawImage.includes('data:image')) {
+                const styleBg = $('.item-thumb', el).css('background-image');
+                if (styleBg && styleBg !== 'none') {
+                    const match = styleBg.match(/url\(["']?(.+?)["']?\)/);
+                    if (match)
+                        rawImage = match[1];
+                }
+            }
+            if (!rawImage || rawImage.includes('data:image'))
                 return;
             results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }));
         });
