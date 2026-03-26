@@ -8,6 +8,7 @@ A **Paperback 0.8** extension supporting **Vietnamese manga sources**:
 | **DamCoNuong** | damconuong.city | ✅ Working |
 | **HV2T** | hv2t.store | ✅ Working (API + Proxy) |
 | **HentaiVN** | hentaivn.college | ⚠️ ISP Blocked (Pending test) |
+| **TruyenVN** | truyenvn.shop | ✅ Working |
 
 ## Add to Paperback
 
@@ -39,3 +40,9 @@ A **Paperback 0.8** extension supporting **Vietnamese manga sources**:
 
 ### HentaiVN (hentaivn.college)
 - ⚠️ Pending testing (Currently blocked by some ISPs)
+
+### TruyenVN (truyenvn.shop)
+- Browse: Mới Cập Nhật, Truyện tranh 18+, Manhwa, Manhua
+- Search functionality
+- Manga details with chapter list
+- Chapter reading
