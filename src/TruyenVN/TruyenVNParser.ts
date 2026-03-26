@@ -13,12 +13,12 @@ export class Parser {
     parseHomePage($: CheerioAPI): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
 
-        $('.page-listing-item').each((_: any, el: any) => {
+        const parseItem = (el: any) => {
             const titleLink = $('.post-title h3 a', el).first()
             const title = titleLink.text().trim()
             let href = titleLink.attr('href') ?? ''
 
-            if (!href || !title) return
+            if (!href || !title) return null
 
             const idMatch = href.match(/\/truyen-tranh\/([^/]+)\/?$/)
             if (!idMatch) {
@@ -26,12 +26,12 @@ export class Parser {
                 if (khotruyenMatch) {
                     href = `https://truyenvn.shop/truyen-tranh/${khotruyenMatch[1]}`
                 } else {
-                    return
+                    return null
                 }
             }
 
             const id = idMatch ? idMatch[1].trim() : ''
-            if (!id) return
+            if (!id) return null
 
             const img = $('.item-thumb img', el).first()
             let rawImage = img.attr('src') ?? img.attr('data-src') ?? img.attr('data-lazy-src') ?? ''
@@ -51,9 +51,21 @@ export class Parser {
                 }
             }
 
-            if (!rawImage || rawImage.includes('data:image')) return
+            if (!rawImage || rawImage.includes('data:image')) return null
 
-            results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }))
+            return App.createPartialSourceManga({ mangaId: id, title, image: rawImage })
+        }
+
+        $('.page-listing-item').each((_: any, el: any) => {
+            const item = parseItem(el)
+            if (item) results.push(item)
+        })
+
+        $('[class*="manga"], [class*="post-"]').each((_: any, el: any) => {
+            if ($('.post-title h3 a', el).length > 0 && $('.item-thumb', el).length > 0) {
+                const item = parseItem(el)
+                if (item) results.push(item)
+            }
         })
 
         return this.deduplicate(results)
