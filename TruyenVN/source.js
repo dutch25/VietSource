@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenVNParser_1 = require("./TruyenVNParser");
 const BASE_URL = 'https://truyenvn.shop';
 exports.TruyenVNInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -602,12 +602,12 @@ exports.Parser = void 0;
 class Parser {
     parseHomePage($) {
         const results = [];
-        $('.page-listing-item').each((_, el) => {
+        const parseItem = (el) => {
             const titleLink = $('.post-title h3 a', el).first();
             const title = titleLink.text().trim();
             let href = titleLink.attr('href') ?? '';
             if (!href || !title)
-                return;
+                return null;
             const idMatch = href.match(/\/truyen-tranh\/([^/]+)\/?$/);
             if (!idMatch) {
                 const khotruyenMatch = href.match(/khotruyen\.ac\/truyen-tranh\/([^/]+)\/?$/);
@@ -615,12 +615,12 @@ class Parser {
                     href = `https://truyenvn.shop/truyen-tranh/${khotruyenMatch[1]}`;
                 }
                 else {
-                    return;
+                    return null;
                 }
             }
             const id = idMatch ? idMatch[1].trim() : '';
             if (!id)
-                return;
+                return null;
             const img = $('.item-thumb img', el).first();
             let rawImage = img.attr('src') ?? img.attr('data-src') ?? img.attr('data-lazy-src') ?? '';
             if (rawImage && rawImage.includes('khotruyen.ac')) {
@@ -638,8 +638,20 @@ class Parser {
                 }
             }
             if (!rawImage || rawImage.includes('data:image'))
-                return;
-            results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }));
+                return null;
+            return App.createPartialSourceManga({ mangaId: id, title, image: rawImage });
+        };
+        $('.page-listing-item').each((_, el) => {
+            const item = parseItem(el);
+            if (item)
+                results.push(item);
+        });
+        $('[class*="manga"], [class*="post-"]').each((_, el) => {
+            if ($('.post-title h3 a', el).length > 0 && $('.item-thumb', el).length > 0) {
+                const item = parseItem(el);
+                if (item)
+                    results.push(item);
+            }
         });
         return this.deduplicate(results);
     }
