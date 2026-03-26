@@ -19,7 +19,7 @@ import { Parser } from './TruyenVNParser'
 const BASE_URL = 'https://truyenvn.shop'
 
 export const TruyenVNInfo: SourceInfo = {
-    version: '1.0.6',
+    version: '1.0.7',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -63,9 +63,9 @@ export class TruyenVN extends Source {
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const sections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/truyen-tranh/` },
+            { id: '18+', title: 'Truyện tranh 18+', url: `${BASE_URL}/the-loai/truyen-tranh-18/?m_orderby=views` },
             { id: 'manhwa', title: 'Manhwa', url: `${BASE_URL}/the-loai/manhwa/` },
             { id: 'manhua', title: 'Manhua', url: `${BASE_URL}/the-loai/manhua/` },
-            { id: '18+', title: 'Truyện tranh 18+', url: `${BASE_URL}/the-loai/truyen-tranh-18/` },
         ]
 
         for (const section of sections) {
@@ -103,9 +103,9 @@ export class TruyenVN extends Source {
 
         const urlMap: Record<string, string> = {
             'latest': `${BASE_URL}/truyen-tranh/page/${page}/`,
+            '18+': `${BASE_URL}/the-loai/truyen-tranh-18/page/${page}/?m_orderby=views`,
             'manhwa': `${BASE_URL}/the-loai/manhwa/page/${page}/`,
             'manhua': `${BASE_URL}/the-loai/manhua/page/${page}/`,
-            '18+': `${BASE_URL}/the-loai/truyen-tranh-18/page/${page}/`,
         }
 
         const url = urlMap[homepageSectionId] ?? `${BASE_URL}/the-loai/${homepageSectionId}/page/${page}/`
