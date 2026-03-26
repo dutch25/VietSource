@@ -16,15 +16,15 @@ import {
 } from '@paperback/types'
 
 const BASE_URL = 'https://suicaodex.com'
-const API_BASE = 'https://api.weebdex.com'
+const API_BASE = 'https://api.mangadex.org'
 
 export const SuicaoDexInfo: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'SuicaoDex',
     icon: 'icon.png',
     author: 'Dutch25',
     authorWebsite: 'https://github.com/Dutch25',
-    description: 'Extension for suicaodex.com (WeebDex/MangaDex frontend)',
+    description: 'Extension for suicaodex.com (MangaDex frontend)',
     contentRating: ContentRating.ADULT,
     websiteBaseURL: BASE_URL,
     sourceTags: [
@@ -33,14 +33,30 @@ export const SuicaoDexInfo: SourceInfo = {
     ],
     intents:
         SourceIntents.MANGA_CHAPTERS |
-        SourceIntents.HOMEPAGE_SECTIONS,
+        SourceIntents.HOMEPAGE_SECTIONS |
+        SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 }
 
 export class SuicaoDex extends Source {
     requestManager = App.createRequestManager({
         requestsPerSecond: 3,
         requestTimeout: 30000,
+        interceptor: {
+            interceptRequest: async (request) => {
+                request.headers = {
+                    ...(request.headers ?? {}),
+                    'referer': 'https://suicaodex.com/',
+                    'user-agent': await this.requestManager.getDefaultUserAgent(),
+                }
+                return request
+            },
+            interceptResponse: async (response) => response,
+        }
     })
+
+    async getCloudflareBypassRequestAsync(): Promise<any> {
+        return App.createRequest({ url: 'https://api.mangadex.org', method: 'GET' })
+    }
 
     private async fetchApi<T>(url: string): Promise<T> {
         const response = await this.requestManager.schedule(
@@ -59,7 +75,7 @@ export class SuicaoDex extends Source {
     private getCover(manga: any, mangaId: string): string {
         const coverRel = manga.relationships?.find((r: any) => r.type === 'cover_art')
         if (coverRel?.attributes?.file) {
-            return `https://uploads.weebdex.com/cover/${mangaId}/${coverRel.attributes.file}.256.jpg`
+            return `https://uploads.mangadex.org/cover/${mangaId}/${coverRel.attributes.file}.256.jpg`
         }
         return ''
     }
@@ -108,7 +124,7 @@ export class SuicaoDex extends Source {
             const coverRel = manga.relationships?.find((r: any) => r.type === 'cover_art')
             let image = ''
             if (coverRel?.attributes?.file) {
-                image = `https://uploads.weebdex.com/cover/${id}/${coverRel.attributes.file}.256.jpg`
+                image = `https://uploads.mangadex.org/cover/${id}/${coverRel.attributes.file}.256.jpg`
             }
 
             results.push(App.createPartialSourceManga({ mangaId: id, title, image }))
@@ -153,7 +169,7 @@ export class SuicaoDex extends Source {
         let image = ''
         const coverRel = manga.relationships?.find((r: any) => r.type === 'cover_art')
         if (coverRel?.attributes?.file) {
-            image = `https://uploads.weebdex.com/cover/${mangaId}/${coverRel.attributes.file}.512.jpg`
+            image = `https://uploads.mangadex.org/cover/${mangaId}/${coverRel.attributes.file}.512.jpg`
         }
 
         const desc = Object.values(attrs.description || {})[0] as string || ''

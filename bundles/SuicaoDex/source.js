@@ -463,14 +463,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SuicaoDex = exports.SuicaoDexInfo = void 0;
 const types_1 = require("@paperback/types");
 const BASE_URL = 'https://suicaodex.com';
-const API_BASE = 'https://api.weebdex.com';
+const API_BASE = 'https://api.mangadex.org';
 exports.SuicaoDexInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'SuicaoDex',
     icon: 'icon.png',
     author: 'Dutch25',
     authorWebsite: 'https://github.com/Dutch25',
-    description: 'Extension for suicaodex.com (WeebDex/MangaDex frontend)',
+    description: 'Extension for suicaodex.com (MangaDex frontend)',
     contentRating: types_1.ContentRating.ADULT,
     websiteBaseURL: BASE_URL,
     sourceTags: [
@@ -478,7 +478,8 @@ exports.SuicaoDexInfo = {
         { text: '18+', type: types_1.BadgeColor.YELLOW },
     ],
     intents: types_1.SourceIntents.MANGA_CHAPTERS |
-        types_1.SourceIntents.HOMEPAGE_SECTIONS,
+        types_1.SourceIntents.HOMEPAGE_SECTIONS |
+        types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
 class SuicaoDex extends types_1.Source {
     constructor() {
@@ -486,7 +487,21 @@ class SuicaoDex extends types_1.Source {
         this.requestManager = App.createRequestManager({
             requestsPerSecond: 3,
             requestTimeout: 30000,
+            interceptor: {
+                interceptRequest: async (request) => {
+                    request.headers = {
+                        ...(request.headers ?? {}),
+                        'referer': 'https://suicaodex.com/',
+                        'user-agent': await this.requestManager.getDefaultUserAgent(),
+                    };
+                    return request;
+                },
+                interceptResponse: async (response) => response,
+            }
         });
+    }
+    async getCloudflareBypassRequestAsync() {
+        return App.createRequest({ url: 'https://api.mangadex.org', method: 'GET' });
     }
     async fetchApi(url) {
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
@@ -501,7 +516,7 @@ class SuicaoDex extends types_1.Source {
     getCover(manga, mangaId) {
         const coverRel = manga.relationships?.find((r) => r.type === 'cover_art');
         if (coverRel?.attributes?.file) {
-            return `https://uploads.weebdex.com/cover/${mangaId}/${coverRel.attributes.file}.256.jpg`;
+            return `https://uploads.mangadex.org/cover/${mangaId}/${coverRel.attributes.file}.256.jpg`;
         }
         return '';
     }
@@ -546,7 +561,7 @@ class SuicaoDex extends types_1.Source {
             const coverRel = manga.relationships?.find((r) => r.type === 'cover_art');
             let image = '';
             if (coverRel?.attributes?.file) {
-                image = `https://uploads.weebdex.com/cover/${id}/${coverRel.attributes.file}.256.jpg`;
+                image = `https://uploads.mangadex.org/cover/${id}/${coverRel.attributes.file}.256.jpg`;
             }
             results.push(App.createPartialSourceManga({ mangaId: id, title, image }));
         }
@@ -581,7 +596,7 @@ class SuicaoDex extends types_1.Source {
         let image = '';
         const coverRel = manga.relationships?.find((r) => r.type === 'cover_art');
         if (coverRel?.attributes?.file) {
-            image = `https://uploads.weebdex.com/cover/${mangaId}/${coverRel.attributes.file}.512.jpg`;
+            image = `https://uploads.mangadex.org/cover/${mangaId}/${coverRel.attributes.file}.512.jpg`;
         }
         const desc = Object.values(attrs.description || {})[0] || '';
         const authorRel = manga.relationships?.find((r) => r.type === 'author');
