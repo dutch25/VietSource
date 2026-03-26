@@ -19,7 +19,7 @@ const BASE_URL = 'https://suicaodex.com'
 const API_BASE = 'https://api.mangadex.org'
 
 export const SuicaoDexInfo: SourceInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'SuicaoDex',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -98,8 +98,10 @@ export class SuicaoDex extends Source {
 
         for (const section of sections) {
             try {
-                const url = `${API_BASE}/manga?limit=20&${section.params}&includes[]=cover_art&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`
+                const url = `${API_BASE}/manga?limit=20&${section.params}&includes[]=cover_art&includes[]=author&includes[]=artist`
+                console.log('Fetching:', url)
                 const data = await this.fetchApi<any>(url)
+                console.log('Got data:', data.data?.length, 'items')
                 const manga = this.parseMangaList(data.data)
                 
                 sectionCallback(App.createHomeSection({
@@ -110,6 +112,7 @@ export class SuicaoDex extends Source {
                     items: manga,
                 }))
             } catch (e) {
+                console.log('Error:', e)
             }
         }
     }
