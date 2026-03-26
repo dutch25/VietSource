@@ -19,7 +19,7 @@ import { Parser } from './TruyenVNParser'
 const BASE_URL = 'https://truyenvn.shop'
 
 export const TruyenVNInfo: SourceInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',

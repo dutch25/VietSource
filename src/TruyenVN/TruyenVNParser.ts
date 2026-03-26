@@ -36,11 +36,18 @@ export class Parser {
             const img = $('.item-thumb img', el).first()
             let rawImage = img.attr('src') ?? img.attr('data-src') ?? img.attr('data-lazy-src') ?? ''
             
+            if (rawImage && rawImage.includes('khotruyen.ac')) {
+                rawImage = rawImage.replace('khotruyen.ac/wp-content', 'truyenvn.shop/wp-content')
+            }
+
             if (!rawImage || rawImage.includes('data:image')) {
                 const styleBg = $('.item-thumb', el).css('background-image')
                 if (styleBg && styleBg !== 'none') {
                     const match = styleBg.match(/url\(["']?(.+?)["']?\)/)
                     if (match) rawImage = match[1]
+                    if (rawImage && rawImage.includes('khotruyen.ac')) {
+                        rawImage = rawImage.replace('khotruyen.ac/wp-content', 'truyenvn.shop/wp-content')
+                    }
                 }
             }
 
