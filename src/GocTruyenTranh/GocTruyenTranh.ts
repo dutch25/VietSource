@@ -322,11 +322,11 @@ export class GocTruyenTranh implements SearchResultsProviding, MangaProviding, C
 
     async getCloudflareBypassRequestAsync(): Promise<Request> {
         return App.createRequest({
-            url: `${DOMAIN}trang-chu`,
+            url: DOMAIN,
             method: 'GET',
             headers: {
-                'referer': `${DOMAIN}`,
-                'origin': `${DOMAIN}`,
+                'referer': DOMAIN,
+                'origin': DOMAIN,
                 'user-agent': await this.requestManager.getDefaultUserAgent()
             }
         });
