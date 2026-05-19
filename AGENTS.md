@@ -3,12 +3,13 @@
 ## Project Overview
 
 This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
-- **vi-hentai.pro** - Built-in source `ViHentai`
 - **nhentaiclub.space** - Built-in source `NHentaiClub`
 - **damconuong.lol** - Built-in source `DamCoNuong`
-- **goctruyentranh.co** - Built-in source `GocTruyenTranh`
+- **truyenvn.sbs** - Built-in source `TruyenVN`
 - **truyenqqko.com** - Built-in source `TruyenQQ`
-- **toptruyentranh.org** - Built-in source `TopTruyen`
+- **www.toptruyenzone2.com** - Built-in source `TopTruyen`
+- **hv2t.store** - Built-in source `HV2T`
+- **goctruyentranh.co** - Built-in source `GocTruyenTranh` (Broken/Ignored)
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -23,10 +24,6 @@ Users can browse, search, and read manga from these sites through the Paperback 
 ```
 dutch-extension/
 ├── src/
-│   ├── ViHentai/
-│   │   ├── ViHentai.ts           ← Main source implementation
-│   │   ├── ViHentaiParser.ts     ← HTML parsing logic
-│   │   └── includes/icon.png     ← Extension icon
 │   ├── NHentaiClub/
 │   │   ├── NHentaiClub.ts        ← Main source implementation
 │   │   ├── NHentaiClubParser.ts  ← HTML parsing logic
@@ -35,9 +32,14 @@ dutch-extension/
 │   │   ├── DamCoNuong.ts         ← Main source implementation
 │   │   ├── DamCoNuongParser.ts   ← HTML parsing logic
 │   │   └── includes/icon.png     ← Extension icon
-│   ├── GocTruyenTranh/
+│   ├── TruyenVN/
+│   │   ├── TruyenVN.ts           ← Main source implementation
+│   │   ├── TruyenVNParser.ts     ← HTML parsing logic
+│   │   └── includes/icon.png     ← Extension icon
 │   ├── TruyenQQ/
-│   └── TopTruyen/
+│   ├── TopTruyen/
+│   ├── HV2T/
+│   └── GocTruyenTranh/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -50,49 +52,6 @@ dutch-extension/
 - `npm run bundle` - Build the extension
 - `npm run serve` - Start local server for Paperback to connect
 - `npm run dev` - Auto-rebuild on changes
-
----
-
-# Source 1: ViHentai
-
-**Website**: https://vi-hentai.pro
-
-### SourceInfo
-- **Version**: 1.1.29
-- **Author**: Dutch25
-- **Content Rating**: ADULT (18+)
-- **Tags**: "Adult" (RED), "18+" (YELLOW)
-- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
-
-### URL Patterns
-- Homepage: `https://vi-hentai.pro/`
-- Manga: `https://vi-hentai.pro/truyen/{mangaId}`
-- Chapter: `https://vi-hentai.pro/truyen/{mangaId}/{chapterId}`
-- Search: `https://vi-hentai.pro/danh-sach?page={page}&keyword={search}`
-- Genre: `https://vi-hentai.pro/the-loai/{genre}?page={page}`
-
-### Homepage Sections
-1. **Mới Cập Nhật** (Latest) - `/`
-2. **Phổ Biến Nhất** (Popular) - `/?sort=-views`
-3. **Truuyện Mới** (New) - `/?sort=-created_at`
-
-### How It Works
-
-1. **getHomePageSections** - Fetches homepage and parses `.manga-vertical` elements
-2. **getSearchResults** - Searches via `/danh-sach` or filters by genre
-3. **getMangaDetails** - Parses manga info from `/truyen/{mangaId}`: title, cover, author, status, description, genres
-4. **getChapters** - Fetches reader page and parses `#chapter-selector` dropdown options
-5. **getChapterDetails** - Returns page images from chapter page
-   - ⚠️ **BROKEN**: Site uses Livewire - images load dynamically via AJAX, not in initial HTML
-   - Has fallbacks that don't work properly
-
-### Image CDN
-- `img.shousetsu.dev` - Behind Cloudflare protection
-- Requires cloudflare bypass headers
-
-### Known Issues
-- Chapter images don't load - Livewire renders content after page load
-- The extension can't extract images properly (shows same test images for all chapters)
 
 ---
 
@@ -124,7 +83,7 @@ dutch-extension/
 **Website**: https://nhentaiclub.space
 
 ### SourceInfo
-- **Version**: 1.1.50
+- **Version**: 1.1.73
 - **Author**: Dutch25
 - **Content Rating**: ADULT (18+)
 - **Tags**: "Adult" (RED), "18+" (YELLOW)
@@ -166,20 +125,15 @@ dutch-extension/
 
 ### Search Tags
 - 130+ genres defined in `NHentaiClubParser.getSearchTags()`
-- Tags: ahegao, anal, bdsm, big-ass, big-boobs, blowjobs, cosplay, doujinshi, ecchi, futanari, harem, incest, milf, netorare, ntr, oral, rape, tentacles, threesome, virgin, yaoi, yuri, and more
-
-### Known Issues
-- CDN images (`i*.nhentaiclub.shop`) are behind Cloudflare - proxy can't bypass
-- Shows 403 when loading chapter images
 
 ---
 
-# Source 3: DamCoNuong
+# Source: DamCoNuong
 
-**Website**: https://damconuong.city
+**Website**: https://damconuong.lol
 
 ### SourceInfo
-- **Version**: 1.0.9
+- **Version**: 1.1.2
 - **Author**: Dutch25
 - **Content Rating**: ADULT (18+)
 - **Tags**: "Adult" (RED), "18+" (YELLOW)
@@ -197,10 +151,59 @@ dutch-extension/
 2. **getSearchResults** - Searches via `/tim-kiem`.
 3. **getMangaDetails** - Parses manga details from `/truyen/{mangaId}`.
 4. **getChapters** - Extracts the chapter list from the individual truyen info page.
-5. **getChapterDetails** - Scrapes high-quality image URLs from chapter reader pages using relaxed image filters. 
+5. **getChapterDetails** - Scrapes high-quality image URLs from chapter reader pages using relaxed image filters.
 
-### Known Issues
-- **UI Card Pollution**: Some manga cards on the homepage might still show "Chapter 22", "65", "80" etc. incorrectly in the title or subtitle area due to dynamic site layout changes. 
+---
+
+# Source: TruyenVN
+
+**Website**: https://truyenvn.sbs
+
+### SourceInfo
+- **Version**: 1.0.8
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
+
+### URL Patterns
+- Homepage: `https://truyenvn.sbs/`
+- Manga: `https://truyenvn.sbs/truyen-tranh/{mangaId}`
+- Chapter: `https://truyenvn.sbs/truyen-tranh/{mangaId}/{chapterId}`
+- Search: `https://truyenvn.sbs/?s={search}`
+
+---
+
+# Source: TruyenQQ
+
+**Website**: https://truuyenqqko.com
+
+### SourceInfo
+- **Version**: 1.1.6
+- **Author**: AlanNois
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
+
+### URL Patterns
+- Homepage: `https://truyenqqko.com/`
+- Manga: `https://truyenqqko.com/truyen-tranh/{mangaId}`
+- Chapter: `https://truyenqqko.com/truyen-tranh/{mangaId}/{chapterId}`
+- Search: `https://truyenqqko.com/tim-kiem/trang-1?q={search}`
+
+---
+
+# Source: TopTruyen
+
+**Website**: https://www.toptruyenzone2.com
+
+### SourceInfo
+- **Version**: 1.1.6
+- **Author**: AlanNois
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
+
+### URL Patterns
+- Homepage: `https://www.toptruyenzone2.com/`
+- Manga: `https://www.toptruyenzone2.com/truyen-tranh/{mangaId}`
+- Chapter: `https://www.toptruyenzone2.com/truyen-tranh/{mangaId}/{chapterId}`
 
 ---
 
@@ -244,4 +247,3 @@ npm version patch && npm run bundle && git add bundles/ package.json && git comm
 # Deployment
 
 - Push to main branch triggers auto-deploy to GitHub Pages
-
