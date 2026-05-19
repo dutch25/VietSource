@@ -712,8 +712,8 @@ class TruyenQQ {
             url: DOMAIN,
             method: 'GET',
             headers: {
-                'referer': `${DOMAIN}/`,
-                'origin': `${DOMAIN}/`,
+                'referer': DOMAIN,
+                'origin': DOMAIN,
                 'user-agent': await this.requestManager.getDefaultUserAgent()
             }
         });
