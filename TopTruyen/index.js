@@ -460,445 +460,468 @@ __exportStar(require("./compat/DyamicUI"), exports);
 },{"./base/index":7,"./compat/DyamicUI":16,"./generated/_exports":60}],62:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HentaiVN = exports.HentaiVNInfo = void 0;
+exports.TopTruyen = exports.TopTruyenInfo = exports.isLastPage = void 0;
 const types_1 = require("@paperback/types");
-const HentaiVNParser_1 = require("./HentaiVNParser");
-const BASE_URL = 'https://hentaivn.college';
-const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'; // Reuse proxy if images are blocked
-exports.HentaiVNInfo = {
-    version: '1.0.3',
-    name: 'HentaiVN',
-    icon: 'icon.png',
-    author: 'Dutch25',
-    authorWebsite: 'https://github.com/Dutch25',
-    description: 'Extension for HentaiVN (hentaivn.college)',
-    contentRating: types_1.ContentRating.ADULT,
-    websiteBaseURL: BASE_URL,
-    sourceTags: [
-        { text: 'Adult', type: types_1.BadgeColor.RED },
-        { text: '18+', type: types_1.BadgeColor.YELLOW },
-    ],
-    intents: types_1.SourceIntents.MANGA_CHAPTERS |
-        types_1.SourceIntents.HOMEPAGE_SECTIONS |
-        types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
+const TopTruyenParser_1 = require("./TopTruyenParser");
+const DOMAIN = 'https://toptruyentranh.org/';
+const isLastPage = ($) => {
+    // try with span else a tag
+    let current = $('ul.pagination li.page-item.active span').text();
+    if (!current)
+        current = $('ul.pagination li.page-item.active a').text();
+    const lastPage = $('ul.pagination li.page-item:nth-last-child(2) a').text();
+    if (current) {
+        if (!lastPage) {
+            const hasNextButton = $('ul.pagination a[rel="next"]').length > 0;
+            return !hasNextButton;
+        }
+        return (+lastPage) === (+current);
+    }
+    return true;
 };
-class HentaiVN extends types_1.Source {
-    constructor() {
-        super(...arguments);
-        this.parser = new HentaiVNParser_1.Parser();
+exports.isLastPage = isLastPage;
+exports.TopTruyenInfo = {
+    version: '1.1.5',
+    name: 'TopTruyen',
+    icon: 'icon.png',
+    author: 'AlanNois',
+    authorWebsite: 'https://github.com/AlanNois/',
+    description: 'Extension that pulls manga from TopTruyen.',
+    contentRating: types_1.ContentRating.EVERYONE,
+    websiteBaseURL: DOMAIN,
+    sourceTags: [
+        {
+            text: 'Recommended',
+            type: types_1.BadgeColor.BLUE
+        },
+        {
+            text: 'Notifications',
+            type: types_1.BadgeColor.GREEN
+        },
+    ],
+    intents: types_1.SourceIntents.MANGA_CHAPTERS | types_1.SourceIntents.HOMEPAGE_SECTIONS
+};
+class TopTruyen {
+    constructor(cheerio) {
+        this.cheerio = cheerio;
         this.requestManager = App.createRequestManager({
-            requestsPerSecond: 3,
-            requestTimeout: 30000,
+            requestsPerSecond: 4,
+            requestTimeout: 50000,
             interceptor: {
                 interceptRequest: async (request) => {
                     request.headers = {
                         ...(request.headers ?? {}),
-                        'referer': BASE_URL,
-                        'user-agent': await this.requestManager.getDefaultUserAgent(),
+                        ...{
+                            'referer': DOMAIN,
+                            'user-agent': await this.requestManager.getDefaultUserAgent(),
+                        }
                     };
                     return request;
                 },
                 interceptResponse: async (response) => {
                     return response;
-                },
+                }
             }
         });
+        this.parser = new TopTruyenParser_1.Parser();
     }
-    async getCloudflareBypassRequestAsync() {
-        return App.createRequest({ url: BASE_URL, method: 'GET' });
+    getMangaShareUrl(mangaId) {
+        return `${DOMAIN}truyen-tranh/${mangaId}`;
     }
-    buildRequest(url) {
-        return App.createRequest({ url, method: 'GET' });
-    }
-    slugFromUrl(url) {
-        return url.replace(/\/$/, '').split('/').pop() ?? url;
-    }
-    async fetchHTML(url) {
-        const response = await this.requestManager.schedule(this.buildRequest(url), 0);
+    async DOMHTML(url) {
+        const request = App.createRequest({
+            url: url,
+            method: 'GET',
+        });
+        const response = await this.requestManager.schedule(request, 1);
         return this.cheerio.load(response.data);
     }
-    async getHomePageSections(sectionCallback) {
-        const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: BASE_URL },
-            { id: 'full', title: 'Truyện Full', url: `${BASE_URL}/tim-truyen?status=completed` },
-            { id: 'top', title: 'Top View', url: `${BASE_URL}/tim-truyen?sort=view` },
-        ];
-        for (const section of sections) {
-            sectionCallback(App.createHomeSection({
-                id: section.id,
-                title: section.title,
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal,
-            }));
-            const $ = await this.fetchHTML(section.url);
-            const items = this.parser.parseHomePage($, PROXY_URL);
-            sectionCallback(App.createHomeSection({
-                id: section.id,
-                title: section.title,
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal,
-                items,
-            }));
-        }
-    }
     async getMangaDetails(mangaId) {
-        const url = `${BASE_URL}/truyen-hentai/${mangaId}`;
-        const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
-        const $ = this.cheerio.load(response.data);
-        return this.parser.parseMangaDetails($, mangaId, PROXY_URL);
+        const $ = await this.DOMHTML(`${DOMAIN}truyen-tranh/${mangaId}`);
+        return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
-        const url = `${BASE_URL}/truyen-hentai/${mangaId}`;
-        const $ = await this.fetchHTML(url);
-        return this.parser.parseChapters($, mangaId);
-    }
-    async getSearchResults(query, metadata) {
-        const page = metadata?.page ?? 1;
-        const url = `${BASE_URL}/tim-truyen?keyword=${encodeURIComponent(query.title ?? '')}&page=${page}`;
-        const $ = await this.fetchHTML(url);
-        const manga = this.parser.parseHomePage($, PROXY_URL);
-        const hasNextPage = $('a[rel="next"], .next, .page-next, .pagination next').length > 0;
-        return App.createPagedResults({
-            results: manga,
-            metadata: hasNextPage ? { page: page + 1 } : undefined
-        });
-    }
-    async getSearchTags() {
-        return this.parser.getSearchTags();
+        const $ = await this.DOMHTML(`${DOMAIN}truyen-tranh/${mangaId}`);
+        return this.parser.parseChapterList($);
     }
     async getChapterDetails(mangaId, chapterId) {
-        const url = `${BASE_URL}/${chapterId}-doc-truyen-${mangaId}.html`;
-        const $ = await this.fetchHTML(url);
-        const pages = this.parser.parseChapterDetails($, chapterId, mangaId, PROXY_URL);
-        return App.createChapterDetails({ id: chapterId, mangaId, pages });
+        const $ = await this.DOMHTML(`${DOMAIN}truyen-tranh/${chapterId}`);
+        const pages = this.parser.parseChapterDetails($);
+        return App.createChapterDetails({
+            id: chapterId,
+            mangaId: mangaId,
+            pages: pages,
+        });
+    }
+    // async supportsTagExclusion(): Promise<boolean> {
+    //     return true;
+    // }
+    async getSearchResults(query, metadata) {
+        const page = metadata?.page ?? 1;
+        const search = {
+            genres: '',
+            // exgenres: '',
+            // gender: '-1',
+            // status: '-1',
+            // minchapter: '1',
+            // sort: '0'
+        };
+        // const extags = query.excludedTags?.map(tag => tag.id) ?? [];
+        // const exgenres: string[] = [];
+        // for (const value of extags) {
+        //     if (value.indexOf('.') === -1) {
+        //         exgenres.push(value);
+        //     }
+        // }
+        const tags = query.includedTags?.map(tag => tag.id) ?? [];
+        const genres = [];
+        for (const value of tags) {
+            // if (value.indexOf('.') === -1) {
+            genres.push(value);
+            // } else {
+            //     const [key, val] = value.split('.');
+            //     switch (key) {
+            //         case 'minchapter':
+            //             search.minchapter = String(val);
+            //             break;
+            //         case 'gender':
+            //             search.gender = String(val);
+            //             break;
+            //         case 'sort':
+            //             search.sort = String(val);
+            //             break;
+            //         case 'status':
+            //             search.status = String(val);
+            //             break;
+            //     }
+            // }
+        }
+        search.genres = genres.join(',');
+        // search.exgenres = exgenres.join(',');
+        // const paramExgenres = search.exgenres ? `&notgenres=${search.exgenres}` : '';
+        // const url = `${DOMAIN}${query.title ? '/tim-truyen' : '/tim-truyen-nang-cao'}`;
+        // const param = encodeURI(`?keyword=${query.title ?? ''}&genres=${search.genres}${paramExgenres}&gender=${search.gender}&status=${search.status}&minchapter=${search.minchapter}&sort=${search.sort}&page=${page}`);
+        const url = `${DOMAIN}tim-truyen`;
+        const param = encodeURI(`?keyword=${query.title ?? ''}&genres=${search.genres}&page=${page}`);
+        const $ = await this.DOMHTML(url + param);
+        // const tiles = this.parser.parseSearchResults($);
+        const tiles = this.parser.parseSection($);
+        metadata = !(0, exports.isLastPage)($) ? { page: page + 1 } : undefined;
+        return App.createPagedResults({
+            results: tiles,
+            metadata
+        });
+    }
+    async getHomePageSections(sectionCallback) {
+        console.log('TopTruyen Running...');
+        const sections = [
+            App.createHomeSection({ id: 'featured', title: 'Truyện Đề Cử', containsMoreItems: false, type: types_1.HomeSectionType.featured }),
+            App.createHomeSection({ id: 'viewest', title: 'Truyện Xem Nhiều Nhất', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'hot', title: 'Truyện Hot Nhất', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'new_updated', title: 'Truyện Mới Cập Nhật', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'new_added', title: 'Truyện Mới Thêm Gần Đây', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'full', title: 'Truyện Đã Hoàn Thành', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+        ];
+        for (const section of sections) {
+            sectionCallback(section);
+            let url;
+            switch (section.id) {
+                case 'featured':
+                    url = `${DOMAIN}`;
+                    break;
+                case 'viewest':
+                    url = `${DOMAIN}tim-truyen?status=2&sort=9`;
+                    break;
+                case 'hot':
+                    url = `${DOMAIN}hot`;
+                    break;
+                case 'new_updated':
+                    url = `${DOMAIN}`;
+                    break;
+                case 'new_added':
+                    url = `${DOMAIN}tim-truyen?status=2&sort=1`;
+                    break;
+                case 'full':
+                    url = `${DOMAIN}tim-truyen?status=1&sort=2`;
+                    break;
+                default:
+                    throw new Error('Invalid homepage section ID');
+            }
+            const $ = await this.DOMHTML(url);
+            switch (section.id) {
+                case 'featured':
+                    section.items = this.parser.parseFeaturedSection($);
+                    break;
+                case 'viewest':
+                    // section.items = this.parser.parsePopularSection($);
+                    section.items = this.parser.parseSection($);
+                    break;
+                case 'hot':
+                    // section.items = this.parser.parseHotSection($);
+                    section.items = this.parser.parseSection($);
+                    break;
+                case 'new_updated':
+                    // section.items = this.parser.parseNewUpdatedSection($);
+                    section.items = this.parser.parseSection($);
+                    break;
+                case 'new_added':
+                    // section.items = this.parser.parseNewAddedSection($);
+                    section.items = this.parser.parseSection($);
+                    break;
+                case 'full':
+                    // section.items = this.parser.parseFullSection($);
+                    section.items = this.parser.parseSection($);
+                    break;
+            }
+            sectionCallback(section);
+        }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
         const page = metadata?.page ?? 1;
-        let url;
+        let param = '';
+        let url = '';
         switch (homepageSectionId) {
-            case 'latest':
-                url = `${BASE_URL}/trang/${page}`;
+            case 'viewest':
+                param = `?status=2&sort=9&page=${page}`;
+                url = `${DOMAIN}tim-truyen`;
+                break;
+            case 'hot':
+                param = '';
+                url = `${DOMAIN}hot?page=${page}`;
+                break;
+            case 'new_updated':
+                param = '';
+                url = `${DOMAIN}?page=${page}`;
+                break;
+            case 'new_added':
+                param = `?status=2&sort=1&page=${page}`;
+                url = `${DOMAIN}tim-truyen`;
                 break;
             case 'full':
-                url = `${BASE_URL}/truyen-full/trang/${page}`;
-                break;
-            case 'top':
-                url = `${BASE_URL}/top-view/trang/${page}`;
+                param = `?status=1&sort=2&page=${page}`;
+                url = `${DOMAIN}tim-truyen`;
                 break;
             default:
-                throw new Error(`Unknown section: ${homepageSectionId}`);
+                throw new Error('Requested to getViewMoreItems for a section ID which doesn\'t exist');
         }
-        const $ = await this.fetchHTML(url);
-        const items = this.parser.parseHomePage($, PROXY_URL);
-        const hasNextPage = $('a[rel="next"], .next, .page-next').length > 0;
+        const request = App.createRequest({
+            url,
+            method: 'GET',
+            param,
+        });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        const manga = this.parser.parseSection($);
+        metadata = (0, exports.isLastPage)($) ? undefined : { page: page + 1 };
         return App.createPagedResults({
-            results: items,
-            metadata: hasNextPage ? { page: page + 1 } : undefined,
+            results: manga,
+            metadata
         });
     }
-    getMangaShareUrl(mangaId) {
-        return `${BASE_URL}/truyen-hentai/${mangaId}`;
+    async getSearchTags() {
+        const url = `${DOMAIN}tim-truyen`;
+        const $ = await this.DOMHTML(url);
+        return this.parser.parseTags($);
     }
 }
-exports.HentaiVN = HentaiVN;
+exports.TopTruyen = TopTruyen;
 
-},{"./HentaiVNParser":63,"@paperback/types":61}],63:[function(require,module,exports){
+},{"./TopTruyenParser":63,"@paperback/types":61}],63:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
 class Parser {
-    constructor() {
-        this.BASE_DOMAIN = 'hentaivn.college';
+    convertTime(timeAgo) {
+        let trimmed = Number((/\d*/.exec(timeAgo) ?? [])[0]);
+        trimmed = (trimmed === 0 && timeAgo.includes('a')) ? 1 : trimmed;
+        if (timeAgo.includes('giây') || timeAgo.includes('secs')) {
+            return new Date(Date.now() - trimmed * 1000);
+        }
+        else if (timeAgo.includes('phút')) {
+            return new Date(Date.now() - trimmed * 60000);
+        }
+        else if (timeAgo.includes('giờ')) {
+            return new Date(Date.now() - trimmed * 3600000);
+        }
+        else if (timeAgo.includes('ngày')) {
+            return new Date(Date.now() - trimmed * 86400000);
+        }
+        else if (timeAgo.includes('tuần')) {
+            return new Date(Date.now() - trimmed * 604800000);
+        }
+        else if (timeAgo.includes('năm')) {
+            return new Date(Date.now() - trimmed * 31556952000);
+        }
+        else if (timeAgo.includes(':')) {
+            const [H, D] = timeAgo.split(' ');
+            const fixD = String(D).split('/');
+            const finalD = `${fixD[1]}/${fixD[0]}/${new Date().getFullYear()}`;
+            return new Date(`${finalD} ${H}`);
+        }
+        else if (timeAgo.includes('-')) {
+            const [day, month, year] = timeAgo.split('-');
+            return new Date(`${month}/${day}/${year}`);
+        }
+        else {
+            const split = timeAgo.split('/');
+            return new Date(`${split[1]}/${split[0]}/20${split[2]}`);
+        }
     }
-    // ─── Home Page ─────────────────────────────────────────────────────────────
-    parseHomePage($, proxyUrl) {
-        const results = [];
-        // Primary: .items-slide .owl-item .item (carousel on homepage)
-        // Also check for .manga-vertical .item (list view)
-        const selectors = [
-            '.items-slide .owl-item .item',
-            '.manga-vertical .item',
-            '.comic-item',
-            '.story-item'
-        ];
-        for (const selector of selectors) {
-            $(selector).each((_, el) => {
-                const $el = $(el);
-                // Find manga link - pattern: /truyen-hentai/slug-id
-                const titleLink = $el.find('a[href*="/truyen-hentai/"]').first();
-                const href = titleLink.attr('href') || '';
-                // Skip if no valid href
-                if (!href || !href.includes('/truyen-hentai/'))
-                    return;
-                // Extract manga ID from URL pattern: /truyen-hentai/slug-12345
-                // Store the full path (without domain) as ID so we can reconstruct the URL
-                const pathMatch = href.match(/\/truyen-hentai\/([^-]+-[^/?#]+)/);
-                let mangaId = '';
-                if (pathMatch) {
-                    mangaId = pathMatch[1]; // e.g., "tinh-duc-ngot-ngao-voi-nguoi-yeu-9"
-                }
-                else {
-                    // Fallback: just use the numeric ID
-                    const idMatch = href.match(/-(\d+)(?:\/|$|\?)/);
-                    if (idMatch)
-                        mangaId = idMatch[1];
-                }
-                if (!mangaId)
-                    return;
-                // Get title from img alt attribute
-                const img = $el.find('img.lazy').first();
-                let title = img.attr('alt') || titleLink.attr('title') || '';
-                // Fallback to slide-caption title
-                if (!title) {
-                    title = $el.find('.slide-caption h3 a').text().trim();
-                }
-                if (!title)
-                    return;
-                // Get image - use data-original for lazy loaded images
-                let image = img.attr('data-original') || img.attr('src') || '';
-                if (!image)
-                    return;
-                // Add domain if relative URL
-                if (!image.startsWith('http')) {
-                    image = `https://www.${this.BASE_DOMAIN}${image.startsWith('/') ? '' : '/'}${image}`;
-                }
-                results.push(App.createPartialSourceManga({
-                    mangaId: mangaId,
-                    title,
-                    image
-                }));
-            });
-            if (results.length > 0)
-                break;
-        }
-        console.log(`[HentaiVN] parseHomePage: Found ${results.length} items`);
-        return results;
-    }
-    // ─── Manga Details ─────────────────────────────────────────────────────────
-    parseMangaDetails($, mangaId, proxyUrl) {
-        // Try multiple selectors for title
-        const title = $('.page-info h1').text().trim() ||
-            $('.manga-title').text().trim() ||
-            $('h1.title').text().trim() ||
-            $('meta[property="og:title"]').attr('content')?.trim() ||
-            $('.itemcrumb.active span').text().trim() ||
-            'Unknown Title';
-        // Try multiple selectors for image
-        let image = $('.col-image img').attr('src') ||
-            $('.image-manga img').attr('src') ||
-            $('meta[property="og:image"]').attr('content') ||
-            $('.cover img').attr('src') ||
-            $('.manga-cover img').attr('src') ||
-            '';
-        if (image && !image.startsWith('http')) {
-            image = `https://hentaivn.college${image.startsWith('/') ? '' : '/'}${image}`;
-        }
-        if (image) {
-            image = `${proxyUrl}?url=${encodeURIComponent(image)}`;
-        }
-        let author = 'Unknown';
-        let status = 'Ongoing';
-        // Try multiple selectors for author and status
-        $('p, .info-item, .detail-info li').each((_, el) => {
-            const text = $(el).text();
-            if (text.includes('Tác giả') || text.includes('Author')) {
-                author = $(el).find('a').text().trim() || text.replace(/Tác giả|Author|:/g, '').trim();
-                if (!author || author === 'Unknown')
-                    author = 'Unknown';
-            }
-            if (text.includes('Tình trạng') || text.includes('Status')) {
-                const statusText = $(el).find('span').text().trim() || text.replace(/Tình trạng|Status|:/g, '').trim();
-                if (statusText.toLowerCase().includes('đã hoàn thành') || statusText.toLowerCase().includes('completed') || statusText.toLowerCase().includes('full')) {
-                    status = 'Completed';
-                }
-            }
-        });
+    parseMangaDetails($, mangaId) {
         const tags = [];
-        // Try multiple selectors for genres/tags
-        const tagSelectors = [
-            'a[href*="tim-truyen/"]',
-            'a[href*="/the-loai/"]',
-            'a[href*="/genre/"]',
-            '.genre a',
-            '.tags a',
-            '.taxonomy a'
-        ];
-        for (const selector of tagSelectors) {
-            $(selector).each((_, el) => {
-                const href = $(el).attr('href') || '';
-                const label = $(el).text().trim();
-                if (label && !label.includes('Tác giả') && !label.includes('Tình trạng')) {
-                    const id = href.split('/').pop()?.replace(/\?.*$/, '') || label.toLowerCase().replace(/\s+/g, '-');
-                    tags.push(App.createTag({ id, label }));
-                }
-            });
-            if (tags.length > 0)
-                break;
-        }
-        const desc = $('.detail-content').text().trim() ||
-            $('.summary').text().trim() ||
-            $('.description').text().trim() ||
-            $('meta[property="og:description"]').attr('content')?.trim() ||
-            '';
+        $('li.category > p.col-sm-8 > a').each((_, obj) => {
+            const label = $(obj).text();
+            const id = $(obj).attr('href')?.split('/').pop() ?? label;
+            tags.push(App.createTag({ label, id }));
+        });
+        const titles = $('h1.title-manga').text().trim();
+        const author = $('ul.info-detail-comic > li.author > p.col-sm-8').text();
+        const artist = $('ul.info-detail-comic > li.author > p.col-sm-8').text();
+        const image = $('div.image-info > img').attr('src') || '';
+        const desc = $('div.summary-content > p').text();
+        const status = $('ul.info-detail-comic > li.status > p.col-sm-8').text();
+        const rating = parseFloat($('span[itemprop="ratingValue"]').text());
         return App.createSourceManga({
             id: mangaId,
             mangaInfo: App.createMangaInfo({
-                titles: [title],
-                image: image,
-                status: status === 'Completed' ? 'completed' : 'ongoing',
-                author: author,
-                desc: desc,
-                tags: [App.createTagSection({ id: '0', label: 'genres', tags: tags })],
-            })
+                titles: [titles],
+                author,
+                artist,
+                image,
+                desc,
+                status,
+                tags: [App.createTagSection({ id: '0', label: 'genres', tags })],
+                rating: Number.isNaN(rating) ? 0 : rating
+            }),
         });
     }
-    // ─── Chapters ─────────────────────────────────────────────────────────────
-    parseChapters($, mangaId) {
+    parseChapterList($) {
         const chapters = [];
-        // Try multiple selectors for chapter list
-        const selectors = [
-            '.list-chapter a',
-            'a[href*="-doc-truyen-"]',
-            'a[href*="-xem-truyen-"]',
-            '.chapter-list a',
-            '.chapters a',
-            '.episode-list a',
-            'ul.chapters li a',
-            '.chapter-item a'
-        ];
-        for (const selector of selectors) {
-            $(selector).each((_, el) => {
-                const href = $(el).attr('href') || '';
-                const title = $(el).text().trim() || 'Chapter';
-                // Skip if no href
-                if (!href)
-                    return;
-                // Extract chapter ID from URL
-                // Pattern: /12345-60558-xem-truyen-name.html or /manga-id/chapter-id
-                let id = '';
-                // Match: 12345-60558-xem-truyen -> chapter ID is 60558
-                const xemMatch = href.match(/-(\d+)-xem-truyen/);
-                // Match: /12345-doc-truyen -> manga ID from doc (but we need chapter)
-                const docMatch = href.match(/\/(\d+)-doc-truyen/);
-                if (xemMatch) {
-                    id = xemMatch[1];
-                }
-                else if (docMatch) {
-                    // Use the full path minus domain as ID
-                    id = href.replace(/https?:\/\/hentaivn\.college/, '').replace(/^\//, '').replace(/\.html$/, '');
-                }
-                else {
-                    // Use the path as is
-                    id = href.replace(/https?:\/\/hentaivn\.college/, '').replace(/^\//, '').replace(/\.html$/, '');
-                }
-                if (!id)
-                    return;
-                // Try to extract chapter number
-                const numMatch = title.match(/chapter\s*(\d+)/i) || title.match(/ch\.?\s*(\d+)/i) || title.match(/(\d+)/);
-                const chapNum = numMatch ? parseFloat(numMatch[1]) : chapters.length + 1;
-                // Try to get date
-                let time = new Date();
-                const dateText = $(el).parent().find('.time, .date, .chapter-date').text().trim();
-                if (dateText) {
-                    const parsed = new Date(dateText);
-                    if (!isNaN(parsed.getTime()))
-                        time = parsed;
-                }
-                chapters.push(App.createChapter({
-                    id: id,
-                    name: title,
-                    chapNum,
-                    time,
-                    langCode: 'vi'
-                }));
-            });
-            if (chapters.length > 0)
-                break;
+        $('div.list-chapter > nav > ul > li.row').not('li[style="display: none"]').each((_, obj) => {
+            const id = String($('div.chapters a', obj).attr('href')).split('/truyen-tranh/').pop() || '';
+            const time = $('div.col-4', obj).text().trim();
+            const group = $('div.col-3', obj).text().trim();
+            let name = $('div.chapters a', obj).text();
+            const chapNum = $('div.chapters a', obj).text().split(' ')[1];
+            name = name.includes(':') ? String(name.split(':')[1]).trim() : '';
+            const timeFinal = this.convertTime(time);
+            chapters.push(App.createChapter({
+                id: id,
+                chapNum: parseFloat(String(chapNum)),
+                name: name,
+                langCode: '🇻🇳',
+                time: timeFinal,
+                group: `${group} lượt xem`
+            }));
+        });
+        if (chapters.length == 0) {
+            throw new Error('No chapters found');
         }
-        // Reverse to show newest first
-        return chapters.reverse();
+        console.log(chapters);
+        return chapters;
     }
-    // ─── Pages ────────────────────────────────────────────────────────────────
-    parseChapterDetails($, chapterId, mangaId, proxyUrl) {
+    parseChapterDetails($) {
         const pages = [];
-        // HentaiVN typically has images in .page-image img or similar selectors
-        // Common patterns: .page-image img, #page img, .content img
-        const selectors = [
-            '.page-image img',
-            '#page img',
-            '.content img',
-            '.chapter-content img',
-            'div[data-index] img',
-            'img[src*="hentaivn"]',
-            'img.chapter-img'
-        ];
-        for (const selector of selectors) {
-            $(selector).each((_, el) => {
-                let src = $(el).attr('data-src') || $(el).attr('src') || '';
-                if (src && !src.startsWith('data:') && src.includes('.')) {
-                    src = `${proxyUrl}?url=${encodeURIComponent(src)}`;
-                    if (!pages.includes(src)) {
-                        pages.push(src);
-                    }
-                }
-            });
-            if (pages.length > 0)
-                break;
-        }
-        // Fallback: try to find all images with numeric src patterns
-        if (pages.length === 0) {
-            $('img').each((_, el) => {
-                let src = $(el).attr('data-src') || $(el).attr('src') || '';
-                if (src && !src.startsWith('data:') && (src.match(/\.(jpg|jpeg|png|gif|webp)/i) || src.match(/\/\d+\//))) {
-                    src = `${proxyUrl}?url=${encodeURIComponent(src)}`;
-                    if (!pages.includes(src)) {
-                        pages.push(src);
-                    }
-                }
-            });
-        }
+        $('div.list-image-detail > div.page-chapter > img').each((_, obj) => {
+            if (!obj)
+                return;
+            const link = !obj.attribs['data-original']
+                ? obj.attribs['src']
+                : obj.attribs['data-original'];
+            pages.push(link.indexOf('https') === -1 ? 'https:' + link : link);
+        });
         return pages;
     }
-    // ─── Search Tags ──────────────────────────────────────────────────────────
-    getSearchTags() {
-        const tags = [
-            { id: 'action', label: 'Hành Động' },
-            { id: 'adventure', label: 'Phiêu Lưu' },
-            { id: 'comedy', label: 'Hài Hước' },
-            { id: 'doujinshi', label: 'Doujinshi' },
-            { id: 'drama', label: 'Drama' },
-            { id: 'ecchi', label: 'Ecchi' },
-            { id: 'fantasy', label: 'Fantasy' },
-            { id: 'gender-bender', label: 'Gender Bender' },
-            { id: 'harem', label: 'Harem' },
-            { id: 'historical', label: 'Lịch Sử' },
-            { id: 'horror', label: 'Kinh Dị' },
-            { id: 'joshi', label: 'Joshi' },
-            { id: 'lolicon', label: 'Lolicon' },
-            { id: 'manga', label: 'Manga' },
-            { id: 'manhwa', label: 'Manhwa' },
-            { id: 'martial-arts', label: 'Võ Thuật' },
-            { id: 'mature', label: 'Mature' },
-            { id: 'mecha', label: 'Mecha' },
-            { id: 'mystery', label: ' Bí Ẩn' },
-            { id: 'netorare', label: 'Netorare' },
-            { id: 'ntr', label: 'NTR' },
-            { id: 'psychological', label: 'Tâm Lý' },
-            { id: 'romance', label: 'Lãng Mạn' },
-            { id: 'school-life', label: 'School Life' },
-            { id: 'sci-fi', label: 'Khoa Học' },
-            { id: 'seinen', label: 'Seinen' },
-            { id: 'shoujo', label: 'Shoujo' },
-            { id: 'shounen', label: 'Shounen' },
-            { id: 'slice-of-life', label: 'Đời Thường' },
-            { id: 'smut', label: 'Smut' },
-            { id: 'sports', label: 'Thể Thao' },
-            { id: 'supernatural', label: 'Siêu Nhiên' },
-            { id: 'tragedy', label: 'Bi Kịch' },
-            { id: 'yaoi', label: 'Yaoi' },
-            { id: 'yuri', label: 'Yuri' },
+    parseTags($) {
+        //id tag đéo đc trùng nhau
+        const arrayTags = [];
+        // const arrayTags2: Tag[] = [];
+        // const arrayTags3: Tag[] = [];
+        // const arrayTags4: Tag[] = [];
+        // const arrayTags5: Tag[] = [];
+        //The loai
+        for (const element of $('.categories-detail ul.nav li:not(.active) a').toArray()) {
+            const label = $(element).text().trim();
+            const href = $(element).attr('href');
+            if (!label || !href)
+                continue;
+            const id = href.split('/').filter(Boolean).pop() ?? href;
+            arrayTags.push({ id: id, label: label });
+        }
+        // //Số lượng chapter
+        // for (const tag of $('option', 'select.select-minchapter').toArray()) {
+        //     const label = $(tag).text().trim();
+        //     const id = 'minchapter.' + ($(tag).attr('value') ?? label);
+        //     if (!id || !label) continue;
+        //     arrayTags2.push({ id: id, label: label });
+        // }
+        // //Tình trạng
+        // for (const tag of $('option', '.select-status').toArray()) {
+        //     const label = $(tag).text().trim();
+        //     const id = 'status.' + ($(tag).attr('value') ?? label);
+        //     if (!id || !label) continue;
+        //     arrayTags3.push({ id: id, label: label });
+        // }
+        // //Dành cho
+        // for (const tag of $('option', '.select-gender').toArray()) {
+        //     const label = $(tag).text().trim();
+        //     const id = 'gender.' + ($(tag).attr('value') ?? label);
+        //     if (!id || !label) continue;
+        //     arrayTags4.push({ id: id, label: label });
+        // }
+        // //Sắp xếp theo
+        // for (const tag of $('option', '.select-sort').toArray()) {
+        //     const label = $(tag).text().trim();
+        //     const id = 'sort.' + ($(tag).attr('value') ?? label);
+        //     if (!id || !label) continue;
+        //     arrayTags5.push({ id: id, label: label });
+        // }
+        const tagSections = [
+            App.createTagSection({ id: '0', label: 'Thể Loại (Có thể chọn nhiều hơn 1)', tags: arrayTags.map(x => App.createTag(x)) }),
+            // App.createTagSection({ id: '1', label: 'Số Lượng Chapter (Chỉ chọn 1)', tags: arrayTags2.map(x => App.createTag(x)) }),
+            // App.createTagSection({ id: '2', label: 'Tình Trạng (Chỉ chọn 1)', tags: arrayTags3.map(x => App.createTag(x)) }),
+            // App.createTagSection({ id: '3', label: 'Dành Cho (Chỉ chọn 1)', tags: arrayTags4.map(x => App.createTag(x)) }),
+            // App.createTagSection({ id: '4', label: 'Sắp xếp theo (Chỉ chọn 1)', tags: arrayTags5.map(x => App.createTag(x)) }),
         ];
-        return [App.createTagSection({ id: '0', label: 'Thể Loại', tags })];
+        return tagSections;
+    }
+    parseFeaturedSection($) {
+        const featuredItems = [];
+        $('div.slide-item', 'div.slide-show').each((_, manga) => {
+            const title = $('.slide-info > h3 > a', manga).text();
+            const id = $('a', manga).attr('href')?.split('/truyen-tranh/').pop();
+            const image = $('a > img.owl-lazy', manga).attr('data-src');
+            const subtitle = $('.detail-slide > a', manga).text().trim() + ' - ' + $('.slide-info > .slide-time', manga).text().trim();
+            if (!id || !title)
+                return;
+            featuredItems.push(App.createPartialSourceManga({
+                mangaId: String(id),
+                image: !image ? 'https://i.imgur.com/GYUxEX8.png' : image,
+                title: title,
+                subtitle: subtitle,
+            }));
+        });
+        return featuredItems;
+    }
+    parseSection($) {
+        const sectionItems = [];
+        $('div.item', 'div.row').each((_, manga) => {
+            const title = $('.clearfix > .caption > h3 > a', manga).first().text();
+            const id = $('.clearfix > div.image-item > a', manga).attr('href')?.split('/truyen-tranh/').pop();
+            const image = $('.clearfix > div.image-item > a > img', manga).first().attr('src')?.includes('image_default.png')
+                ? $('.clearfix > div.image-item > a > img', manga).first().attr('data-original')
+                : $('.clearfix > div.image-item > a > img', manga).first().attr('src');
+            const subtitle = $('.clearfix > .caption > ul > li.chapter-detail:nth-of-type(1) > a', manga).last().text().trim();
+            if (!id || !title)
+                return;
+            sectionItems.push(App.createPartialSourceManga({
+                mangaId: String(id),
+                image: !image ? 'https://i.imgur.com/GYUxEX8.png' : image,
+                title: title,
+                subtitle: subtitle,
+            }));
+        });
+        return sectionItems;
     }
 }
 exports.Parser = Parser;
