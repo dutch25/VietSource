@@ -14,10 +14,11 @@ export class Parser {
     parseHomePage($: CheerioAPI, proxyUrl: string): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
 
-        $('a[href^="/g/"]').each((_: any, el: any) => {
+        $('a[href*="/g/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
-            const id = href.replace('/g/', '').replace(/\/$/, '')
-            if (!id || isNaN(Number(id))) return
+            const match = href.match(/\/g\/(\d+)/)
+            if (!match) return
+            const id = match[1]
 
             const img = $(el).find('img').first()
             const title = img.attr('alt')?.trim() ?? ''
@@ -41,18 +42,20 @@ export class Parser {
         const image = rawImage ? `${proxyUrl}?url=${encodeURIComponent(rawImage)}` : ''
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? ''
 
-        const authorLink = $('a[href^="/author/"]').first()
+        const authorLink = $('a[href*="/author/"]').first()
         const author = authorLink.text().trim() ?? ''
         const authorHref = authorLink.attr('href') ?? ''
-        const authorId = authorHref.replace('/author/', '').replace(/\?.*/, '').replace(/\+/g, ' ').trim() ?? author
+        const authorMatch = authorHref.match(/\/author\/([^?#/]+)/)
+        const authorId = authorMatch ? authorMatch[1].replace(/\+/g, ' ').trim() : author
 
         const statusText = $('a[href*="status="]').first().text().trim().toLowerCase() ?? ''
         const status = statusText.includes('hoàn thành') || statusText.includes('completed') ? 'Completed' : 'Ongoing'
 
         const genres: Tag[] = []
-        $('.flex.flex-wrap.gap-2 a[href^="/genre/"]').each((_: any, el: any) => {
+        $('.flex.flex-wrap.gap-2 a[href*="/genre/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
-            const genreId = href.replace('/genre/', '').trim()
+            const genreMatch = href.match(/\/genre\/([^?#/]+)/)
+            const genreId = genreMatch ? genreMatch[1].trim() : ''
             const label = $(el).find('button').text().trim()
             if (genreId && label) {
                 genres.push(App.createTag({ id: genreId, label }))

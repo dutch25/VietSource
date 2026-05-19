@@ -466,7 +466,7 @@ const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.space';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.73',
+    version: '1.1.74',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -651,11 +651,12 @@ class Parser {
     // ─── Home Page ─────────────────────────────────────────────────────────────
     parseHomePage($, proxyUrl) {
         const results = [];
-        $('a[href^="/g/"]').each((_, el) => {
+        $('a[href*="/g/"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
-            const id = href.replace('/g/', '').replace(/\/$/, '');
-            if (!id || isNaN(Number(id)))
+            const match = href.match(/\/g\/(\d+)/);
+            if (!match)
                 return;
+            const id = match[1];
             const img = $(el).find('img').first();
             const title = img.attr('alt')?.trim() ?? '';
             const rawImage = img.attr('src') ?? img.attr('data-src') ?? '';
@@ -674,16 +675,18 @@ class Parser {
         const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? '';
         const image = rawImage ? `${proxyUrl}?url=${encodeURIComponent(rawImage)}` : '';
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? '';
-        const authorLink = $('a[href^="/author/"]').first();
+        const authorLink = $('a[href*="/author/"]').first();
         const author = authorLink.text().trim() ?? '';
         const authorHref = authorLink.attr('href') ?? '';
-        const authorId = authorHref.replace('/author/', '').replace(/\?.*/, '').replace(/\+/g, ' ').trim() ?? author;
+        const authorMatch = authorHref.match(/\/author\/([^?#/]+)/);
+        const authorId = authorMatch ? authorMatch[1].replace(/\+/g, ' ').trim() : author;
         const statusText = $('a[href*="status="]').first().text().trim().toLowerCase() ?? '';
         const status = statusText.includes('hoàn thành') || statusText.includes('completed') ? 'Completed' : 'Ongoing';
         const genres = [];
-        $('.flex.flex-wrap.gap-2 a[href^="/genre/"]').each((_, el) => {
+        $('.flex.flex-wrap.gap-2 a[href*="/genre/"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
-            const genreId = href.replace('/genre/', '').trim();
+            const genreMatch = href.match(/\/genre\/([^?#/]+)/);
+            const genreId = genreMatch ? genreMatch[1].trim() : '';
             const label = $(el).find('button').text().trim();
             if (genreId && label) {
                 genres.push(App.createTag({ id: genreId, label }));
