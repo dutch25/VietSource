@@ -5,7 +5,7 @@
 This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **vi-hentai.pro** - Built-in source `ViHentai`
 - **nhentaiclub.space** - Built-in source `NHentaiClub`
-- **damconuong.city** - Built-in source `DamCoNuong`
+- **damconuong.lol** - Built-in source `DamCoNuong`
 - **goctruyentranh.co** - Built-in source `GocTruyenTranh`
 - **truyenqqko.com** - Built-in source `TruyenQQ`
 - **toptruyentranh.org** - Built-in source `TopTruyen`
@@ -186,10 +186,10 @@ dutch-extension/
 - **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
 
 ### URL Patterns
-- Homepage: `https://damconuong.city/`
-- Manga: `https://damconuong.city/truyen/{mangaId}`
-- Chapter: `https://damconuong.city/truyen/{mangaId}/{chapterId}`
-- Search: `https://damconuong.city/tim-kiem?q={search}`
+- Homepage: `https://damconuong.lol/`
+- Manga: `https://damconuong.lol/truyen/{mangaId}`
+- Chapter: `https://damconuong.lol/truyen/{mangaId}/{chapterId}`
+- Search: `https://damconuong.lol/tim-kiem?q={search}`
 
 ### How It Works
 
