@@ -466,7 +466,7 @@ const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.space';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.74',
+    version: '1.1.75',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -683,11 +683,13 @@ class Parser {
         const statusText = $('a[href*="status="]').first().text().trim().toLowerCase() ?? '';
         const status = statusText.includes('hoàn thành') || statusText.includes('completed') ? 'Completed' : 'Ongoing';
         const genres = [];
-        $('.flex.flex-wrap.gap-2 a[href*="/genre/"]').each((_, el) => {
+        $('a[href*="/genre/"]').each((_, el) => {
+            if ($(el).closest('header, nav, footer, .menu, #menu, .sidebar, #sidebar').length)
+                return;
             const href = $(el).attr('href') ?? '';
             const genreMatch = href.match(/\/genre\/([^?#/]+)/);
             const genreId = genreMatch ? genreMatch[1].trim() : '';
-            const label = $(el).find('button').text().trim();
+            const label = $(el).text().trim() || $(el).find('button').text().trim();
             if (genreId && label) {
                 genres.push(App.createTag({ id: genreId, label }));
             }

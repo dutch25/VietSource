@@ -83,7 +83,7 @@ dutch-extension/
 **Website**: https://nhentaiclub.space
 
 ### SourceInfo
-- **Version**: 1.1.73
+- **Version**: 1.1.75
 - **Author**: Dutch25
 - **Content Rating**: ADULT (18+)
 - **Tags**: "Adult" (RED), "18+" (YELLOW)

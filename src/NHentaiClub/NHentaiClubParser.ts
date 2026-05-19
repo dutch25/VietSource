@@ -52,11 +52,13 @@ export class Parser {
         const status = statusText.includes('hoàn thành') || statusText.includes('completed') ? 'Completed' : 'Ongoing'
 
         const genres: Tag[] = []
-        $('.flex.flex-wrap.gap-2 a[href*="/genre/"]').each((_: any, el: any) => {
+        $('a[href*="/genre/"]').each((_: any, el: any) => {
+            if ($(el).closest('header, nav, footer, .menu, #menu, .sidebar, #sidebar').length) return
+
             const href = $(el).attr('href') ?? ''
             const genreMatch = href.match(/\/genre\/([^?#/]+)/)
             const genreId = genreMatch ? genreMatch[1].trim() : ''
-            const label = $(el).find('button').text().trim()
+            const label = $(el).text().trim() || $(el).find('button').text().trim()
             if (genreId && label) {
                 genres.push(App.createTag({ id: genreId, label }))
             }
