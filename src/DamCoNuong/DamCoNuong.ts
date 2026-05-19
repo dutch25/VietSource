@@ -16,10 +16,10 @@ import {
 
 import { Parser } from './DamCoNuongParser'
 
-const BASE_URL = 'https://damconuong.plus'
+const BASE_URL = 'https://damconuong.lol'
 
 export const DamCoNuongInfo: SourceInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -57,7 +57,14 @@ export class DamCoNuong extends Source {
     })
 
     async getCloudflareBypassRequestAsync(): Promise<any> {
-        return App.createRequest({ url: BASE_URL, method: 'GET' })
+        return App.createRequest({
+            url: BASE_URL,
+            method: 'GET',
+            headers: {
+                'referer': BASE_URL,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            }
+        })
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {

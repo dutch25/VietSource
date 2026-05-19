@@ -16,10 +16,10 @@ import {
 
 import { Parser } from './TruyenVNParser'
 
-const BASE_URL = 'https://truyenvn.shop'
+const BASE_URL = 'https://truyenvn.sbs'
 
 export const TruyenVNInfo: SourceInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -57,7 +57,14 @@ export class TruyenVN extends Source {
     })
 
     async getCloudflareBypassRequestAsync(): Promise<any> {
-        return App.createRequest({ url: BASE_URL, method: 'GET' })
+        return App.createRequest({
+            url: BASE_URL,
+            method: 'GET',
+            headers: {
+                'referer': BASE_URL,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            }
+        })
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {

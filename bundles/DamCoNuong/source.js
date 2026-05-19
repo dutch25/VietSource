@@ -463,9 +463,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DamCoNuong = exports.DamCoNuongInfo = void 0;
 const types_1 = require("@paperback/types");
 const DamCoNuongParser_1 = require("./DamCoNuongParser");
-const BASE_URL = 'https://damconuong.plus';
+const BASE_URL = 'https://damconuong.lol';
 exports.DamCoNuongInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -502,7 +502,14 @@ class DamCoNuong extends types_1.Source {
         });
     }
     async getCloudflareBypassRequestAsync() {
-        return App.createRequest({ url: BASE_URL, method: 'GET' });
+        return App.createRequest({
+            url: BASE_URL,
+            method: 'GET',
+            headers: {
+                'referer': BASE_URL,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            }
+        });
     }
     async getHomePageSections(sectionCallback) {
         const sections = [

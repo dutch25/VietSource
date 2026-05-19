@@ -16,11 +16,11 @@ import {
 
 import { Parser } from './NHentaiClubParser'
 
-const BASE_URL = 'https://nhentaiclub.site'
+const BASE_URL = 'https://nhentaiclub.space'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.72',
+    version: '1.1.73',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -58,7 +58,14 @@ export class NHentaiClub extends Source {
     })
 
     async getCloudflareBypassRequestAsync(): Promise<any> {
-        return App.createRequest({ url: BASE_URL, method: 'GET' })
+        return App.createRequest({
+            url: BASE_URL,
+            method: 'GET',
+            headers: {
+                'referer': BASE_URL,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            }
+        })
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
