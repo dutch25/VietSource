@@ -1,0 +1,335 @@
+import {
+    TagSection,
+    SourceManga,
+    Chapter,
+    ChapterDetails,
+    HomeSection,
+    HomeSectionType,
+    SearchRequest,
+    PagedResults,
+    Request,
+    Response,
+    ChapterProviding,
+    MangaProviding,
+    SearchResultsProviding,
+    HomePageSectionsProviding,
+    SourceInfo,
+    ContentRating,
+    SourceIntents,
+    BadgeColor
+} from '@paperback/types';
+
+import type { CheerioAPI } from 'cheerio';
+
+import { Parser } from './GocTruyenTranhParser';
+
+const DOMAIN = 'https://goctruyentranh.co/';
+const Auth = 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqbmkgcHJhdHR2b25kYSIsImNvbWljSWRzIjpbXSwicm9sZUlkIjpudWxsLCJncm91cElkIjpudWxsLCJhZG1pbiI6ZmFsc2UsInJhbmsiOjAsInBlcm1pc3Npb24iOltdLCJpZCI6IjAwMDExNjg0MzkiLCJ0ZWFtIjpmYWxzZSwiaWF0IjoxNzY3ODAzNDc4LCJlbWFpbCI6Im51bGwifQ.eWFypaV4dDZ_R5J9Gf0HqkbLaQDWCVwuja4yJJafl6KmPgaRk9TRHHX-0X94rP6xQtpeZRS25RNjOT0RpIdffg';
+
+export const GocTruyenTranhInfo: SourceInfo = {
+    version: '1.2.9',
+    name: 'GocTruyenTranh',
+    icon: 'icon.png',
+    author: 'AlanNois',
+    authorWebsite: 'https://github.com.AlanNois/',
+    description: 'Extension that pulls manga from GocTruyenTranh',
+    websiteBaseURL: DOMAIN,
+    contentRating: ContentRating.EVERYONE,
+    sourceTags: [
+        {
+            text: 'Recommended',
+            type: BadgeColor.BLUE
+        },
+    ],
+    intents: SourceIntents.MANGA_CHAPTERS | SourceIntents.HOMEPAGE_SECTIONS | SourceIntents.CLOUDFLARE_BYPASS_REQUIRED
+};
+
+export class GocTruyenTranh implements SearchResultsProviding, MangaProviding, ChapterProviding, HomePageSectionsProviding {
+
+    constructor(private cheerio: CheerioAPI) { }
+
+    readonly requestManager = App.createRequestManager({
+        requestsPerSecond: 4,
+        requestTimeout: 50000,
+        interceptor: {
+            interceptRequest: async (request: Request): Promise<Request> => {
+                request.headers = {
+                    ...(request.headers ?? {}),
+                    ...{
+                        // 'referer': DOMAIN,
+                        'user-agent': await this.requestManager.getDefaultUserAgent(),
+                    }
+                };
+                return request;
+            },
+            interceptResponse: async (response: Response): Promise<Response> => {
+                return response;
+            }
+        }
+    });
+
+    getMangaShareUrl(mangaId: string): string {
+        return `${DOMAIN}truyen/${mangaId.split('::')[0]}`;
+    }
+
+    parser = new Parser();
+
+    private async DOMHTML(url: string): Promise<CheerioAPI> {
+        const request = App.createRequest({
+            url: url,
+            method: 'GET',
+            headers: {
+                'referer': `${DOMAIN}`,
+            }
+        });
+        const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status);
+        return this.cheerio.load(response.data as string);
+    }
+
+    private async callAPI(url: string, xToken: string = ''): Promise<any> {
+        const request = App.createRequest({
+            url: url,
+            method: 'GET',
+            headers: {
+                'referer': `${DOMAIN}`,
+                'x-token': xToken
+            }
+        });
+        const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status);
+        return JSON.parse(response.data as string);
+    }
+
+    async getXToken(url: string): Promise<string> {
+        const request = App.createRequest({
+            url: url,
+            method: 'GET',
+            headers: {
+                'referer': `${DOMAIN}`,
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7'
+            }
+        });
+        const response = await this.requestManager.schedule(request, 2);
+        this.CloudFlareError(response.status);
+        const xToken = (response.headers?.['set-cookie'] ?? response.headers?.['Set-Cookie']) as string;
+        return xToken;
+    }
+
+    async getMangaDetails(mangaId: string): Promise<SourceManga> {
+        const $ = await this.DOMHTML(`${DOMAIN}truyen/${mangaId.split('::')[0]}`);
+        return this.parser.parseMangaDetails($, mangaId, DOMAIN);
+    } 
+
+    async getChapters(mangaId: string): Promise<Chapter[]> {
+        const xToken = await this.getXToken(`${DOMAIN}truyen/${mangaId.split('::')[0]}`);
+        const json = await this.callAPI(`${DOMAIN}api/comic/${mangaId.split('::')[1]}/chapter?offset=0&limit=-1`, xToken);
+        return this.parser.parseChapterList(json);
+    }
+
+    async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
+        // Extract manga ID and chapter number using destructuring
+        const nameEn = mangaId.split('::')[0];
+        const [mangaNumber, chapterNumber] = [mangaId.split('::')[1], chapterId.split('-')[1]];
+
+        // Combine manga ID and chapter number into a single query parameter
+        const comicId = `comicId=${mangaNumber}&chapterNumber=${chapterNumber}&nameEn=${nameEn}`;
+        const width = `width=414&name=false|${nameEn}&number=${chapterNumber}&direct=false`;
+        const rpFXD = "localSessionId="
+
+        // Simulate the normal request to the API
+        const rpSS = App.createRequest({
+            // url: `${DOMAIN}api/chapter/reportFixed?${rpFXD}`,
+            url: `${DOMAIN}api/chapter/reportFixed`,
+            method: 'POST',
+            headers: {
+                'referer': `${DOMAIN}truyen/${nameEn}/chuong-${chapterNumber}`,
+                'authorization': Auth,
+                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'x-requested-with': 'XMLHttpRequest',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-dest': 'empty',
+                'accept': 'application/json, text/javascript, */*; q=0.01'
+            },
+            data: rpFXD
+        })
+        const rpSSResponse = await this.requestManager.schedule(rpSS, 1);
+        console.log(rpSSResponse.data as string);
+
+        const gCR = App.createRequest({
+            url: `${DOMAIN}api/user/getCountReminder`,
+            method: 'GET',
+            headers: {
+                'referer': `${DOMAIN}truyen/${nameEn}/chuong-${chapterNumber}`,
+                'authorization': Auth,
+                'x-requested-with': 'XMLHttpRequest',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-dest': 'empty'
+            }
+        });
+        const gCRResponse = await this.requestManager.schedule(gCR, 1);
+        console.log(gCRResponse.data as string);
+        
+        const track = App.createRequest({
+            // url: `${DOMAIN}api/user/tracking?${width}`,
+            url: `${DOMAIN}api/user/tracking`,
+            method: 'POST',
+            headers: {
+                'referer': `${DOMAIN}truyen/${nameEn}/chuong-${chapterNumber}`,
+                'authorization': Auth,
+                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'x-requested-with': 'XMLHttpRequest',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-dest': 'empty',
+                'accept': 'application/json, text/javascript, */*; q=0.01'
+            },
+            data: width
+        })
+        const trackResponse = await this.requestManager.schedule(track, 1);
+        console.log(trackResponse.data as string);
+
+        const xToken = await this.getXToken(`${DOMAIN}truyen/${mangaId.split('::')[0]}`);
+        const request = App.createRequest({
+            // url: `${DOMAIN}api/chapter/loadAll?${comicId}`,
+            url: `${DOMAIN}api/chapter/loadAll`,
+            method: 'POST',
+            headers: {
+                'referer': `${DOMAIN}truyen/${nameEn}/chuong-${chapterNumber}`,
+                'authorization': Auth,
+                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'x-requested-with': 'XMLHttpRequest',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-dest': 'empty',
+                'accept': 'application/json, text/javascript, */*; q=0.01',
+                'cookie': xToken
+            },
+            data: comicId
+        });
+        const response = await this.requestManager.schedule(request, 1);
+        const json = JSON.parse(response.data as string);
+        console.log(json)
+
+        const pages = this.parser.parseChapterDetails(json, null, DOMAIN);
+
+        return App.createChapterDetails({
+            id: chapterId,
+            mangaId: mangaId,
+            pages: pages,
+        });
+    }
+
+
+    async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
+        const page = metadata?.page ?? 0;
+
+        const tags = query.includedTags?.map(tag => tag.id) ?? [];
+        const url = query.title ? encodeURI(`${DOMAIN}api/comic/search?name=${query.title}`) : `${DOMAIN}api/comic/search/category?p=${page}&value=${tags[0]}`;
+        const json = await this.callAPI(url);
+        const tiles = this.parser.parseSearchResults(json, DOMAIN);
+
+        metadata = query.title ? undefined : { page: page + 1 };
+
+        return App.createPagedResults({
+            results: tiles,
+            metadata
+        });
+    }
+
+    async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
+        console.log('GocTruyenTranh Running...');
+        const sections: HomeSection[] = [
+            App.createHomeSection({ id: 'hot', title: 'TRUYỆN HOT NHẤT', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'new_added', title: 'TRUYỆN MỚI', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'new_updated', title: 'TRUYỆN CẬP NHẬT GẦN ĐÂY', containsMoreItems: true, type: HomeSectionType.singleRowNormal })
+        ];
+
+        for (const section of sections) {
+            sectionCallback(section);
+            let url: string;
+            switch (section.id) {
+                case 'hot':
+                    url = `${DOMAIN}api/comic/search/view?p=0`;
+                    break;
+                case 'new_added':
+                    url = `${DOMAIN}api/comic/search/new?p=0`;
+                    break;
+                case 'new_updated':
+                    url = `${DOMAIN}api/comic/search/recent?p=0`;
+                    break;
+                default:
+                    throw new Error('Invalid home section ID');
+            }
+
+
+            const json = await this.callAPI(url);
+
+            switch (section.id) {
+                case 'hot':
+                    section.items = this.parser.parseViewMoreItems(json, DOMAIN).slice(0, 10);
+                    break;
+                case 'new_added':
+                    section.items = this.parser.parseViewMoreItems(json, DOMAIN).slice(0, 10);
+                    break;
+                case 'new_updated':
+                    section.items = this.parser.parseViewMoreItems(json, DOMAIN).slice(0, 10);
+                    break;
+            }
+            sectionCallback(section);
+        }
+    }
+
+    async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
+        const page = metadata?.page ?? 0;
+        let url: string;
+        switch (homepageSectionId) {
+            case 'hot':
+                url = `${DOMAIN}api/comic/search/view?p=${page}`;
+                break;
+            case 'new_added':
+                url = `${DOMAIN}api/comic/search/new?p=${page}`;
+                break;
+            case 'new_updated':
+                url = `${DOMAIN}api/comic/search/recent?p=${page}`;
+                break;
+            default:
+                throw new Error('Requested to getViewMoreItems for a section ID which doesn\'t exist');
+        }
+
+        const json = await this.callAPI(url);
+        const tiles = this.parser.parseViewMoreItems(json, DOMAIN);
+        metadata = { page: page + 1 };
+        return App.createPagedResults({
+            results: tiles,
+            metadata
+        });
+    }
+
+    async getSearchTags(): Promise<TagSection[]> {
+        const url = `${DOMAIN}api/category`;
+        const json = await this.callAPI(url);
+        return this.parser.parseTags(json);
+    }
+
+    CloudFlareError(status: number): void {
+        if (status == 503 || status == 403) {
+            throw new Error(`CLOUDFLARE BYPASS ERROR:\nPlease go to home page ${GocTruyenTranh.name} source and press the cloud icon.`);
+        }
+    }
+
+    async getCloudflareBypassRequestAsync(): Promise<Request> {
+        return App.createRequest({
+            url: `${DOMAIN}trang-chu`,
+            method: 'GET',
+            headers: {
+                'referer': `${DOMAIN}`,
+                'origin': `${DOMAIN}`,
+                'user-agent': await this.requestManager.getDefaultUserAgent()
+            }
+        });
+    }
+
+}
