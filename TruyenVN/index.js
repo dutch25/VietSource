@@ -463,9 +463,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TruyenVN = exports.TruyenVNInfo = void 0;
 const types_1 = require("@paperback/types");
 const TruyenVNParser_1 = require("./TruyenVNParser");
-const BASE_URL = 'https://truyenvn.shop';
+const BASE_URL = 'https://truyenvn.sbs';
 exports.TruyenVNInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -502,7 +502,14 @@ class TruyenVN extends types_1.Source {
         });
     }
     async getCloudflareBypassRequestAsync() {
-        return App.createRequest({ url: BASE_URL, method: 'GET' });
+        return App.createRequest({
+            url: BASE_URL,
+            method: 'GET',
+            headers: {
+                'referer': BASE_URL,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            }
+        });
     }
     async getHomePageSections(sectionCallback) {
         const sections = [

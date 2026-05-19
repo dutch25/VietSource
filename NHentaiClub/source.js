@@ -463,10 +463,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NHentaiClub = exports.NHentaiClubInfo = void 0;
 const types_1 = require("@paperback/types");
 const NHentaiClubParser_1 = require("./NHentaiClubParser");
-const BASE_URL = 'https://nhentaiclub.site';
+const BASE_URL = 'https://nhentaiclub.space';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.72',
+    version: '1.1.73',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -503,7 +503,14 @@ class NHentaiClub extends types_1.Source {
         });
     }
     async getCloudflareBypassRequestAsync() {
-        return App.createRequest({ url: BASE_URL, method: 'GET' });
+        return App.createRequest({
+            url: BASE_URL,
+            method: 'GET',
+            headers: {
+                'referer': BASE_URL,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            }
+        });
     }
     async getHomePageSections(sectionCallback) {
         const rankingSections = [
