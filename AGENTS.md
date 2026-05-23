@@ -9,7 +9,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **truyenqqko.com** - Built-in source `TruyenQQ`
 - **www.toptruyenzone2.com** - Built-in source `TopTruyen`
 - **hv2t.store** - Built-in source `HV2T`
-- **goctruyentranh.co** - Built-in source `GocTruyenTranh` (Broken/Ignored)
+- **goctruyentranhvui30.com** - Built-in source `GocTruyenTranh`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
