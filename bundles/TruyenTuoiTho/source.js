@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 exports.TruyenTuoiThoInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -527,22 +527,17 @@ class TruyenTuoiTho extends types_1.Source {
             }));
         }
         for (const section of sections) {
-            try {
-                const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 0);
-                if (response.status === 403 || response.status === 503)
-                    continue;
-                const $ = this.cheerio.load(response.data);
-                const manga = this.parser.parseHomePage($);
-                sectionCallback(App.createHomeSection({
-                    id: section.id,
-                    title: section.title,
-                    containsMoreItems: true,
-                    type: types_1.HomeSectionType.singleRowNormal,
-                    items: manga,
-                }));
-            }
-            catch (e) {
-            }
+            const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 0);
+            this.checkCloudflare(response);
+            const $ = this.cheerio.load(response.data);
+            const manga = this.parser.parseHomePage($);
+            sectionCallback(App.createHomeSection({
+                id: section.id,
+                title: section.title,
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+                items: manga,
+            }));
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
@@ -555,6 +550,7 @@ class TruyenTuoiTho extends types_1.Source {
         };
         const url = urlMap[homepageSectionId] ?? `${BASE_URL}/manga-genre/${homepageSectionId}?page=${page}`;
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
+        this.checkCloudflare(response);
         const $ = this.cheerio.load(response.data);
         const manga = this.parser.parseHomePage($);
         return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
@@ -571,16 +567,19 @@ class TruyenTuoiTho extends types_1.Source {
             url = `${BASE_URL}/page/${page}/?s=${searchQuery}&post_type=wp-manga`;
         }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
+        this.checkCloudflare(response);
         const $ = this.cheerio.load(response.data);
         return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: { page: page + 1 } });
     }
     async getMangaDetails(mangaId) {
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/`, method: 'GET' }), 0);
+        this.checkCloudflare(response);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/`, method: 'GET' }), 0);
+        this.checkCloudflare(response);
         const html = response.data;
         const $ = this.cheerio.load(html);
         // Try extracting postId for AJAX chapter list loading
@@ -600,6 +599,7 @@ class TruyenTuoiTho extends types_1.Source {
                     },
                     data: `action=ajax_list_chapter&manga=${postId}`
                 }), 0);
+                this.checkCloudflare(ajaxResponse);
                 const ajaxHtml = ajaxResponse.data;
                 const $ajax = this.cheerio.load(ajaxHtml);
                 const chapters = this.parser.parseChapters($ajax, mangaId);
@@ -614,6 +614,7 @@ class TruyenTuoiTho extends types_1.Source {
     }
     async getChapterDetails(mangaId, chapterId) {
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/${chapterId}/`, method: 'GET' }), 1);
+        this.checkCloudflare(response);
         const $ = this.cheerio.load(response.data);
         const pages = this.parser.parseChapterPages($);
         if (pages.length === 0) {
@@ -626,6 +627,18 @@ class TruyenTuoiTho extends types_1.Source {
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
+    }
+    checkCloudflare(response) {
+        const status = response.status;
+        const html = response.data;
+        if (status === 403 ||
+            status === 503 ||
+            html.includes('challenges.cloudflare.com') ||
+            html.includes('cf-challenge') ||
+            html.includes('<title>Just a moment...</title>') ||
+            html.includes('id="challenge-error-title"')) {
+            throw new Error('CLOUDFLARE_BYPASS_REQUIRED');
+        }
     }
 }
 exports.TruyenTuoiTho = TruyenTuoiTho;

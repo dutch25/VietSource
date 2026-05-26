@@ -6,6 +6,7 @@ import {
     HomeSection,
     HomeSectionType,
     PagedResults,
+    Response,
     SearchRequest,
     Source,
     SourceInfo,
@@ -19,7 +20,7 @@ import { Parser } from './TruyenTuoiThoParser'
 const BASE_URL = 'https://truyentuoitho.com'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -85,23 +86,20 @@ export class TruyenTuoiTho extends Source {
         }
 
         for (const section of sections) {
-            try {
-                const response = await this.requestManager.schedule(
-                    App.createRequest({ url: section.url, method: 'GET' }), 0
-                )
-                if (response.status === 403 || response.status === 503) continue
-                const $ = this.cheerio.load(response.data as string)
-                const manga = this.parser.parseHomePage($)
+            const response = await this.requestManager.schedule(
+                App.createRequest({ url: section.url, method: 'GET' }), 0
+            )
+            this.checkCloudflare(response)
+            const $ = this.cheerio.load(response.data as string)
+            const manga = this.parser.parseHomePage($)
 
-                sectionCallback(App.createHomeSection({
-                    id: section.id,
-                    title: section.title,
-                    containsMoreItems: true,
-                    type: HomeSectionType.singleRowNormal,
-                    items: manga,
-                }))
-            } catch (e) {
-            }
+            sectionCallback(App.createHomeSection({
+                id: section.id,
+                title: section.title,
+                containsMoreItems: true,
+                type: HomeSectionType.singleRowNormal,
+                items: manga,
+            }))
         }
     }
 
@@ -120,6 +118,7 @@ export class TruyenTuoiTho extends Source {
         const response = await this.requestManager.schedule(
             App.createRequest({ url, method: 'GET' }), 0
         )
+        this.checkCloudflare(response)
         const $ = this.cheerio.load(response.data as string)
         const manga = this.parser.parseHomePage($)
 
@@ -141,6 +140,7 @@ export class TruyenTuoiTho extends Source {
         const response = await this.requestManager.schedule(
             App.createRequest({ url, method: 'GET' }), 0
         )
+        this.checkCloudflare(response)
         const $ = this.cheerio.load(response.data as string)
         return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: { page: page + 1 } })
     }
@@ -149,6 +149,7 @@ export class TruyenTuoiTho extends Source {
         const response = await this.requestManager.schedule(
             App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/`, method: 'GET' }), 0
         )
+        this.checkCloudflare(response)
         const $ = this.cheerio.load(response.data as string)
         return this.parser.parseMangaDetails($, mangaId)
     }
@@ -157,6 +158,7 @@ export class TruyenTuoiTho extends Source {
         const response = await this.requestManager.schedule(
             App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/`, method: 'GET' }), 0
         )
+        this.checkCloudflare(response)
         const html = response.data as string
         const $ = this.cheerio.load(html)
 
@@ -180,6 +182,7 @@ export class TruyenTuoiTho extends Source {
                         data: `action=ajax_list_chapter&manga=${postId}`
                     }), 0
                 )
+                this.checkCloudflare(ajaxResponse)
                 const ajaxHtml = ajaxResponse.data as string
                 const $ajax = this.cheerio.load(ajaxHtml)
                 const chapters = this.parser.parseChapters($ajax, mangaId)
@@ -197,6 +200,7 @@ export class TruyenTuoiTho extends Source {
         const response = await this.requestManager.schedule(
             App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/${chapterId}/`, method: 'GET' }), 1
         )
+        this.checkCloudflare(response)
         const $ = this.cheerio.load(response.data as string)
         const pages = this.parser.parseChapterPages($)
 
@@ -213,5 +217,20 @@ export class TruyenTuoiTho extends Source {
 
     async getSearchTags(): Promise<TagSection[]> {
         return this.parser.getSearchTags()
+    }
+
+    private checkCloudflare(response: Response): void {
+        const status = response.status
+        const html = response.data as string
+        if (
+            status === 403 ||
+            status === 503 ||
+            html.includes('challenges.cloudflare.com') ||
+            html.includes('cf-challenge') ||
+            html.includes('<title>Just a moment...</title>') ||
+            html.includes('id="challenge-error-title"')
+        ) {
+            throw new Error('CLOUDFLARE_BYPASS_REQUIRED')
+        }
     }
 }
