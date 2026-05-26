@@ -466,7 +466,7 @@ const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.TruyenTuoiThoInfo = {
-    version: '1.1.5',
+    version: '1.1.6',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -513,15 +513,17 @@ class TruyenTuoiTho extends types_1.Source {
         });
     }
     async fetchHTML(url, method = 'GET', data) {
+        const headers = {};
+        if (method === 'POST') {
+            headers['content-type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+        }
         // 1. Try fetching via proxy worker first
         try {
             const proxyRequestUrl = `${PROXY_URL}/?url=${encodeURIComponent(url)}`;
             const response = await this.requestManager.schedule(App.createRequest({
                 url: proxyRequestUrl,
                 method,
-                headers: {
-                    'content-type': method === 'POST' ? 'application/x-www-form-urlencoded; charset=UTF-8' : undefined
-                },
+                headers,
                 data
             }), 0);
             if (response.status === 200) {
@@ -541,9 +543,7 @@ class TruyenTuoiTho extends types_1.Source {
         const response = await this.requestManager.schedule(App.createRequest({
             url,
             method,
-            headers: {
-                'content-type': method === 'POST' ? 'application/x-www-form-urlencoded; charset=UTF-8' : undefined
-            },
+            headers,
             data
         }), 0);
         this.checkCloudflare(response);
@@ -614,7 +614,7 @@ class TruyenTuoiTho extends types_1.Source {
     async getMangaDetails(mangaId) {
         const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/`);
         const $ = this.cheerio.load(response.data);
-        return this.parser.parseMangaDetails($, mangaId);
+        return this.parser.parseMangaDetails($, mangaId, PROXY_URL);
     }
     async getChapters(mangaId) {
         // 1. Try to fetch the AJAX chapters endpoint directly
@@ -701,14 +701,26 @@ class Parser {
         });
         return this.deduplicate(results);
     }
-    parseMangaDetails($, mangaId) {
-        const title = $('meta[property="og:title"]').attr('content')?.trim()
-            || $('.post-title h1').first().text().trim()
+    parseMangaDetails($, mangaId, proxyUrl) {
+        let title = $('.post-title h1').first().text().trim()
+            || $('meta[property="og:title"]').attr('content')?.trim()
             || mangaId;
+        // Clean WordPress SEO title prefixes/suffixes
+        if (title.startsWith('Đọc truyện ')) {
+            title = title.replace('Đọc truyện ', '');
+        }
+        if (title.includes(' Full')) {
+            title = title.split(' Full')[0];
+        }
+        if (title.includes(' - Truyen tuoi tho')) {
+            title = title.split(' - Truyen tuoi tho')[0];
+        }
+        title = title.trim();
         const rawImage = $('meta[property="og:image"]').attr('content')?.trim()
             || $('.summary_image img').attr('src')
             || $('.summary_image img').attr('data-src')
             || '';
+        const image = proxyUrl && rawImage ? `${proxyUrl}/?url=${encodeURIComponent(rawImage)}` : rawImage;
         const desc = $('meta[property="og:description"]').attr('content')?.trim()
             || $('.description-summary').text().trim()
             || $('.summary__content').text().trim()
@@ -734,7 +746,7 @@ class Parser {
             id: mangaId,
             mangaInfo: App.createMangaInfo({
                 titles: [title],
-                image: rawImage,
+                image,
                 desc,
                 author,
                 artist,
