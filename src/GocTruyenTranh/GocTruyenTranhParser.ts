@@ -53,7 +53,11 @@ export class Parser {
             tags.push(App.createTag({ label, id }));
         });
 
-        const titles = [this.decodeHTMLEntity($('.v-card-title').text().trim())];
+        const titleText = $('.v-card-title').text().trim()
+            || $('meta[property="og:title"]').attr('content')?.trim()
+            || $('h1').text().trim()
+            || mangaId.split('::')[0];
+        const titles = [this.decodeHTMLEntity(titleText)];
         let author, artist;
         let status = '';
         $('.information-section > div').each((_: any, obj: any) => {
@@ -67,14 +71,23 @@ export class Parser {
                     break;
             }
         });
-        const imageRaw = String(
-            $('.v-image > img').attr('src')?.indexOf('https') === -1 ? 
-                DOMAIN + $('.v-image > img').attr('src') : $('.v-image > img').attr('src')
-        );
-        const fullImage = encodeURI(imageRaw).replace(/([^:]\/)\/+/g, '$1');
+        let rawImage = $('meta[property="og:image"]').attr('content')?.trim()
+            || $('.v-image > img').attr('src')
+            || $('.v-image img').attr('src')
+            || '';
+
+        if (rawImage && rawImage.indexOf('http') === -1) {
+            rawImage = DOMAIN + rawImage;
+        }
+        const fullImage = encodeURI(rawImage).replace(/([^:]\/)\/+/g, '$1');
         const image = proxyUrl && fullImage ? `${proxyUrl}/?url=${encodeURIComponent(fullImage)}` : fullImage;
-        const desc = this.decodeHTMLEntity($('.v-card-text.pt-1.px-4.pb-4.text-secondary.font-weight-medium').text());
+        const desc = this.decodeHTMLEntity(
+            $('.v-card-text.pt-1.px-4.pb-4.text-secondary.font-weight-medium').text().trim()
+            || $('meta[property="og:description"]').attr('content')?.trim()
+            || ''
+        );
         const rating = parseFloat($('.pr-3 > b').text().trim());
+        const finalRating = Number.isNaN(rating) ? 0 : rating;
 
         return App.createSourceManga({
             id: mangaId,
@@ -85,7 +98,7 @@ export class Parser {
                 author,
                 artist,
                 status,
-                rating,
+                rating: finalRating,
                 tags: [App.createTagSection({ id: '0', label: 'genres', tags })]
             })
         });
@@ -99,7 +112,10 @@ export class Parser {
             const id = `chuong-${chapNum}`;
             const timeStr = obj.stringUpdateTime;
             const time = this.convertTime(timeStr);
-            const name = (obj.name != 'N/A') ? obj.name : '';
+            let name = (obj.name && obj.name !== 'N/A') ? obj.name.trim() : undefined;
+            if (name && (name.toLowerCase() === 'no title' || name.toLowerCase() === 'null' || name.toLowerCase() === 'n/a')) {
+                name = undefined;
+            }
             const group = `${obj.viewCount} lượt xem`;
             chapters.push(App.createChapter({
                 id,
