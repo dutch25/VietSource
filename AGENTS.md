@@ -10,6 +10,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **www.toptruyenzone2.com** - Built-in source `TopTruyen`
 - **hv2t.store** - Built-in source `HV2T`
 - **goctruyentranhvui30.com** - Built-in source `GocTruyenTranh`
+- **truyentuoitho.com** - Built-in source `TruyenTuoiTho`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -207,6 +208,25 @@ dutch-extension/
 
 ---
 
+# Source: TruyenTuoiTho
+
+**Website**: https://truyentuoitho.com
+
+### SourceInfo
+- **Version**: 1.1.0
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
+
+### URL Patterns
+- Homepage: `https://truyentuoitho.com`
+- Manga: `https://truyentuoitho.com/manga/{mangaId}/`
+- Chapter: `https://truyentuoitho.com/manga/{mangaId}/{chapterId}/`
+- Search: `https://truyentuoitho.com/?s={search}&post_type=wp-manga`
+
+---
+
 # Release Checklist
 
 **IMPORTANT: You MUST update the version in the .ts file every time you make changes!**
@@ -222,6 +242,8 @@ dutch-extension/
 **If working on TruyenQQ:** Update `src/TruyenQQ/TruyenQQ.ts` - `version: 'x.x.x'`
 
 **If working on TopTruyen:** Update `src/TopTruyen/TopTruyen.ts` - `version: 'x.x.x'`
+
+**If working on TruyenTuoiTho:** Update `src/TruyenTuoiTho/TruyenTuoiTho.ts` - `version: 'x.x.x'`
 
 DO NOT update package.json unless specifically asked.
 
