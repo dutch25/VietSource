@@ -213,7 +213,7 @@ dutch-extension/
 **Website**: https://truyentuoitho.com
 
 ### SourceInfo
-- **Version**: 1.1.5
+- **Version**: 1.1.6
 - **Author**: Dutch25
 - **Content Rating**: ADULT (18+)
 - **Tags**: "Adult" (RED), "18+" (YELLOW)

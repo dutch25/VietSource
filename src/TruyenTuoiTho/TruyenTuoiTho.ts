@@ -21,7 +21,7 @@ const BASE_URL = 'https://truyentuoitho.com'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
-    version: '1.1.5',
+    version: '1.1.6',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -188,7 +188,7 @@ export class TruyenTuoiTho extends Source {
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/`)
         const $ = this.cheerio.load(response.data as string)
-        return this.parser.parseMangaDetails($, mangaId)
+        return this.parser.parseMangaDetails($, mangaId, PROXY_URL)
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {

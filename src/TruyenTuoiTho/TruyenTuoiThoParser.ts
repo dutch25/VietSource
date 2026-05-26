@@ -47,14 +47,30 @@ export class Parser {
         return this.deduplicate(results)
     }
 
-    parseMangaDetails($: CheerioAPI, mangaId: string): SourceManga {
-        const title = $('meta[property="og:title"]').attr('content')?.trim()
-            || $('.post-title h1').first().text().trim()
+    parseMangaDetails($: CheerioAPI, mangaId: string, proxyUrl?: string): SourceManga {
+        let title = $('.post-title h1').first().text().trim()
+            || $('meta[property="og:title"]').attr('content')?.trim()
             || mangaId
+
+        // Clean WordPress SEO title prefixes/suffixes
+        if (title.startsWith('Đọc truyện ')) {
+            title = title.replace('Đọc truyện ', '')
+        }
+        if (title.includes(' Full')) {
+            title = title.split(' Full')[0]
+        }
+        if (title.includes(' - Truyen tuoi tho')) {
+            title = title.split(' - Truyen tuoi tho')[0]
+        }
+        title = title.trim()
+
         const rawImage = $('meta[property="og:image"]').attr('content')?.trim()
             || $('.summary_image img').attr('src')
             || $('.summary_image img').attr('data-src')
             || ''
+
+        const image = proxyUrl && rawImage ? `${proxyUrl}/?url=${encodeURIComponent(rawImage)}` : rawImage
+
         const desc = $('meta[property="og:description"]').attr('content')?.trim()
             || $('.description-summary').text().trim()
             || $('.summary__content').text().trim()
@@ -84,7 +100,7 @@ export class Parser {
             id: mangaId,
             mangaInfo: App.createMangaInfo({
                 titles: [title],
-                image: rawImage,
+                image,
                 desc,
                 author,
                 artist,
