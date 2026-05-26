@@ -98,9 +98,17 @@ export class Parser {
         const chapters: Chapter[] = []
         const seenUrls = new Set<string>()
 
-        $('.wp-manga-chapter a, .chapter-item a').each((_: any, el: any) => {
+        // Scoping search to actual chapter containers to prevent grabbing sidebar links
+        const container = $('.listing-chapters_wrap, #manga-chapters-holder, .version-chap')
+        const target = container.length > 0 ? container.find('a') : $('.wp-manga-chapter a, .chapter-item a')
+
+        target.each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
             if (!href || seenUrls.has(href)) return
+            
+            // Filter out non-chapter anchor elements
+            if (href === '#' || href.includes('javascript:void(0)')) return
+            
             seenUrls.add(href)
             
             const match = href.match(/\/manga\/[^/]+\/([^/]+)\/?$/)

@@ -21,7 +21,7 @@ const BASE_URL = 'https://truyentuoitho.com'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
-    version: '1.1.3',
+    version: '1.1.4',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -192,34 +192,25 @@ export class TruyenTuoiTho extends Source {
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/`)
-        const html = response.data as string
-        const $ = this.cheerio.load(html)
-
-        // Try extracting postId for AJAX chapter list loading
-        const dataId = $('#manga-chapters-holder').attr('data-id')
-        const postIdMatch = html.match(/wpMangaPostId\s*=\s*['"]?(\d+)/i)
-            || html.match(/post_id\s*=\s*['"]?(\d+)/i)
-            || html.match(/manga\s*:\s*['"]?(\d+)/i)
-        const postId = dataId || (postIdMatch ? postIdMatch[1] : null)
-
-        if (postId) {
-            try {
-                const ajaxResponse = await this.fetchHTML(
-                    `${BASE_URL}/wp-admin/admin-ajax.php`,
-                    'POST',
-                    `action=ajax_list_chapter&manga=${postId}`
-                )
-                const ajaxHtml = ajaxResponse.data as string
-                const $ajax = this.cheerio.load(ajaxHtml)
-                const chapters = this.parser.parseChapters($ajax, mangaId)
-                if (chapters.length > 0) {
-                    return chapters
-                }
-            } catch (e) {
+        // 1. Try to fetch the AJAX chapters endpoint directly
+        try {
+            const ajaxResponse = await this.fetchHTML(
+                `${BASE_URL}/manga/${mangaId}/ajax/chapters/`,
+                'POST'
+            )
+            const ajaxHtml = ajaxResponse.data as string
+            const $ajax = this.cheerio.load(ajaxHtml)
+            const chapters = this.parser.parseChapters($ajax, mangaId)
+            if (chapters.length > 0) {
+                return chapters
             }
+        } catch (e) {
+            // Fail silently and fall back to fetching the main page HTML
         }
 
+        // 2. Fallback: Fetch main page HTML and parse chapters
+        const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/`)
+        const $ = this.cheerio.load(response.data as string)
         return this.parser.parseChapters($, mangaId)
     }
 

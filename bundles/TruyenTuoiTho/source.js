@@ -466,7 +466,7 @@ const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.TruyenTuoiThoInfo = {
-    version: '1.1.3',
+    version: '1.1.4',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -617,28 +617,22 @@ class TruyenTuoiTho extends types_1.Source {
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
-        const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/`);
-        const html = response.data;
-        const $ = this.cheerio.load(html);
-        // Try extracting postId for AJAX chapter list loading
-        const dataId = $('#manga-chapters-holder').attr('data-id');
-        const postIdMatch = html.match(/wpMangaPostId\s*=\s*['"]?(\d+)/i)
-            || html.match(/post_id\s*=\s*['"]?(\d+)/i)
-            || html.match(/manga\s*:\s*['"]?(\d+)/i);
-        const postId = dataId || (postIdMatch ? postIdMatch[1] : null);
-        if (postId) {
-            try {
-                const ajaxResponse = await this.fetchHTML(`${BASE_URL}/wp-admin/admin-ajax.php`, 'POST', `action=ajax_list_chapter&manga=${postId}`);
-                const ajaxHtml = ajaxResponse.data;
-                const $ajax = this.cheerio.load(ajaxHtml);
-                const chapters = this.parser.parseChapters($ajax, mangaId);
-                if (chapters.length > 0) {
-                    return chapters;
-                }
-            }
-            catch (e) {
+        // 1. Try to fetch the AJAX chapters endpoint directly
+        try {
+            const ajaxResponse = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/ajax/chapters/`, 'POST');
+            const ajaxHtml = ajaxResponse.data;
+            const $ajax = this.cheerio.load(ajaxHtml);
+            const chapters = this.parser.parseChapters($ajax, mangaId);
+            if (chapters.length > 0) {
+                return chapters;
             }
         }
+        catch (e) {
+            // Fail silently and fall back to fetching the main page HTML
+        }
+        // 2. Fallback: Fetch main page HTML and parse chapters
+        const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/`);
+        const $ = this.cheerio.load(response.data);
         return this.parser.parseChapters($, mangaId);
     }
     async getChapterDetails(mangaId, chapterId) {
@@ -752,9 +746,15 @@ class Parser {
     parseChapters($, mangaId) {
         const chapters = [];
         const seenUrls = new Set();
-        $('.wp-manga-chapter a, .chapter-item a').each((_, el) => {
+        // Scoping search to actual chapter containers to prevent grabbing sidebar links
+        const container = $('.listing-chapters_wrap, #manga-chapters-holder, .version-chap');
+        const target = container.length > 0 ? container.find('a') : $('.wp-manga-chapter a, .chapter-item a');
+        target.each((_, el) => {
             const href = $(el).attr('href') ?? '';
             if (!href || seenUrls.has(href))
+                return;
+            // Filter out non-chapter anchor elements
+            if (href === '#' || href.includes('javascript:void(0)'))
                 return;
             seenUrls.add(href);
             const match = href.match(/\/manga\/[^/]+\/([^/]+)\/?$/);
