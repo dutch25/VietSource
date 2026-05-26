@@ -18,14 +18,15 @@ import {
 import { Parser } from './TruyenTuoiThoParser'
 
 const BASE_URL = 'https://truyentuoitho.com'
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
-    version: '1.1.2',
+    version: '1.1.3',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
     authorWebsite: 'https://github.com/Dutch25',
-    description: 'Extension for truyentuoitho.com (Madara Theme)',
+    description: 'Extension for truyentuoitho.com (Madara Theme with Proxy Support)',
     contentRating: ContentRating.ADULT,
     websiteBaseURL: BASE_URL,
     sourceTags: [
@@ -68,6 +69,50 @@ export class TruyenTuoiTho extends Source {
         })
     }
 
+    private async fetchHTML(url: string, method: string = 'GET', data?: any): Promise<Response> {
+        // 1. Try fetching via proxy worker first
+        try {
+            const proxyRequestUrl = `${PROXY_URL}/?url=${encodeURIComponent(url)}`
+            const response = await this.requestManager.schedule(
+                App.createRequest({
+                    url: proxyRequestUrl,
+                    method,
+                    headers: {
+                        'content-type': method === 'POST' ? 'application/x-www-form-urlencoded; charset=UTF-8' : undefined
+                    },
+                    data
+                }), 0
+            )
+            if (response.status === 200) {
+                const html = response.data as string
+                if (
+                    !html.includes('challenges.cloudflare.com') &&
+                    !html.includes('cf-challenge') &&
+                    !html.includes('<title>Just a moment...</title>') &&
+                    !html.includes('id="challenge-error-title"')
+                ) {
+                    return response
+                }
+            }
+        } catch (e) {
+            // Silently fall back to direct request on error
+        }
+
+        // 2. Direct request fallback
+        const response = await this.requestManager.schedule(
+            App.createRequest({
+                url,
+                method,
+                headers: {
+                    'content-type': method === 'POST' ? 'application/x-www-form-urlencoded; charset=UTF-8' : undefined
+                },
+                data
+            }), 0
+        )
+        this.checkCloudflare(response)
+        return response
+    }
+
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const sections = [
             { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/manga/?m_orderby=latest` },
@@ -86,20 +131,21 @@ export class TruyenTuoiTho extends Source {
         }
 
         for (const section of sections) {
-            const response = await this.requestManager.schedule(
-                App.createRequest({ url: section.url, method: 'GET' }), 0
-            )
-            this.checkCloudflare(response)
-            const $ = this.cheerio.load(response.data as string)
-            const manga = this.parser.parseHomePage($)
+            try {
+                const response = await this.fetchHTML(section.url)
+                const $ = this.cheerio.load(response.data as string)
+                const manga = this.parser.parseHomePage($, PROXY_URL)
 
-            sectionCallback(App.createHomeSection({
-                id: section.id,
-                title: section.title,
-                containsMoreItems: true,
-                type: HomeSectionType.singleRowNormal,
-                items: manga,
-            }))
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items: manga,
+                }))
+            } catch (e) {
+                // Silently ignore individual section failures to avoid breaking others
+            }
         }
     }
 
@@ -115,12 +161,9 @@ export class TruyenTuoiTho extends Source {
 
         const url = urlMap[homepageSectionId] ?? `${BASE_URL}/manga-genre/${homepageSectionId}?page=${page}`
 
-        const response = await this.requestManager.schedule(
-            App.createRequest({ url, method: 'GET' }), 0
-        )
-        this.checkCloudflare(response)
+        const response = await this.fetchHTML(url)
         const $ = this.cheerio.load(response.data as string)
-        const manga = this.parser.parseHomePage($)
+        const manga = this.parser.parseHomePage($, PROXY_URL)
 
         return App.createPagedResults({ results: manga, metadata: { page: page + 1 } })
     }
@@ -137,28 +180,19 @@ export class TruyenTuoiTho extends Source {
             url = `${BASE_URL}/page/${page}/?s=${searchQuery}&post_type=wp-manga`
         }
 
-        const response = await this.requestManager.schedule(
-            App.createRequest({ url, method: 'GET' }), 0
-        )
-        this.checkCloudflare(response)
+        const response = await this.fetchHTML(url)
         const $ = this.cheerio.load(response.data as string)
-        return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: { page: page + 1 } })
+        return App.createPagedResults({ results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } })
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
-        const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/`, method: 'GET' }), 0
-        )
-        this.checkCloudflare(response)
+        const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/`)
         const $ = this.cheerio.load(response.data as string)
         return this.parser.parseMangaDetails($, mangaId)
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/`, method: 'GET' }), 0
-        )
-        this.checkCloudflare(response)
+        const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/`)
         const html = response.data as string
         const $ = this.cheerio.load(html)
 
@@ -171,18 +205,11 @@ export class TruyenTuoiTho extends Source {
 
         if (postId) {
             try {
-                const ajaxResponse = await this.requestManager.schedule(
-                    App.createRequest({
-                        url: `${BASE_URL}/wp-admin/admin-ajax.php`,
-                        method: 'POST',
-                        headers: {
-                            'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                            'referer': `${BASE_URL}/manga/${mangaId}/`
-                        },
-                        data: `action=ajax_list_chapter&manga=${postId}`
-                    }), 0
+                const ajaxResponse = await this.fetchHTML(
+                    `${BASE_URL}/wp-admin/admin-ajax.php`,
+                    'POST',
+                    `action=ajax_list_chapter&manga=${postId}`
                 )
-                this.checkCloudflare(ajaxResponse)
                 const ajaxHtml = ajaxResponse.data as string
                 const $ajax = this.cheerio.load(ajaxHtml)
                 const chapters = this.parser.parseChapters($ajax, mangaId)
@@ -197,10 +224,7 @@ export class TruyenTuoiTho extends Source {
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/${chapterId}/`, method: 'GET' }), 1
-        )
-        this.checkCloudflare(response)
+        const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/${chapterId}/`)
         const $ = this.cheerio.load(response.data as string)
         const pages = this.parser.parseChapterPages($)
 
@@ -208,7 +232,10 @@ export class TruyenTuoiTho extends Source {
             throw new Error(`No pages found for chapter ${chapterId}`)
         }
 
-        return App.createChapterDetails({ id: chapterId, mangaId, pages })
+        // Apply proxy to all page image URLs
+        const proxiedPages = pages.map(page => `${PROXY_URL}/?url=${encodeURIComponent(page)}`)
+
+        return App.createChapterDetails({ id: chapterId, mangaId, pages: proxiedPages })
     }
 
     getMangaShareUrl(mangaId: string): string {

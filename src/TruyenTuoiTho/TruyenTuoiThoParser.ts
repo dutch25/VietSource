@@ -10,7 +10,7 @@ import { CheerioAPI } from 'cheerio'
 
 export class Parser {
 
-    parseHomePage($: CheerioAPI): PartialSourceManga[] {
+    parseHomePage($: CheerioAPI, proxyUrl?: string): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
 
         $('.page-item-detail, .manga-item, .page-listing-item, .row.c-tabs-item__content').each((_: any, el: any) => {
@@ -39,7 +39,9 @@ export class Parser {
 
             if (!rawImage) return
 
-            results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }))
+            const image = proxyUrl ? `${proxyUrl}/?url=${encodeURIComponent(rawImage)}` : rawImage
+
+            results.push(App.createPartialSourceManga({ mangaId: id, title, image }))
         })
 
         return this.deduplicate(results)

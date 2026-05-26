@@ -19,6 +19,7 @@ export default {
       'https://vvcz.store/',      // NHentaiClub
       'https://cdn.hv2t.com/',    // HV2T
       'https://hv2t.store/',      // HV2T Cover/Images
+      'https://truyentuoitho.com/', // TruyenTuoiTho Images
     ]
 
     // Allowed domains for pages (HTML)
@@ -26,6 +27,7 @@ export default {
       'nhentaiclub.site',
       'hv2t.store',
       'cdn.hv2t.com',
+      'truyentuoitho.com',
     ]
 
     const isImage = imageAllowed.some(prefix => target.startsWith(prefix))
@@ -39,6 +41,8 @@ export default {
     let referer = 'https://nhentaiclub.site'
     if (target.includes('hv2t.store') || target.includes('cdn.hv2t.com')) {
       referer = 'https://hv2t.store'
+    } else if (target.includes('truyentuoitho.com')) {
+      referer = 'https://truyentuoitho.com'
     }
 
     // HARDCODED AUTH COOKIES (from browser session)
@@ -59,10 +63,16 @@ export default {
     }
 
     // Use manual redirect handling to preserve headers (Referer & Cookies) across domains
-    let response = await fetch(target, {
+    const fetchOptions = {
+      method: request.method,
       headers: fetchHeaders,
       redirect: 'manual'
-    })
+    }
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      fetchOptions.body = await request.clone().arrayBuffer()
+    }
+
+    let response = await fetch(target, fetchOptions)
 
     // Handle redirects (up to 3 hops)
     let hops = 0
@@ -72,10 +82,16 @@ export default {
 
       const nextUrl = new URL(location, target).href
 
-      response = await fetch(nextUrl, {
+      const nextOptions = {
+        method: request.method,
         headers: fetchHeaders,
         redirect: 'manual'
-      })
+      }
+      if (request.method !== 'GET' && request.method !== 'HEAD') {
+        nextOptions.body = fetchOptions.body
+      }
+
+      response = await fetch(nextUrl, nextOptions)
       hops++
     }
 
