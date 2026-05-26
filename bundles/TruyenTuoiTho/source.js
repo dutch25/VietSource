@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 exports.TruyenTuoiThoInfo = {
-    version: '1.1.0',
+    version: '1.1.1',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -638,9 +638,15 @@ class Parser {
     parseHomePage($) {
         const results = [];
         $('.page-item-detail, .manga-item, .page-listing-item, .row.c-tabs-item__content').each((_, el) => {
-            const titleLink = $('.post-title h3 a, .post-title a, .manga-title a, .h5 a', el).first();
-            const title = titleLink.text().trim();
-            const href = titleLink.attr('href') ?? '';
+            const thumbLink = $('.item-thumb a, .manga-thumb a, .tab-thumb a', el).first();
+            const titleLink = $('.post-title h3 a, .post-title a, .manga-title a, .h5 a, .post-title a', el).first();
+            const href = thumbLink.attr('href') ?? titleLink.attr('href') ?? '';
+            let title = thumbLink.attr('title') ?? titleLink.text() ?? '';
+            // Clean title if it has "Full" or extra descriptions
+            if (title.includes(' Full')) {
+                title = title.split(' Full')[0];
+            }
+            title = title.trim();
             if (!href || !title)
                 return;
             const idMatch = href.match(/\/manga\/([^/]+)\/?$/);
@@ -649,7 +655,7 @@ class Parser {
             const id = idMatch[1].trim();
             if (!id)
                 return;
-            const img = $('.item-thumb img, .manga-thumb img, img', el).first();
+            const img = $('.item-thumb img, .manga-thumb img, .tab-thumb img, img', el).first();
             const rawImage = img.attr('data-src') ?? img.attr('data-lazy-src') ?? img.attr('src') ?? '';
             if (!rawImage)
                 return;
@@ -752,21 +758,42 @@ class Parser {
     }
     getSearchTags() {
         const genres = [
-            ['action', 'Action'], ['adult', 'Adult'], ['adventure', 'Adventure'], ['anime', 'Anime'],
-            ['bollywood', 'Bollywood'], ['chinese', 'Chinese'], ['comedy', 'Comedy'], ['comics', 'Comics'],
-            ['doujinshi', 'Doujinshi'], ['drama', 'Drama'], ['ecchi', 'Ecchi'], ['erotic', 'Erotic'],
-            ['fantasy', 'Fantasy'], ['funny', 'Funny'], ['gender-bender', 'Gender Bender'], ['harem', 'Harem'],
-            ['historical', 'Historical'], ['horror', 'Horror'], ['hot', 'Hot'], ['humor', 'Humor'],
-            ['isekai', 'Isekai'], ['josei', 'Josei'], ['live-action', 'Live Action'], ['magic', 'Magic'],
-            ['manga', 'Manga'], ['manhua', 'Manhua'], ['manhwa', 'Manhwa'], ['martial-arts', 'Martial Arts'],
-            ['mature', 'Mature'], ['mecha', 'Mecha'], ['mystery', 'Mystery'], ['ngon-tinh', 'Ngôn Tình'],
-            ['one-shot', 'One Shot'], ['psychological', 'Psychological'], ['romance', 'Romance'],
-            ['school-life', 'School Life'], ['sci-fi', 'Sci-Fi'], ['seinen', 'Seinen'], ['shoujo', 'Shoujo'],
-            ['shoujo-ai', 'Shoujo Ai'], ['slice-of-life', 'Slice of Life'], ['smut', 'Smut'], ['soft-yaoi', 'Soft Yaoi'],
-            ['soft-yuri', 'Soft Yuri'], ['sports', 'Sports'], ['supernatural', 'Supernatural'], ['thieu-nhi', 'Thiếu Nhi'],
-            ['thriller', 'Thriller'], ['traditionally-published', 'Traditionally Published'], ['tragedy', 'Tragedy'],
-            ['trinh-tham', 'Trinh Thám'], ['vampire', 'Vampire'], ['webtoons', 'Webtoons'], ['xuyen-khong', 'Xuyên Không'],
-            ['yaoi', 'Yaoi'], ['yuri', 'Yuri'],
+            ['action', 'Action'],
+            ['adult', 'Adult'],
+            ['adventure', 'Adventure'],
+            ['anime', 'Anime'],
+            ['comedy', 'Comedy'],
+            ['comic', 'Comic'],
+            ['cooking', 'Cooking'],
+            ['drama', 'Drama'],
+            ['fantasy', 'Fantasy'],
+            ['harem', 'Harem'],
+            ['historical', 'Historical'],
+            ['horror', 'Horror'],
+            ['josei', 'Josei'],
+            ['live-action', 'Live action'],
+            ['manga', 'Manga'],
+            ['manhua', 'Manhua'],
+            ['manhwa', 'Manhwa'],
+            ['martial-arts', 'Martial Arts'],
+            ['mature', 'Mature'],
+            ['mecha', 'Mecha'],
+            ['mystery', 'Mystery'],
+            ['one-shot', 'One shot'],
+            ['psychological', 'Psychological'],
+            ['romance', 'Romance'],
+            ['school-life', 'School Life'],
+            ['sci-fi', 'Sci-fi'],
+            ['seinen', 'Seinen'],
+            ['shoujo', 'Shoujo'],
+            ['shounen', 'Shounen'],
+            ['slice-of-life', 'Slice of Life'],
+            ['sports', 'Sports'],
+            ['thieu-nhi', 'Thiếu Nhi'],
+            ['detective', 'Trinh thám'],
+            ['truyen-giay', 'truyện giấy'],
+            ['truyen-hay', 'Truyện hay'],
+            ['webtoon', 'Webtoon']
         ];
         const tags = genres.map(([id, label]) => App.createTag({ id, label }));
         return [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })];
