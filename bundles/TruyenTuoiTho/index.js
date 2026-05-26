@@ -513,15 +513,17 @@ class TruyenTuoiTho extends types_1.Source {
         });
     }
     async fetchHTML(url, method = 'GET', data) {
+        const headers = {};
+        if (method === 'POST') {
+            headers['content-type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+        }
         // 1. Try fetching via proxy worker first
         try {
             const proxyRequestUrl = `${PROXY_URL}/?url=${encodeURIComponent(url)}`;
             const response = await this.requestManager.schedule(App.createRequest({
                 url: proxyRequestUrl,
                 method,
-                headers: {
-                    'content-type': method === 'POST' ? 'application/x-www-form-urlencoded; charset=UTF-8' : undefined
-                },
+                headers,
                 data
             }), 0);
             if (response.status === 200) {
@@ -541,9 +543,7 @@ class TruyenTuoiTho extends types_1.Source {
         const response = await this.requestManager.schedule(App.createRequest({
             url,
             method,
-            headers: {
-                'content-type': method === 'POST' ? 'application/x-www-form-urlencoded; charset=UTF-8' : undefined
-            },
+            headers,
             data
         }), 0);
         this.checkCloudflare(response);

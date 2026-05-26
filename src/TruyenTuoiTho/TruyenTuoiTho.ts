@@ -70,6 +70,11 @@ export class TruyenTuoiTho extends Source {
     }
 
     private async fetchHTML(url: string, method: string = 'GET', data?: any): Promise<Response> {
+        const headers: Record<string, string> = {}
+        if (method === 'POST') {
+            headers['content-type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
+        }
+
         // 1. Try fetching via proxy worker first
         try {
             const proxyRequestUrl = `${PROXY_URL}/?url=${encodeURIComponent(url)}`
@@ -77,9 +82,7 @@ export class TruyenTuoiTho extends Source {
                 App.createRequest({
                     url: proxyRequestUrl,
                     method,
-                    headers: {
-                        'content-type': method === 'POST' ? 'application/x-www-form-urlencoded; charset=UTF-8' : undefined
-                    },
+                    headers,
                     data
                 }), 0
             )
@@ -103,9 +106,7 @@ export class TruyenTuoiTho extends Source {
             App.createRequest({
                 url,
                 method,
-                headers: {
-                    'content-type': method === 'POST' ? 'application/x-www-form-urlencoded; charset=UTF-8' : undefined
-                },
+                headers,
                 data
             }), 0
         )
