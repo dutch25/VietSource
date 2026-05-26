@@ -466,7 +466,7 @@ const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.TruyenTuoiThoInfo = {
-    version: '1.1.4',
+    version: '1.1.5',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',

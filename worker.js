@@ -20,6 +20,8 @@ export default {
       'https://cdn.hv2t.com/',    // HV2T
       'https://hv2t.store/',      // HV2T Cover/Images
       'https://truyentuoitho.com/', // TruyenTuoiTho Images
+      'https://img.resourcehub.shop/', // TruyenTuoiTho CDN
+      'https://resourcehub.shop/', // TruyenTuoiTho CDN Alternate
     ]
 
     // Allowed domains for pages (HTML)
@@ -41,7 +43,7 @@ export default {
     let referer = 'https://nhentaiclub.site'
     if (target.includes('hv2t.store') || target.includes('cdn.hv2t.com')) {
       referer = 'https://hv2t.store'
-    } else if (target.includes('truyentuoitho.com')) {
+    } else if (target.includes('truyentuoitho.com') || target.includes('resourcehub.shop')) {
       referer = 'https://truyentuoitho.com'
     }
 
