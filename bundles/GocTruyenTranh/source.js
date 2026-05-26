@@ -1418,9 +1418,10 @@ exports.GocTruyenTranh = exports.GocTruyenTranhInfo = void 0;
 const types_1 = require("@paperback/types");
 const GocTruyenTranhParser_1 = require("./GocTruyenTranhParser");
 const DOMAIN = 'https://goctruyentranhvui30.com/';
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 const Auth = 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqbmkgcHJhdHR2b25kYSIsImNvbWljSWRzIjpbXSwicm9sZUlkIjpudWxsLCJncm91cElkIjpudWxsLCJhZG1pbiI6ZmFsc2UsInJhbmsiOjAsInBlcm1pc3Npb24iOltdLCJpZCI6IjAwMDExNjg0MzkiLCJ0ZWFtIjpmYWxzZSwiaWF0IjoxNzY3ODAzNDc4LCJlbWFpbCI6Im51bGwifQ.eWFypaV4dDZ_R5J9Gf0HqkbLaQDWCVwuja4yJJafl6KmPgaRk9TRHHX-0X94rP6xQtpeZRS25RNjOT0RpIdffg';
 exports.GocTruyenTranhInfo = {
-    version: '1.2.11',
+    version: '1.2.12',
     name: 'GocTruyenTranh',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -1504,7 +1505,7 @@ class GocTruyenTranh {
     }
     async getMangaDetails(mangaId) {
         const $ = await this.DOMHTML(`${DOMAIN}truyen/${mangaId.split('::')[0]}`);
-        return this.parser.parseMangaDetails($, mangaId, DOMAIN);
+        return this.parser.parseMangaDetails($, mangaId, DOMAIN, PROXY_URL);
     }
     async getChapters(mangaId) {
         const xToken = await this.getXToken(`${DOMAIN}truyen/${mangaId.split('::')[0]}`);
@@ -1603,7 +1604,7 @@ class GocTruyenTranh {
         const tags = query.includedTags?.map(tag => tag.id) ?? [];
         const url = query.title ? encodeURI(`${DOMAIN}api/comic/search?name=${query.title}`) : `${DOMAIN}api/comic/search/category?p=${page}&value=${tags[0]}`;
         const json = await this.callAPI(url);
-        const tiles = this.parser.parseSearchResults(json, DOMAIN);
+        const tiles = this.parser.parseSearchResults(json, DOMAIN, PROXY_URL);
         metadata = query.title ? undefined : { page: page + 1 };
         return App.createPagedResults({
             results: tiles,
@@ -1636,13 +1637,13 @@ class GocTruyenTranh {
             const json = await this.callAPI(url);
             switch (section.id) {
                 case 'hot':
-                    section.items = this.parser.parseViewMoreItems(json, DOMAIN).slice(0, 10);
+                    section.items = this.parser.parseViewMoreItems(json, DOMAIN, PROXY_URL).slice(0, 10);
                     break;
                 case 'new_added':
-                    section.items = this.parser.parseViewMoreItems(json, DOMAIN).slice(0, 10);
+                    section.items = this.parser.parseViewMoreItems(json, DOMAIN, PROXY_URL).slice(0, 10);
                     break;
                 case 'new_updated':
-                    section.items = this.parser.parseViewMoreItems(json, DOMAIN).slice(0, 10);
+                    section.items = this.parser.parseViewMoreItems(json, DOMAIN, PROXY_URL).slice(0, 10);
                     break;
             }
             sectionCallback(section);
@@ -1665,7 +1666,7 @@ class GocTruyenTranh {
                 throw new Error('Requested to getViewMoreItems for a section ID which doesn\'t exist');
         }
         const json = await this.callAPI(url);
-        const tiles = this.parser.parseViewMoreItems(json, DOMAIN);
+        const tiles = this.parser.parseViewMoreItems(json, DOMAIN, PROXY_URL);
         metadata = { page: page + 1 };
         return App.createPagedResults({
             results: tiles,
@@ -1766,7 +1767,7 @@ class Parser {
         }
         return time;
     }
-    parseMangaDetails($, mangaId, DOMAIN) {
+    parseMangaDetails($, mangaId, DOMAIN, proxyUrl) {
         const tags = [];
         $('.group-content a').each((_, obj) => {
             const label = $('span:nth-child(2)', obj).text().trim();
@@ -1789,7 +1790,8 @@ class Parser {
         });
         const imageRaw = String($('.v-image > img').attr('src')?.indexOf('https') === -1 ?
             DOMAIN + $('.v-image > img').attr('src') : $('.v-image > img').attr('src'));
-        const image = encodeURI(imageRaw).replace(/([^:]\/)\/+/g, '$1');
+        const fullImage = encodeURI(imageRaw).replace(/([^:]\/)\/+/g, '$1');
+        const image = proxyUrl && fullImage ? `${proxyUrl}/?url=${encodeURIComponent(fullImage)}` : fullImage;
         const desc = this.decodeHTMLEntity($('.v-card-text.pt-1.px-4.pb-4.text-secondary.font-weight-medium').text());
         const rating = parseFloat($('.pr-3 > b').text().trim());
         return App.createSourceManga({
@@ -1850,35 +1852,39 @@ class Parser {
         }
         return pages;
     }
-    parseSearchResults(json, DOMAIN) {
+    parseSearchResults(json, DOMAIN, proxyUrl) {
         const tiles = [];
         const array = json.result.data ?? json.result;
         for (const obj of array) {
             const title = obj.name;
             const subtitle = `Chương ${obj.chapterLatest[0]}`;
-            const image = obj.photo;
+            const imageRaw = obj.photo;
             const mangaId = `${obj.nameEn}::${obj.id}`;
+            const fullImage = encodeURI(imageRaw.indexOf('https') === -1 ? DOMAIN + imageRaw : imageRaw).replace(/([^:]\/)\/+/g, '$1') ?? '';
+            const image = proxyUrl ? `${proxyUrl}/?url=${encodeURIComponent(fullImage)}` : fullImage;
             tiles.push(App.createPartialSourceManga({
                 mangaId,
-                image: encodeURI(image.indexOf('https') === -1 ? DOMAIN + image : image).replace(/([^:]\/)\/+/g, '$1') ?? '',
+                image,
                 title,
                 subtitle
             }));
         }
         return tiles;
     }
-    parseViewMoreItems(json, DOMAIN) {
+    parseViewMoreItems(json, DOMAIN, proxyUrl) {
         const manga = [];
         const collectedIds = [];
         for (const obj of json.result.data) {
             const title = obj.name;
             const subtitle = 'Chương ' + obj.chapterLatest[0];
-            const image = obj.photo;
+            const imageRaw = obj.photo;
             const mangaId = `${obj.nameEn}::${obj.id}`;
             if (!collectedIds.includes(mangaId)) {
+                const fullImage = encodeURI(imageRaw.indexOf('https') === -1 ? DOMAIN + imageRaw : imageRaw).replace(/([^:]\/)\/+/g, '$1') ?? '';
+                const image = proxyUrl ? `${proxyUrl}/?url=${encodeURIComponent(fullImage)}` : fullImage;
                 manga.push(App.createPartialSourceManga({
                     mangaId,
-                    image: encodeURI(image.indexOf('https') === -1 ? DOMAIN + image : image).replace(/([^:]\/)\/+/g, '$1') ?? '',
+                    image,
                     title,
                     subtitle,
                 }));

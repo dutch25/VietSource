@@ -22,6 +22,7 @@ export default {
       'https://truyentuoitho.com/', // TruyenTuoiTho Images
       'https://img.resourcehub.shop/', // TruyenTuoiTho CDN
       'https://resourcehub.shop/', // TruyenTuoiTho CDN Alternate
+      'https://goctruyentranhvui30.com/', // GocTruyenTranh
     ]
 
     // Allowed domains for pages (HTML)
@@ -30,6 +31,7 @@ export default {
       'hv2t.store',
       'cdn.hv2t.com',
       'truyentuoitho.com',
+      'goctruyentranhvui30.com',
     ]
 
     const isImage = imageAllowed.some(prefix => target.startsWith(prefix))
@@ -45,6 +47,8 @@ export default {
       referer = 'https://hv2t.store'
     } else if (target.includes('truyentuoitho.com') || target.includes('resourcehub.shop')) {
       referer = 'https://truyentuoitho.com'
+    } else if (target.includes('goctruyentranhvui30.com')) {
+      referer = 'https://goctruyentranhvui30.com'
     }
 
     // HARDCODED AUTH COOKIES (from browser session)

@@ -6,6 +6,7 @@ import {
     PartialSourceManga
 } from '@paperback/types';
 
+import { CheerioAPI } from 'cheerio';
 import * as entities from 'entities'; //Import package for decoding HTML entities
 
 export class Parser {
@@ -43,7 +44,7 @@ export class Parser {
         return time;
     }
 
-    parseMangaDetails($: CheerioStatic, mangaId: string, DOMAIN: any): SourceManga {
+    parseMangaDetails($: CheerioAPI, mangaId: string, DOMAIN: any, proxyUrl?: string): SourceManga {
         const tags: Tag[] = [];
 
         $('.group-content a').each((_: any, obj: any) => {
@@ -70,7 +71,8 @@ export class Parser {
             $('.v-image > img').attr('src')?.indexOf('https') === -1 ? 
                 DOMAIN + $('.v-image > img').attr('src') : $('.v-image > img').attr('src')
         );
-        const image = encodeURI(imageRaw).replace(/([^:]\/)\/+/g, '$1');
+        const fullImage = encodeURI(imageRaw).replace(/([^:]\/)\/+/g, '$1');
+        const image = proxyUrl && fullImage ? `${proxyUrl}/?url=${encodeURIComponent(fullImage)}` : fullImage;
         const desc = this.decodeHTMLEntity($('.v-card-text.pt-1.px-4.pb-4.text-secondary.font-weight-medium').text());
         const rating = parseFloat($('.pr-3 > b').text().trim());
 
@@ -136,17 +138,19 @@ export class Parser {
         return pages;
     }
 
-    parseSearchResults(json: any, DOMAIN: any): PartialSourceManga[] {
+    parseSearchResults(json: any, DOMAIN: any, proxyUrl?: string): PartialSourceManga[] {
         const tiles: PartialSourceManga[] = [];
         const array = json.result.data ?? json.result;
         for (const obj of array) {
             const title = obj.name;
             const subtitle = `Chương ${obj.chapterLatest[0]}`;
-            const image = obj.photo;
+            const imageRaw = obj.photo;
             const mangaId = `${obj.nameEn}::${obj.id}`;
+            const fullImage = encodeURI(imageRaw.indexOf('https') === -1 ? DOMAIN + imageRaw : imageRaw).replace(/([^:]\/)\/+/g, '$1') ?? '';
+            const image = proxyUrl ? `${proxyUrl}/?url=${encodeURIComponent(fullImage)}` : fullImage;
             tiles.push(App.createPartialSourceManga({
                 mangaId,
-                image: encodeURI(image.indexOf('https') === -1 ? DOMAIN + image : image).replace(/([^:]\/)\/+/g, '$1') ?? '',
+                image,
                 title,
                 subtitle
             }));
@@ -155,18 +159,20 @@ export class Parser {
         return tiles;
     }
 
-    parseViewMoreItems(json: any, DOMAIN: any): PartialSourceManga[] {
+    parseViewMoreItems(json: any, DOMAIN: any, proxyUrl?: string): PartialSourceManga[] {
         const manga: PartialSourceManga[] = [];
         const collectedIds: string[] = [];
         for (const obj of json.result.data) {
             const title = obj.name;
             const subtitle = 'Chương ' + obj.chapterLatest[0];
-            const image = obj.photo;
+            const imageRaw = obj.photo;
             const mangaId = `${obj.nameEn}::${obj.id}`;
             if (!collectedIds.includes(mangaId)) {
+                const fullImage = encodeURI(imageRaw.indexOf('https') === -1 ? DOMAIN + imageRaw : imageRaw).replace(/([^:]\/)\/+/g, '$1') ?? '';
+                const image = proxyUrl ? `${proxyUrl}/?url=${encodeURIComponent(fullImage)}` : fullImage;
                 manga.push(App.createPartialSourceManga({
                     mangaId,
-                    image: encodeURI(image.indexOf('https') === -1 ? DOMAIN + image : image).replace(/([^:]\/)\/+/g, '$1') ?? '',
+                    image,
                     title,
                     subtitle,
                 }));

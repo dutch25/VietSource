@@ -24,10 +24,11 @@ import type { CheerioAPI } from 'cheerio';
 import { Parser } from './GocTruyenTranhParser';
 
 const DOMAIN = 'https://goctruyentranhvui30.com/';
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 const Auth = 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqbmkgcHJhdHR2b25kYSIsImNvbWljSWRzIjpbXSwicm9sZUlkIjpudWxsLCJncm91cElkIjpudWxsLCJhZG1pbiI6ZmFsc2UsInJhbmsiOjAsInBlcm1pc3Npb24iOltdLCJpZCI6IjAwMDExNjg0MzkiLCJ0ZWFtIjpmYWxzZSwiaWF0IjoxNzY3ODAzNDc4LCJlbWFpbCI6Im51bGwifQ.eWFypaV4dDZ_R5J9Gf0HqkbLaQDWCVwuja4yJJafl6KmPgaRk9TRHHX-0X94rP6xQtpeZRS25RNjOT0RpIdffg';
 
 export const GocTruyenTranhInfo: SourceInfo = {
-    version: '1.2.11',
+    version: '1.2.12',
     name: 'GocTruyenTranh',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -118,7 +119,7 @@ export class GocTruyenTranh implements SearchResultsProviding, MangaProviding, C
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const $ = await this.DOMHTML(`${DOMAIN}truyen/${mangaId.split('::')[0]}`);
-        return this.parser.parseMangaDetails($, mangaId, DOMAIN);
+        return this.parser.parseMangaDetails($, mangaId, DOMAIN, PROXY_URL);
     } 
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
@@ -229,7 +230,7 @@ export class GocTruyenTranh implements SearchResultsProviding, MangaProviding, C
         const tags = query.includedTags?.map(tag => tag.id) ?? [];
         const url = query.title ? encodeURI(`${DOMAIN}api/comic/search?name=${query.title}`) : `${DOMAIN}api/comic/search/category?p=${page}&value=${tags[0]}`;
         const json = await this.callAPI(url);
-        const tiles = this.parser.parseSearchResults(json, DOMAIN);
+        const tiles = this.parser.parseSearchResults(json, DOMAIN, PROXY_URL);
 
         metadata = query.title ? undefined : { page: page + 1 };
 
@@ -269,13 +270,13 @@ export class GocTruyenTranh implements SearchResultsProviding, MangaProviding, C
 
             switch (section.id) {
                 case 'hot':
-                    section.items = this.parser.parseViewMoreItems(json, DOMAIN).slice(0, 10);
+                    section.items = this.parser.parseViewMoreItems(json, DOMAIN, PROXY_URL).slice(0, 10);
                     break;
                 case 'new_added':
-                    section.items = this.parser.parseViewMoreItems(json, DOMAIN).slice(0, 10);
+                    section.items = this.parser.parseViewMoreItems(json, DOMAIN, PROXY_URL).slice(0, 10);
                     break;
                 case 'new_updated':
-                    section.items = this.parser.parseViewMoreItems(json, DOMAIN).slice(0, 10);
+                    section.items = this.parser.parseViewMoreItems(json, DOMAIN, PROXY_URL).slice(0, 10);
                     break;
             }
             sectionCallback(section);
@@ -300,7 +301,7 @@ export class GocTruyenTranh implements SearchResultsProviding, MangaProviding, C
         }
 
         const json = await this.callAPI(url);
-        const tiles = this.parser.parseViewMoreItems(json, DOMAIN);
+        const tiles = this.parser.parseViewMoreItems(json, DOMAIN, PROXY_URL);
         metadata = { page: page + 1 };
         return App.createPagedResults({
             results: tiles,
