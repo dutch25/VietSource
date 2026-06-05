@@ -20,7 +20,7 @@ import { Parser } from './VinaHentaiParser'
 const BASE_URL = 'https://vinahentai.bond'
 
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -100,7 +100,7 @@ export class VinaHentai extends Source {
                         )
                         if (resAnal.status === 200) {
                             const $anal = this.cheerio.load(resAnal.data as string)
-                            mangaAnal = this.parser.parseHomePage($anal)
+                            mangaAnal = this.parser.parseGenrePage($anal)
                         }
                     } catch (e) {}
 
@@ -110,7 +110,7 @@ export class VinaHentai extends Source {
                         )
                         if (resKhongChe.status === 200) {
                             const $khongChe = this.cheerio.load(resKhongChe.data as string)
-                            mangaKhongChe = this.parser.parseHomePage($khongChe)
+                            mangaKhongChe = this.parser.parseGenrePage($khongChe)
                         }
                     } catch (e) {}
 
@@ -166,7 +166,7 @@ export class VinaHentai extends Source {
                 )
                 if (resAnal.status === 200) {
                     const $anal = this.cheerio.load(resAnal.data as string)
-                    mangaAnal = this.parser.parseHomePage($anal)
+                    mangaAnal = this.parser.parseGenrePage($anal)
                 }
             } catch (e) {}
 
@@ -176,7 +176,7 @@ export class VinaHentai extends Source {
                 )
                 if (resKhongChe.status === 200) {
                     const $khongChe = this.cheerio.load(resKhongChe.data as string)
-                    mangaKhongChe = this.parser.parseHomePage($khongChe)
+                    mangaKhongChe = this.parser.parseGenrePage($khongChe)
                 }
             } catch (e) {}
 

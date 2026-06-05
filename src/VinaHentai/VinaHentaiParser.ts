@@ -196,7 +196,7 @@ export class Parser {
             ['doujinshi', 'Doujinshi'], ['drama', 'Drama'], ['drug', 'Drug'],
             ['ecchi', 'Ecchi'], ['elf', 'Elf'], ['fantasy', 'Fantasy'],
             ['father', 'Father'], ['femdom', 'Femdom'], ['footjob', 'Footjob'],
-            ['full-color', 'Full Color'], ['futanari', 'Futanari'],
+            ['full-color', 'Full Color'], ['furry', 'Furry'], ['futanari', 'Futanari'],
             ['gangbang', 'Gangbang'], ['ghost', 'Ghost'], ['glasses', 'Glasses'],
             ['gothic-lolita', 'Gothic Lolita'], ['guro', 'Guro'], ['handjob', 'Handjob'],
             ['harem', 'Harem'], ['horror', 'Horror'], ['housewife', 'Housewife'],
@@ -217,7 +217,7 @@ export class Parser {
             ['truyen-viet', 'Truyện Việt'], ['tsundere', 'Tsundere'], ['twins', 'Twins'],
             ['underwater', 'Underwater'], ['vanilla', 'Vanilla'], ['virgin', 'Virgin'],
             ['webtoon', 'Webtoon'], ['x-ray', 'X-ray'], ['yandere', 'Yandere'],
-            ['yuri', 'Yuri'], ['beach', 'Beach'],
+            ['yaoi', 'Yaoi'], ['yuri', 'Yuri'], ['beach', 'Beach'],
             ['creampie', 'Creampie'], ['fingering', 'Fingering'], ['gender-bender', 'Gender Bender'],
             ['group', 'Group'], ['lingerie', 'Lingerie'], ['masturbation', 'Masturbation'],
             ['series', 'Series'], ['short', 'Short'], ['succubus', 'Succubus'],
@@ -236,5 +236,97 @@ export class Parser {
             seen.add(item.mangaId)
             return true
         })
+    }
+
+    parseGenrePage($: CheerioAPI): PartialSourceManga[] {
+        const manga = this.parseHomePage($)
+        const genresMap = this.extractMangaGenresMap($)
+        return manga.filter(m => {
+            const genres = genresMap.get(m.mangaId)
+            if (genres) {
+                return !genres.includes('yaoi') && !genres.includes('furry')
+            }
+            return true
+        })
+    }
+
+    private extractMangaGenresMap($: CheerioAPI): Map<string, string[]> {
+        const genresMap = new Map<string, string[]>()
+        try {
+            const html = $.html()
+            const regex = /streamController\.enqueue\("([\s\S]*?)"\)/g
+            let match
+            let concatenated = ''
+            while ((match = regex.exec(html)) !== null) {
+                concatenated += match[1]
+            }
+
+            if (!concatenated) return genresMap
+
+            const safeLiteral = concatenated.replace(/\r/g, '\\r').replace(/\n/g, '\\n')
+            const decodedStr = JSON.parse('"' + safeLiteral + '"')
+            const parsed = JSON.parse(decodedStr)
+
+            if (!Array.isArray(parsed)) return genresMap
+
+            const cache = new Map<number, any>()
+
+            const resolve = (idx: any): any => {
+                if (idx === null || idx === undefined) return idx
+                if (typeof idx !== 'number') return idx
+
+                if (cache.has(idx)) return cache.get(idx)
+                cache.set(idx, null)
+
+                const raw = parsed[idx]
+                if (raw === null || raw === undefined || typeof raw !== 'object') {
+                    cache.set(idx, raw)
+                    return raw
+                }
+
+                if (Array.isArray(raw)) {
+                    const resolvedArr: any[] = []
+                    cache.set(idx, resolvedArr)
+                    for (const item of raw) {
+                        resolvedArr.push(resolve(item))
+                    }
+                    return resolvedArr
+                }
+
+                const keys = Object.keys(raw)
+                const isRefObj = keys.every(k => k.startsWith('_'))
+
+                if (isRefObj) {
+                    const resolvedObj: any = {}
+                    cache.set(idx, resolvedObj)
+                    for (const k of keys) {
+                        const keyIdx = parseInt(k.slice(1), 10)
+                        const propName = resolve(keyIdx)
+                        const valIdx = raw[k]
+                        resolvedObj[propName] = resolve(valIdx)
+                    }
+                    return resolvedObj
+                } else {
+                    const resolvedObj: any = {}
+                    cache.set(idx, resolvedObj)
+                    for (const k of keys) {
+                        resolvedObj[k] = resolve(raw[k])
+                    }
+                    return resolvedObj
+                }
+            }
+
+            for (let i = 0; i < parsed.length; i++) {
+                const resObj = resolve(i)
+                if (resObj && typeof resObj === 'object' && resObj.slug && resObj.title && resObj.chapters !== undefined) {
+                    if (Array.isArray(resObj.genres)) {
+                        genresMap.set(resObj.slug, resObj.genres.filter((g: any) => typeof g === 'string'))
+                    }
+                }
+            }
+        } catch (e) {
+            // Silence parsing errors
+        }
+        return genresMap
     }
 }
