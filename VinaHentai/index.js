@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.bond';
 exports.VinaHentaiInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -515,9 +515,10 @@ class VinaHentai extends types_1.Source {
         const sections = [
             { id: 'hot', title: 'Truyện HOT', url: `${BASE_URL}` },
             { id: 'latest', title: 'Truyện Hentai Mới', url: `${BASE_URL}` },
-            { id: 'cosplay', title: 'Ảnh Cosplay', url: `${BASE_URL}` },
             { id: 'week', title: 'Top Tuần', url: `${BASE_URL}/leaderboard/manga?period=weekly` },
             { id: 'month', title: 'Top Tháng', url: `${BASE_URL}/leaderboard/manga?period=monthly` },
+            { id: 'private', title: 'Bộ Sưu Tập Riêng', url: `${BASE_URL}/genres/anal` },
+            { id: 'cosplay', title: 'Ảnh Cosplay', url: `${BASE_URL}` },
         ];
         for (const section of sections) {
             sectionCallback(App.createHomeSection({
@@ -529,22 +530,55 @@ class VinaHentai extends types_1.Source {
         }
         for (const section of sections) {
             try {
-                const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 0);
-                if (response.status === 403 || response.status === 503)
-                    continue;
-                const $ = this.cheerio.load(response.data);
                 let manga = [];
-                if (section.id === 'hot') {
-                    manga = this.parser.parseSection($, 'Truyện HOT');
-                }
-                else if (section.id === 'latest') {
-                    manga = this.parser.parseSection($, 'Truyện hentai mới');
-                }
-                else if (section.id === 'cosplay') {
-                    manga = this.parser.parseSection($, 'Ảnh cosplay');
+                if (section.id === 'private') {
+                    let mangaAnal = [];
+                    let mangaKhongChe = [];
+                    try {
+                        const resAnal = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/anal`, method: 'GET' }), 0);
+                        if (resAnal.status === 200) {
+                            const $anal = this.cheerio.load(resAnal.data);
+                            mangaAnal = this.parser.parseHomePage($anal);
+                        }
+                    }
+                    catch (e) { }
+                    try {
+                        const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/khong-che`, method: 'GET' }), 0);
+                        if (resKhongChe.status === 200) {
+                            const $khongChe = this.cheerio.load(resKhongChe.data);
+                            mangaKhongChe = this.parser.parseHomePage($khongChe);
+                        }
+                    }
+                    catch (e) { }
+                    const combined = [];
+                    const maxLength = Math.max(mangaAnal.length, mangaKhongChe.length);
+                    for (let i = 0; i < maxLength; i++) {
+                        if (i < mangaAnal.length)
+                            combined.push(mangaAnal[i]);
+                        if (i < mangaKhongChe.length)
+                            combined.push(mangaKhongChe[i]);
+                    }
+                    manga = this.parser.deduplicate(combined);
+                    if (manga.length === 0)
+                        continue;
                 }
                 else {
-                    manga = this.parser.parseHomePage($);
+                    const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 0);
+                    if (response.status === 403 || response.status === 503)
+                        continue;
+                    const $ = this.cheerio.load(response.data);
+                    if (section.id === 'hot') {
+                        manga = this.parser.parseSection($, 'Truyện HOT');
+                    }
+                    else if (section.id === 'latest') {
+                        manga = this.parser.parseSection($, 'Truyện hentai mới');
+                    }
+                    else if (section.id === 'cosplay') {
+                        manga = this.parser.parseSection($, 'Ảnh cosplay');
+                    }
+                    else {
+                        manga = this.parser.parseHomePage($);
+                    }
                 }
                 sectionCallback(App.createHomeSection({
                     id: section.id,
@@ -561,6 +595,36 @@ class VinaHentai extends types_1.Source {
     async getViewMoreItems(homepageSectionId, metadata) {
         const page = metadata?.page ?? 1;
         let url = `${BASE_URL}/danh-sach?page=${page}`;
+        if (homepageSectionId === 'private') {
+            let mangaAnal = [];
+            let mangaKhongChe = [];
+            try {
+                const resAnal = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/anal?page=${page}`, method: 'GET' }), 0);
+                if (resAnal.status === 200) {
+                    const $anal = this.cheerio.load(resAnal.data);
+                    mangaAnal = this.parser.parseHomePage($anal);
+                }
+            }
+            catch (e) { }
+            try {
+                const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/khong-che?page=${page}`, method: 'GET' }), 0);
+                if (resKhongChe.status === 200) {
+                    const $khongChe = this.cheerio.load(resKhongChe.data);
+                    mangaKhongChe = this.parser.parseHomePage($khongChe);
+                }
+            }
+            catch (e) { }
+            const combined = [];
+            const maxLength = Math.max(mangaAnal.length, mangaKhongChe.length);
+            for (let i = 0; i < maxLength; i++) {
+                if (i < mangaAnal.length)
+                    combined.push(mangaAnal[i]);
+                if (i < mangaKhongChe.length)
+                    combined.push(mangaKhongChe[i]);
+            }
+            const manga = this.parser.deduplicate(combined);
+            return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
+        }
         if (homepageSectionId === 'cosplay') {
             url = `${BASE_URL}/genres/anh-cosplay?page=${page}`;
         }
