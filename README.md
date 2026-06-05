@@ -9,6 +9,7 @@ A **Paperback 0.8** extension supporting **Vietnamese manga sources**:
 | **HV2T** | hv2t.store | ✅ Working (API + Proxy) |
 | **HentaiVN** | hentaivn.college | ⚠️ ISP Blocked (Pending test) |
 | **TruyenVN** | truyenvn.shop | ✅ Working |
+| **VinaHentai** | vinahentai.bond | ✅ Working |
 
 ## Add to Paperback
 
@@ -46,3 +47,10 @@ A **Paperback 0.8** extension supporting **Vietnamese manga sources**:
 - Search functionality
 - Manga details with chapter list
 - Chapter reading
+
+### VinaHentai (vinahentai.bond)
+- Browse: Truyện HOT, Truyện Hentai Mới, Top Tuần, Top Tháng, Bộ Sưu Tập Riêng (loại trừ yaoi/furry), Ảnh Cosplay
+- Search by keyword and genres (hỗ trợ click xem truyện cùng tác giả)
+- Manga details với tag tác giả đứng đầu click được
+- Chapter reading
+
