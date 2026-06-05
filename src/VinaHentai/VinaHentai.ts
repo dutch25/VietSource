@@ -20,7 +20,7 @@ import { Parser } from './VinaHentaiParser'
 const BASE_URL = 'https://vinahentai.bond'
 
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -213,7 +213,12 @@ export class VinaHentai extends Source {
         let url: string
 
         if (selectedTag) {
-            url = `${BASE_URL}/genres/${selectedTag.id}?page=${page}`
+            if (selectedTag.id.startsWith('author:')) {
+                const authorId = selectedTag.id.replace('author:', '')
+                url = `${BASE_URL}/authors/${authorId}?page=${page}`
+            } else {
+                url = `${BASE_URL}/genres/${selectedTag.id}?page=${page}`
+            }
         } else {
             const searchQuery = encodeURIComponent(query.title ?? '')
             url = `${BASE_URL}/search?q=${searchQuery}&page=${page}`

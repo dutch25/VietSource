@@ -77,6 +77,16 @@ export class Parser {
         const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? ''
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? ''
 
+        const authors: Tag[] = []
+        $('a[href^="/authors/"]').each((_: any, el: any) => {
+            const href = $(el).attr('href') ?? ''
+            const authorId = href.replace('/authors/', '').trim()
+            const label = $(el).find('span').first().text().trim() || $(el).text().trim()
+            if (authorId && label) {
+                authors.push(App.createTag({ id: 'author:' + authorId, label }))
+            }
+        })
+
         const genres: Tag[] = []
         $('a[href^="/genres/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
@@ -88,9 +98,14 @@ export class Parser {
         })
 
         const tagSections: TagSection[] = []
+        if (authors.length > 0) {
+            tagSections.push(App.createTagSection({ id: 'author', label: 'Tác Giả', tags: authors }))
+        }
         if (genres.length > 0) {
             tagSections.push(App.createTagSection({ id: 'genres', label: 'Thể Loại', tags: genres }))
         }
+
+        const authorName = authors.length > 0 ? authors[0].label : ''
 
         return App.createSourceManga({
             id: mangaId,
@@ -98,8 +113,8 @@ export class Parser {
                 titles: [title],
                 image: rawImage,
                 desc,
-                author: '',
-                artist: '',
+                author: authorName,
+                artist: authorName,
                 status: '',
                 tags: tagSections
             }),

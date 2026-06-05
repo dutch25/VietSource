@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.bond';
 exports.VinaHentaiInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -644,7 +644,13 @@ class VinaHentai extends types_1.Source {
         const selectedTag = query.includedTags?.[0];
         let url;
         if (selectedTag) {
-            url = `${BASE_URL}/genres/${selectedTag.id}?page=${page}`;
+            if (selectedTag.id.startsWith('author:')) {
+                const authorId = selectedTag.id.replace('author:', '');
+                url = `${BASE_URL}/authors/${authorId}?page=${page}`;
+            }
+            else {
+                url = `${BASE_URL}/genres/${selectedTag.id}?page=${page}`;
+            }
         }
         else {
             const searchQuery = encodeURIComponent(query.title ?? '');
@@ -746,6 +752,15 @@ class Parser {
             || mangaId;
         const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? '';
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? '';
+        const authors = [];
+        $('a[href^="/authors/"]').each((_, el) => {
+            const href = $(el).attr('href') ?? '';
+            const authorId = href.replace('/authors/', '').trim();
+            const label = $(el).find('span').first().text().trim() || $(el).text().trim();
+            if (authorId && label) {
+                authors.push(App.createTag({ id: 'author:' + authorId, label }));
+            }
+        });
         const genres = [];
         $('a[href^="/genres/"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
@@ -756,17 +771,21 @@ class Parser {
             }
         });
         const tagSections = [];
+        if (authors.length > 0) {
+            tagSections.push(App.createTagSection({ id: 'author', label: 'Tác Giả', tags: authors }));
+        }
         if (genres.length > 0) {
             tagSections.push(App.createTagSection({ id: 'genres', label: 'Thể Loại', tags: genres }));
         }
+        const authorName = authors.length > 0 ? authors[0].label : '';
         return App.createSourceManga({
             id: mangaId,
             mangaInfo: App.createMangaInfo({
                 titles: [title],
                 image: rawImage,
                 desc,
-                author: '',
-                artist: '',
+                author: authorName,
+                artist: authorName,
                 status: '',
                 tags: tagSections
             }),
