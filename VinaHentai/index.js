@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.bond';
 exports.VinaHentaiInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -513,7 +513,11 @@ class VinaHentai extends types_1.Source {
     }
     async getHomePageSections(sectionCallback) {
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}` },
+            { id: 'hot', title: 'Truyện HOT', url: `${BASE_URL}` },
+            { id: 'latest', title: 'Truyện Hentai Mới', url: `${BASE_URL}` },
+            { id: 'cosplay', title: 'Ảnh Cosplay', url: `${BASE_URL}` },
+            { id: 'week', title: 'Top Tuần', url: `${BASE_URL}/leaderboard/manga?period=weekly` },
+            { id: 'month', title: 'Top Tháng', url: `${BASE_URL}/leaderboard/manga?period=monthly` },
         ];
         for (const section of sections) {
             sectionCallback(App.createHomeSection({
@@ -529,7 +533,19 @@ class VinaHentai extends types_1.Source {
                 if (response.status === 403 || response.status === 503)
                     continue;
                 const $ = this.cheerio.load(response.data);
-                const manga = this.parser.parseHomePage($);
+                let manga = [];
+                if (section.id === 'hot') {
+                    manga = this.parser.parseSection($, 'Truyện HOT');
+                }
+                else if (section.id === 'latest') {
+                    manga = this.parser.parseSection($, 'Truyện hentai mới');
+                }
+                else if (section.id === 'cosplay') {
+                    manga = this.parser.parseSection($, 'Ảnh cosplay');
+                }
+                else {
+                    manga = this.parser.parseHomePage($);
+                }
                 sectionCallback(App.createHomeSection({
                     id: section.id,
                     title: section.title,
@@ -544,7 +560,16 @@ class VinaHentai extends types_1.Source {
     }
     async getViewMoreItems(homepageSectionId, metadata) {
         const page = metadata?.page ?? 1;
-        const url = `${BASE_URL}/danh-sach?page=${page}`;
+        let url = `${BASE_URL}/danh-sach?page=${page}`;
+        if (homepageSectionId === 'cosplay') {
+            url = `${BASE_URL}/genres/anh-cosplay?page=${page}`;
+        }
+        else if (homepageSectionId === 'week') {
+            url = `${BASE_URL}/leaderboard/manga?period=weekly&page=${page}`;
+        }
+        else if (homepageSectionId === 'month') {
+            url = `${BASE_URL}/leaderboard/manga?period=monthly&page=${page}`;
+        }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         const manga = this.parser.parseHomePage($);
@@ -599,24 +624,55 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
 class Parser {
     parseHomePage($) {
+        const cards = $('a[href^="/truyen-hentai/"]');
+        const imageMap = this.buildImageMap($);
+        return this.parseCards($, cards, imageMap);
+    }
+    parseSection($, sectionTitle) {
+        const header = $('h2').filter((_, el) => $(el).text().trim().toLowerCase() === sectionTitle.toLowerCase());
+        if (header.length === 0)
+            return [];
+        const imageMap = this.buildImageMap($);
+        let current = header;
+        for (let i = 0; i < 5; i++) {
+            const next = current.next();
+            if (next.length > 0) {
+                const cards = next.find('a[href^="/truyen-hentai/"]');
+                if (cards.length > 0) {
+                    return this.parseCards($, cards, imageMap);
+                }
+            }
+            const parentNext = current.parent().next();
+            if (parentNext.length > 0) {
+                const cards = parentNext.find('a[href^="/truyen-hentai/"]');
+                if (cards.length > 0) {
+                    return this.parseCards($, cards, imageMap);
+                }
+            }
+            current = current.parent();
+        }
+        return [];
+    }
+    parseCards($, cardsEl, imageMap) {
         const results = [];
-        $('a[href^="/truyen-hentai/"]').each((_, el) => {
-            const href = $(el).attr('href') ?? '';
+        cardsEl.each((_, el) => {
+            const href = $(el).attr('href');
+            if (!href)
+                return;
             const parts = href.split('/').filter(Boolean);
-            // manga details: /truyen-hentai/{slug}
-            // chapter: /truyen-hentai/{slug}/{chapter}
             if (parts.length !== 2)
                 return;
-            const id = parts[1].trim();
-            if (!id)
-                return;
-            const titleEl = $(el).find('h2, h3').first();
+            const slug = parts[1].trim();
+            const titleEl = $(el).find('h2, h3, p').first();
             const title = titleEl.attr('title') || titleEl.text().trim();
             const img = $(el).find('img').first();
-            const rawImage = img.attr('src') ?? img.attr('data-src') ?? '';
-            if (!title || !rawImage)
-                return;
-            results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }));
+            let image = img.attr('src') ?? img.attr('data-src') ?? '';
+            if (!image) {
+                image = imageMap.get(slug) ?? '';
+            }
+            if (slug && title) {
+                results.push(App.createPartialSourceManga({ mangaId: slug, title, image }));
+            }
         });
         return this.deduplicate(results);
     }
@@ -675,9 +731,6 @@ class Parser {
                 time: time,
             }));
         });
-        // Paperback expects chapters to be ordered with newest first or oldest first?
-        // Usually, Paperback requires chapters sorted by chapter number descending/ascending. We return them as they are parsed, or reverse depending on page layout.
-        // On the page, the list is typically descending (newest / highest chapter first).
         return chapters;
     }
     parseChapterPages($) {
@@ -693,6 +746,24 @@ class Parser {
             }
         }
         return pages;
+    }
+    buildImageMap($) {
+        const imageMap = new Map();
+        const html = $.html();
+        const parts = html.split('\\"');
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            if (/^https:\/\/cdn\.vinahentai\.bond\/[^\s"'\\]+\.(webp|jpg|jpeg|png)$/.test(part)) {
+                for (let j = 1; j <= 5; j++) {
+                    const prev = parts[i - j];
+                    if (prev && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(prev) && prev.length > 3 && prev.length < 100) {
+                        imageMap.set(prev, part);
+                        break;
+                    }
+                }
+            }
+        }
+        return imageMap;
     }
     getSearchTags() {
         const genres = [
