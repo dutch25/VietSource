@@ -10,6 +10,7 @@ A **Paperback 0.8** extension supporting **Vietnamese manga sources**:
 | **HentaiVN** | hentaivn.college | ⚠️ ISP Blocked (Pending test) |
 | **TruyenVN** | truyenvn.shop | ✅ Working |
 | **VinaHentai** | vinahentai.bond | ✅ Working |
+| **ViHentai** | vi-hentai.pro | ✅ Working (Gate: 5) |
 
 ## Add to Paperback
 
@@ -53,4 +54,12 @@ A **Paperback 0.8** extension supporting **Vietnamese manga sources**:
 - Search by keyword and genres (hỗ trợ click xem truyện cùng tác giả)
 - Manga details với tag tác giả đứng đầu click được
 - Chapter reading
+
+### ViHentai (vi-hentai.pro)
+- Yêu cầu mật khẩu `5` (hoặc click 5 lần vào video Doro) để vượt qua Gate khi chạy bypass lần đầu.
+- Browse: Truyện HOT, Truyện Hentai Mới, Top Tuần, Top Tháng, Bộ Sưu Tập Riêng (loại trừ yaoi/furry), Ảnh Cosplay
+- Search by keyword and genres (hỗ trợ click xem truyện cùng tác giả)
+- Manga details với tag tác giả đứng đầu click được
+- Chapter reading
+
 
