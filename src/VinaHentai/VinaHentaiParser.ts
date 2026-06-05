@@ -229,7 +229,7 @@ export class Parser {
         return [App.createTagSection({ id: 'genre', label: 'Thể Loại', tags })]
     }
 
-    private deduplicate(items: PartialSourceManga[]): PartialSourceManga[] {
+    deduplicate(items: PartialSourceManga[]): PartialSourceManga[] {
         const seen = new Set<string>()
         return items.filter(item => {
             if (seen.has(item.mangaId)) return false
