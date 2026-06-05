@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.bond';
 exports.VinaHentaiInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -852,7 +852,7 @@ class Parser {
             ['doujinshi', 'Doujinshi'], ['drama', 'Drama'], ['drug', 'Drug'],
             ['ecchi', 'Ecchi'], ['elf', 'Elf'], ['fantasy', 'Fantasy'],
             ['father', 'Father'], ['femdom', 'Femdom'], ['footjob', 'Footjob'],
-            ['full-color', 'Full Color'], ['furry', 'Furry'], ['futanari', 'Futanari'],
+            ['full-color', 'Full Color'], ['futanari', 'Futanari'],
             ['gangbang', 'Gangbang'], ['ghost', 'Ghost'], ['glasses', 'Glasses'],
             ['gothic-lolita', 'Gothic Lolita'], ['guro', 'Guro'], ['handjob', 'Handjob'],
             ['harem', 'Harem'], ['horror', 'Horror'], ['housewife', 'Housewife'],
@@ -873,7 +873,7 @@ class Parser {
             ['truyen-viet', 'Truyện Việt'], ['tsundere', 'Tsundere'], ['twins', 'Twins'],
             ['underwater', 'Underwater'], ['vanilla', 'Vanilla'], ['virgin', 'Virgin'],
             ['webtoon', 'Webtoon'], ['x-ray', 'X-ray'], ['yandere', 'Yandere'],
-            ['yaoi', 'Yaoi'], ['yuri', 'Yuri'], ['beach', 'Beach'],
+            ['yuri', 'Yuri'], ['beach', 'Beach'],
             ['creampie', 'Creampie'], ['fingering', 'Fingering'], ['gender-bender', 'Gender Bender'],
             ['group', 'Group'], ['lingerie', 'Lingerie'], ['masturbation', 'Masturbation'],
             ['series', 'Series'], ['short', 'Short'], ['succubus', 'Succubus'],
