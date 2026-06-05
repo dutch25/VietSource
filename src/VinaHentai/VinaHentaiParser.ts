@@ -11,29 +11,62 @@ import { CheerioAPI } from 'cheerio'
 export class Parser {
 
     parseHomePage($: CheerioAPI): PartialSourceManga[] {
-        const results: PartialSourceManga[] = []
+        const cards = $('a[href^="/truyen-hentai/"]')
+        const imageMap = this.buildImageMap($)
+        return this.parseCards($, cards, imageMap)
+    }
 
-        $('a[href^="/truyen-hentai/"]').each((_: any, el: any) => {
-            const href = $(el).attr('href') ?? ''
+    parseSection($: CheerioAPI, sectionTitle: string): PartialSourceManga[] {
+        const header = $('h2').filter((_, el) => $(el).text().trim().toLowerCase() === sectionTitle.toLowerCase())
+        if (header.length === 0) return []
+
+        const imageMap = this.buildImageMap($)
+
+        let current = header
+        for (let i = 0; i < 5; i++) {
+            const next = current.next()
+            if (next.length > 0) {
+                const cards = next.find('a[href^="/truyen-hentai/"]')
+                if (cards.length > 0) {
+                    return this.parseCards($, cards, imageMap)
+                }
+            }
+
+            const parentNext = current.parent().next()
+            if (parentNext.length > 0) {
+                const cards = parentNext.find('a[href^="/truyen-hentai/"]')
+                if (cards.length > 0) {
+                    return this.parseCards($, cards, imageMap)
+                }
+            }
+            current = current.parent()
+        }
+        return []
+    }
+
+    parseCards($: CheerioAPI, cardsEl: any, imageMap: Map<string, string>): PartialSourceManga[] {
+        const results: PartialSourceManga[] = []
+        cardsEl.each((_: any, el: any) => {
+            const href = $(el).attr('href')
+            if (!href) return
             const parts = href.split('/').filter(Boolean)
-            // manga details: /truyen-hentai/{slug}
-            // chapter: /truyen-hentai/{slug}/{chapter}
             if (parts.length !== 2) return
 
-            const id = parts[1].trim()
-            if (!id) return
-
-            const titleEl = $(el).find('h2, h3').first()
+            const slug = parts[1].trim()
+            const titleEl = $(el).find('h2, h3, p').first()
             const title = titleEl.attr('title') || titleEl.text().trim()
 
             const img = $(el).find('img').first()
-            const rawImage = img.attr('src') ?? img.attr('data-src') ?? ''
+            let image = img.attr('src') ?? img.attr('data-src') ?? ''
 
-            if (!title || !rawImage) return
+            if (!image) {
+                image = imageMap.get(slug) ?? ''
+            }
 
-            results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }))
+            if (slug && title) {
+                results.push(App.createPartialSourceManga({ mangaId: slug, title, image }))
+            }
         })
-
         return this.deduplicate(results)
     }
 
@@ -101,9 +134,6 @@ export class Parser {
             }))
         })
 
-        // Paperback expects chapters to be ordered with newest first or oldest first?
-        // Usually, Paperback requires chapters sorted by chapter number descending/ascending. We return them as they are parsed, or reverse depending on page layout.
-        // On the page, the list is typically descending (newest / highest chapter first).
         return chapters
     }
 
@@ -121,6 +151,26 @@ export class Parser {
             }
         }
         return pages
+    }
+
+    private buildImageMap($: CheerioAPI): Map<string, string> {
+        const imageMap = new Map<string, string>()
+        const html = $.html()
+        const parts = html.split('\\"')
+        
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i]
+            if (/^https:\/\/cdn\.vinahentai\.bond\/[^\s"'\\]+\.(webp|jpg|jpeg|png)$/.test(part)) {
+                for (let j = 1; j <= 5; j++) {
+                    const prev = parts[i - j]
+                    if (prev && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(prev) && prev.length > 3 && prev.length < 100) {
+                        imageMap.set(prev, part)
+                        break
+                    }
+                }
+            }
+        }
+        return imageMap
     }
 
     getSearchTags(): TagSection[] {

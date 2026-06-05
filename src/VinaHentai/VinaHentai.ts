@@ -12,6 +12,7 @@ import {
     SourceIntents,
     SourceManga,
     TagSection,
+    PartialSourceManga,
 } from '@paperback/types'
 
 import { Parser } from './VinaHentaiParser'
@@ -19,7 +20,7 @@ import { Parser } from './VinaHentaiParser'
 const BASE_URL = 'https://vinahentai.bond'
 
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -69,7 +70,11 @@ export class VinaHentai extends Source {
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}` },
+            { id: 'hot', title: 'Truyện HOT', url: `${BASE_URL}` },
+            { id: 'latest', title: 'Truyện Hentai Mới', url: `${BASE_URL}` },
+            { id: 'cosplay', title: 'Ảnh Cosplay', url: `${BASE_URL}` },
+            { id: 'week', title: 'Top Tuần', url: `${BASE_URL}/leaderboard/manga?period=weekly` },
+            { id: 'month', title: 'Top Tháng', url: `${BASE_URL}/leaderboard/manga?period=monthly` },
         ]
 
         for (const section of sections) {
@@ -88,7 +93,17 @@ export class VinaHentai extends Source {
                 )
                 if (response.status === 403 || response.status === 503) continue
                 const $ = this.cheerio.load(response.data as string)
-                const manga = this.parser.parseHomePage($)
+
+                let manga: PartialSourceManga[] = []
+                if (section.id === 'hot') {
+                    manga = this.parser.parseSection($, 'Truyện HOT')
+                } else if (section.id === 'latest') {
+                    manga = this.parser.parseSection($, 'Truyện hentai mới')
+                } else if (section.id === 'cosplay') {
+                    manga = this.parser.parseSection($, 'Ảnh cosplay')
+                } else {
+                    manga = this.parser.parseHomePage($)
+                }
 
                 sectionCallback(App.createHomeSection({
                     id: section.id,
@@ -104,7 +119,15 @@ export class VinaHentai extends Source {
 
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1
-        const url = `${BASE_URL}/danh-sach?page=${page}`
+        let url = `${BASE_URL}/danh-sach?page=${page}`
+
+        if (homepageSectionId === 'cosplay') {
+            url = `${BASE_URL}/genres/anh-cosplay?page=${page}`
+        } else if (homepageSectionId === 'week') {
+            url = `${BASE_URL}/leaderboard/manga?period=weekly&page=${page}`
+        } else if (homepageSectionId === 'month') {
+            url = `${BASE_URL}/leaderboard/manga?period=monthly&page=${page}`
+        }
 
         const response = await this.requestManager.schedule(
             App.createRequest({ url, method: 'GET' }), 0
