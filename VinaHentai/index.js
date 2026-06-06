@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.bond';
 exports.VinaHentaiInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -543,7 +543,7 @@ class VinaHentai extends types_1.Source {
                     }
                     catch (e) { }
                     try {
-                        const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/khong-che`, method: 'GET' }), 0);
+                        const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che`, method: 'GET' }), 0);
                         if (resKhongChe.status === 200) {
                             const $khongChe = this.cheerio.load(resKhongChe.data);
                             mangaKhongChe = this.parser.parseGenrePage($khongChe);
@@ -607,7 +607,7 @@ class VinaHentai extends types_1.Source {
             }
             catch (e) { }
             try {
-                const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/khong-che?page=${page}`, method: 'GET' }), 0);
+                const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che?page=${page}`, method: 'GET' }), 0);
                 if (resKhongChe.status === 200) {
                     const $khongChe = this.cheerio.load(resKhongChe.data);
                     mangaKhongChe = this.parser.parseGenrePage($khongChe);
@@ -876,7 +876,7 @@ class Parser {
             ['gothic-lolita', 'Gothic Lolita'], ['guro', 'Guro'], ['handjob', 'Handjob'],
             ['harem', 'Harem'], ['horror', 'Horror'], ['housewife', 'Housewife'],
             ['idol', 'Idol'], ['incest', 'Incest'], ['isekai', 'Isekai'],
-            ['khong-che', 'Không che'], ['kimono', 'Kimono'], ['maids', 'Maids'],
+            ['hentai-khong-che', 'Không che'], ['kimono', 'Kimono'], ['maids', 'Maids'],
             ['manhua', 'Manhua'], ['manhwa', 'Manhwa'], ['milf', 'Milf'],
             ['mind-break', 'Mind Break'], ['mind-control', 'Mind Control'], ['monster', 'Monster'],
             ['mother', 'Mother'], ['nakadashi', 'Nakadashi'], ['netori', 'Netori'],
