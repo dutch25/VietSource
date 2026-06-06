@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.bond';
 exports.VinaHentaiInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -691,15 +691,23 @@ class Parser {
             if (parts.length !== 2)
                 return;
             const slug = parts[1].trim();
+            if (slug === 'manage')
+                return;
             const titleEl = $(el).find('h2, h3, p').first();
-            const title = titleEl.attr('title') || titleEl.text().trim();
+            const title = titleEl.attr('title') || titleEl.text().trim() || slug;
             const img = $(el).find('img').first();
             let image = img.attr('src') ?? img.attr('data-src') ?? '';
             if (!image) {
                 image = imageMap.get(slug) ?? '';
             }
+            if (!image) {
+                image = 'https://via.placeholder.com/320x424.png?text=No+Image';
+            }
             if (slug && title) {
-                results.push(App.createPartialSourceManga({ mangaId: slug, title, image }));
+                try {
+                    results.push(App.createPartialSourceManga({ mangaId: slug, title, image }));
+                }
+                catch (e) { }
             }
         });
         return this.deduplicate(results);
@@ -791,12 +799,17 @@ class Parser {
     buildImageMap($) {
         const imageMap = new Map();
         const html = $.html();
-        const parts = html.split('\\"');
-        for (let i = 0; i < parts.length; i++) {
-            const part = parts[i];
-            if (/^https:\/\/cdn\.vinahentai\.bond\/[^\s"'\\]+\.(webp|jpg|jpeg|png)$/.test(part)) {
-                for (let j = 1; j <= 5; j++) {
-                    const prev = parts[i - j];
+        const regex = /"([^"]+)"|\\"([^"]+)\\"/g;
+        const tokens = [];
+        let match;
+        while ((match = regex.exec(html)) !== null) {
+            tokens.push(match[1] ?? match[2] ?? '');
+        }
+        for (let i = 0; i < tokens.length; i++) {
+            const part = tokens[i];
+            if (part && /^https:\/\/cdn\.vinahentai\.bond\/[^\s"'\\]+\.(webp|jpg|jpeg|png)$/.test(part)) {
+                for (let j = 1; j <= 20; j++) {
+                    const prev = tokens[i - j];
                     if (prev && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(prev) && prev.length > 3 && prev.length < 100) {
                         imageMap.set(prev, part);
                         break;
