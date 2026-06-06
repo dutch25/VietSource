@@ -216,7 +216,7 @@ export class Parser {
             ['gothic-lolita', 'Gothic Lolita'], ['guro', 'Guro'], ['handjob', 'Handjob'],
             ['harem', 'Harem'], ['horror', 'Horror'], ['housewife', 'Housewife'],
             ['idol', 'Idol'], ['incest', 'Incest'], ['isekai', 'Isekai'],
-            ['khong-che', 'Không che'], ['kimono', 'Kimono'], ['maids', 'Maids'],
+            ['hentai-khong-che', 'Không che'], ['kimono', 'Kimono'], ['maids', 'Maids'],
             ['manhua', 'Manhua'], ['manhwa', 'Manhwa'], ['milf', 'Milf'],
             ['mind-break', 'Mind Break'], ['mind-control', 'Mind Control'], ['monster', 'Monster'],
             ['mother', 'Mother'], ['nakadashi', 'Nakadashi'], ['netori', 'Netori'],

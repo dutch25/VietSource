@@ -20,7 +20,7 @@ import { Parser } from './VinaHentaiParser'
 const BASE_URL = 'https://vinahentai.bond'
 
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -106,7 +106,7 @@ export class VinaHentai extends Source {
 
                     try {
                         const resKhongChe = await this.requestManager.schedule(
-                            App.createRequest({ url: `${BASE_URL}/genres/khong-che`, method: 'GET' }), 0
+                            App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che`, method: 'GET' }), 0
                         )
                         if (resKhongChe.status === 200) {
                             const $khongChe = this.cheerio.load(resKhongChe.data as string)
@@ -172,7 +172,7 @@ export class VinaHentai extends Source {
 
             try {
                 const resKhongChe = await this.requestManager.schedule(
-                    App.createRequest({ url: `${BASE_URL}/genres/khong-che?page=${page}`, method: 'GET' }), 0
+                    App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che?page=${page}`, method: 'GET' }), 0
                 )
                 if (resKhongChe.status === 200) {
                     const $khongChe = this.cheerio.load(resKhongChe.data as string)

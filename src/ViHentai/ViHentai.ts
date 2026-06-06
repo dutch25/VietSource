@@ -20,7 +20,7 @@ import { Parser } from './ViHentaiParser'
 const BASE_URL = 'https://vi-hentai.pro'
 
 export const ViHentaiInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'ViHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -106,7 +106,7 @@ export class ViHentai extends Source {
 
                     try {
                         const resKhongChe = await this.requestManager.schedule(
-                            App.createRequest({ url: `${BASE_URL}/genres/khong-che`, method: 'GET' }), 0
+                            App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che`, method: 'GET' }), 0
                         )
                         if (resKhongChe.status === 200) {
                             const $khongChe = this.cheerio.load(resKhongChe.data as string)
@@ -172,7 +172,7 @@ export class ViHentai extends Source {
 
             try {
                 const resKhongChe = await this.requestManager.schedule(
-                    App.createRequest({ url: `${BASE_URL}/genres/khong-che?page=${page}`, method: 'GET' }), 0
+                    App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che?page=${page}`, method: 'GET' }), 0
                 )
                 if (resKhongChe.status === 200) {
                     const $khongChe = this.cheerio.load(resKhongChe.data as string)
