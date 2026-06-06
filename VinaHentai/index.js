@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.bond';
 exports.VinaHentaiInfo = {
-    version: '1.0.9',
+    version: '1.1.0',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -735,8 +735,15 @@ class Parser {
             const slug = parts[1].trim();
             if (slug === 'manage')
                 return;
-            const titleEl = $(el).find('h2, h3, p').first();
-            const title = titleEl.attr('title') || titleEl.text().trim() || slug;
+            let title = $(el).attr('aria-label') || $(el).attr('title') || '';
+            if (!title) {
+                const titleEl = $(el).find('.truncate').last();
+                title = titleEl.attr('title') || titleEl.text().trim();
+            }
+            if (!title) {
+                const titleEl = $(el).find('h2, h3, p').first();
+                title = titleEl.attr('title') || titleEl.text().trim() || slug;
+            }
             const img = $(el).find('img').first();
             let image = img.attr('src') ?? img.attr('data-src') ?? '';
             if (!image) {
