@@ -20,7 +20,7 @@ import { Parser } from './VinaHentaiParser'
 const BASE_URL = 'https://vinahentai.bond'
 
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.0.8',
+    version: '1.0.9',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -91,15 +91,36 @@ export class VinaHentai extends Source {
             try {
                 let manga: PartialSourceManga[] = []
                 if (section.id === 'private') {
+                    let mangaAnal: PartialSourceManga[] = []
+                    let mangaKhongChe: PartialSourceManga[] = []
+
                     try {
-                        const response = await this.requestManager.schedule(
-                            App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=furry,yaoi,trap&includeGenres=anal,hentai-khong-che&page=1&status=`, method: 'GET' }), 0
+                        const resAnal = await this.requestManager.schedule(
+                            App.createRequest({ url: `${BASE_URL}/genres/anal`, method: 'GET' }), 0
                         )
-                        if (response.status === 200) {
-                            const $ = this.cheerio.load(response.data as string)
-                            manga = this.parser.parseHomePage($)
+                        if (resAnal.status === 200) {
+                            const $anal = this.cheerio.load(resAnal.data as string)
+                            mangaAnal = this.parser.parseHomePage($anal)
                         }
                     } catch (e) {}
+
+                    try {
+                        const resKhongChe = await this.requestManager.schedule(
+                            App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che`, method: 'GET' }), 0
+                        )
+                        if (resKhongChe.status === 200) {
+                            const $khongChe = this.cheerio.load(resKhongChe.data as string)
+                            mangaKhongChe = this.parser.parseHomePage($khongChe)
+                        }
+                    } catch (e) {}
+
+                    const combined: PartialSourceManga[] = []
+                    const maxLength = Math.max(mangaAnal.length, mangaKhongChe.length)
+                    for (let i = 0; i < maxLength; i++) {
+                        if (i < mangaAnal.length) combined.push(mangaAnal[i])
+                        if (i < mangaKhongChe.length) combined.push(mangaKhongChe[i])
+                    }
+                    manga = this.parser.deduplicate(combined)
                     if (manga.length === 0) continue
                 } else {
                     const response = await this.requestManager.schedule(
@@ -136,12 +157,36 @@ export class VinaHentai extends Source {
         let url = `${BASE_URL}/danh-sach?page=${page}`
 
         if (homepageSectionId === 'private') {
-            const url = `${BASE_URL}/search/advanced?apply=1&excludeGenres=furry,yaoi,trap&includeGenres=anal,hentai-khong-che&page=${page}&status=`
-            const response = await this.requestManager.schedule(
-                App.createRequest({ url, method: 'GET' }), 0
-            )
-            const $ = this.cheerio.load(response.data as string)
-            const manga = this.parser.parseHomePage($)
+            let mangaAnal: PartialSourceManga[] = []
+            let mangaKhongChe: PartialSourceManga[] = []
+
+            try {
+                const resAnal = await this.requestManager.schedule(
+                    App.createRequest({ url: `${BASE_URL}/genres/anal?page=${page}`, method: 'GET' }), 0
+                )
+                if (resAnal.status === 200) {
+                    const $anal = this.cheerio.load(resAnal.data as string)
+                    mangaAnal = this.parser.parseHomePage($anal)
+                }
+            } catch (e) {}
+
+            try {
+                const resKhongChe = await this.requestManager.schedule(
+                    App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che?page=${page}`, method: 'GET' }), 0
+                )
+                if (resKhongChe.status === 200) {
+                    const $khongChe = this.cheerio.load(resKhongChe.data as string)
+                    mangaKhongChe = this.parser.parseHomePage($khongChe)
+                }
+            } catch (e) {}
+
+            const combined: PartialSourceManga[] = []
+            const maxLength = Math.max(mangaAnal.length, mangaKhongChe.length)
+            for (let i = 0; i < maxLength; i++) {
+                if (i < mangaAnal.length) combined.push(mangaAnal[i])
+                if (i < mangaKhongChe.length) combined.push(mangaKhongChe[i])
+            }
+            const manga = this.parser.deduplicate(combined)
             return App.createPagedResults({ results: manga, metadata: { page: page + 1 } })
         }
 
