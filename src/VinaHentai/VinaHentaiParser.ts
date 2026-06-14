@@ -274,6 +274,35 @@ export class Parser {
         })
     }
 
+    isLastPage($: CheerioAPI): boolean {
+        let isLast = true;
+        let hasPagination = false;
+
+        $('a').each((_, el) => {
+            const href = $(el).attr('href') || '';
+            if (href.includes('page=')) {
+                hasPagination = true;
+            }
+        });
+
+        if (hasPagination) {
+            $('a').each((_, el) => {
+                const text = $(el).text().toLowerCase();
+                const href = $(el).attr('href') || '';
+                const rel = $(el).attr('rel') || '';
+                if (href.includes('page=')) {
+                    if (text.includes('sau') || text.includes('next') || text.includes('»') || text.includes('>') || rel === 'next') {
+                        isLast = false;
+                    }
+                }
+            });
+        } else {
+            isLast = true;
+        }
+
+        return isLast;
+    }
+
     parseGenrePage($: CheerioAPI): PartialSourceManga[] {
         const manga = this.parseHomePage($)
         const genresMap = this.extractMangaGenresMap($)

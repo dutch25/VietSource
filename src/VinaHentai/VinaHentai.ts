@@ -20,7 +20,7 @@ import { Parser } from './VinaHentaiParser'
 const BASE_URL = 'https://vinahentai.shop'
 
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -203,8 +203,9 @@ export class VinaHentai extends Source {
         )
         const $ = this.cheerio.load(response.data as string)
         const manga = this.parser.parseHomePage($)
+        const isLast = this.parser.isLastPage($)
 
-        return App.createPagedResults({ results: manga, metadata: { page: page + 1 } })
+        return App.createPagedResults({ results: manga, metadata: isLast ? undefined : { page: page + 1 } })
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
@@ -228,7 +229,8 @@ export class VinaHentai extends Source {
             App.createRequest({ url, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: { page: page + 1 } })
+        const isLast = this.parser.isLastPage($)
+        return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: isLast ? undefined : { page: page + 1 } })
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {

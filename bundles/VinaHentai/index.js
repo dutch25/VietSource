@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.shop';
 exports.VinaHentaiInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -637,7 +637,8 @@ class VinaHentai extends types_1.Source {
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         const manga = this.parser.parseHomePage($);
-        return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
+        const isLast = this.parser.isLastPage($);
+        return App.createPagedResults({ results: manga, metadata: isLast ? undefined : { page: page + 1 } });
     }
     async getSearchResults(query, metadata) {
         const page = metadata?.page ?? 1;
@@ -658,7 +659,8 @@ class VinaHentai extends types_1.Source {
         }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
-        return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: { page: page + 1 } });
+        const isLast = this.parser.isLastPage($);
+        return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: isLast ? undefined : { page: page + 1 } });
     }
     async getMangaDetails(mangaId) {
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/truyen-hentai/${mangaId}`, method: 'GET' }), 0);
@@ -930,6 +932,32 @@ class Parser {
             seen.add(item.mangaId);
             return true;
         });
+    }
+    isLastPage($) {
+        let isLast = true;
+        let hasPagination = false;
+        $('a').each((_, el) => {
+            const href = $(el).attr('href') || '';
+            if (href.includes('page=')) {
+                hasPagination = true;
+            }
+        });
+        if (hasPagination) {
+            $('a').each((_, el) => {
+                const text = $(el).text().toLowerCase();
+                const href = $(el).attr('href') || '';
+                const rel = $(el).attr('rel') || '';
+                if (href.includes('page=')) {
+                    if (text.includes('sau') || text.includes('next') || text.includes('»') || text.includes('>') || rel === 'next') {
+                        isLast = false;
+                    }
+                }
+            });
+        }
+        else {
+            isLast = true;
+        }
+        return isLast;
     }
     parseGenrePage($) {
         const manga = this.parseHomePage($);
