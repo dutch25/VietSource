@@ -16,10 +16,10 @@ import {
 
 import { Parser } from './DamCoNuongParser'
 
-const BASE_URL = 'https://damconuong.lol'
+const BASE_URL = 'https://damconuong.mom'
 
 export const DamCoNuongInfo: SourceInfo = {
-    version: '1.1.2',
+    version: '1.1.3',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
