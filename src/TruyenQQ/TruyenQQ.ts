@@ -1,3 +1,4 @@
+﻿import { CheerioAPI } from 'cheerio';
 import {
     TagSection,
     SourceManga,
@@ -23,7 +24,7 @@ import { Parser } from './TruyenQQParser';
 
 const DOMAIN = 'https://truyenqqko.com/';
 
-export const isLastPage = ($: CheerioStatic): boolean => {
+export const isLastPage = ($: CheerioAPI): boolean => {
     const current = $('div.page_redirect > a > p.active').text();
     const lastLinkHref = $('div.page_redirect > a').last().attr('href');
 
@@ -85,7 +86,7 @@ export class TruyenQQ implements SearchResultsProviding, MangaProviding, Chapter
 
     parser = new Parser();
 
-    private async DOMHTML(url: string): Promise<CheerioStatic> {
+    private async DOMHTML(url: string): Promise<CheerioAPI> {
         const request = App.createRequest({
             url: url,
             method: 'GET',

@@ -1,3 +1,4 @@
+﻿import { CheerioAPI } from 'cheerio';
 import {
     TagSection,
     SourceManga,
@@ -23,7 +24,7 @@ import { Parser } from './TopTruyenParser';
 
 const DOMAIN = 'https://www.toptruyenzone2.com/';
 
-export const isLastPage = ($: CheerioStatic): boolean => {
+export const isLastPage = ($: CheerioAPI): boolean => {
     // try with span else a tag
     let current = $('ul.pagination li.page-item.active span').text();
     if (!current)
@@ -94,7 +95,7 @@ export class TopTruyen implements SearchResultsProviding, MangaProviding, Chapte
 
     parser = new Parser();
 
-    private async DOMHTML(url: string): Promise<CheerioStatic> {
+    private async DOMHTML(url: string): Promise<CheerioAPI> {
         const request = App.createRequest({
             url: url,
             method: 'GET',

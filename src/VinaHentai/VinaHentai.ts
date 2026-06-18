@@ -17,10 +17,10 @@ import {
 
 import { Parser } from './VinaHentaiParser'
 
-const BASE_URL = 'https://vinahentai.shop'
+const BASE_URL = 'https://vinahentai.cloud'
 
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.2',
+    version: '1.1.3',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
