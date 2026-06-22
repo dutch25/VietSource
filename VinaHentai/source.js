@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.cloud';
 exports.VinaHentaiInfo = {
-    version: '1.1.4',
+    version: '1.1.5',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -702,7 +702,7 @@ class Parser {
         return this.parseCards($, cards, imageMap);
     }
     parseSection($, sectionTitle) {
-        const header = $('h2').filter((_, el) => $(el).text().trim().toLowerCase() === sectionTitle.toLowerCase());
+        const header = $('h2').filter((_, el) => $(el).text().trim().toLowerCase().includes(sectionTitle.toLowerCase()));
         if (header.length === 0)
             return [];
         const imageMap = this.buildImageMap($);
@@ -820,6 +820,10 @@ class Parser {
             const title = $(el).find('.text-txt-primary').first().text().trim()
                 || $(el).text().trim()
                 || `Chapter ${chapterId}`;
+            const lowerTitle = title.toLowerCase();
+            if (lowerTitle.includes('từ đầu') || lowerTitle.includes('mới nhất') || lowerTitle.includes('đọc tiếp')) {
+                return;
+            }
             const timeStr = $(el).find('time').first().attr('dateTime') ?? '';
             const time = timeStr ? new Date(timeStr) : new Date();
             // Try to extract chapter number
