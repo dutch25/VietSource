@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.cloud';
 exports.VinaHentaiInfo = {
-    version: '1.1.6',
+    version: '1.1.7',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -772,6 +772,8 @@ class Parser {
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? '';
         const authors = [];
         $('a[href^="/authors/"]').each((_, el) => {
+            if (el.parent && el.parent.name === 'li')
+                return;
             const href = $(el).attr('href') ?? '';
             const authorId = href.replace('/authors/', '').trim();
             const label = $(el).find('span').first().text().trim() || $(el).text().trim();
@@ -781,6 +783,8 @@ class Parser {
         });
         const genres = [];
         $('a[href^="/genres/"]').each((_, el) => {
+            if (el.parent && el.parent.name === 'li')
+                return;
             const href = $(el).attr('href') ?? '';
             const genreId = href.replace('/genres/', '').trim();
             const label = $(el).text().trim();

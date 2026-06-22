@@ -94,6 +94,7 @@ export class Parser {
 
         const authors: Tag[] = []
         $('a[href^="/authors/"]').each((_: any, el: any) => {
+            if (el.parent && el.parent.name === 'li') return
             const href = $(el).attr('href') ?? ''
             const authorId = href.replace('/authors/', '').trim()
             const label = $(el).find('span').first().text().trim() || $(el).text().trim()
@@ -104,6 +105,7 @@ export class Parser {
 
         const genres: Tag[] = []
         $('a[href^="/genres/"]').each((_: any, el: any) => {
+            if (el.parent && el.parent.name === 'li') return
             const href = $(el).attr('href') ?? ''
             const genreId = href.replace('/genres/', '').trim()
             const label = $(el).text().trim()
