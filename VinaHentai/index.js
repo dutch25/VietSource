@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.cloud';
 exports.VinaHentaiInfo = {
-    version: '1.1.3',
+    version: '1.1.4',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -637,7 +637,7 @@ class VinaHentai extends types_1.Source {
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         const manga = this.parser.parseHomePage($);
-        const isLast = this.parser.isLastPage($);
+        const isLast = manga.length === 0 || this.parser.isLastPage($, page);
         return App.createPagedResults({ results: manga, metadata: isLast ? undefined : { page: page + 1 } });
     }
     async getSearchResults(query, metadata) {
@@ -659,8 +659,9 @@ class VinaHentai extends types_1.Source {
         }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
-        const isLast = this.parser.isLastPage($);
-        return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: isLast ? undefined : { page: page + 1 } });
+        const manga = this.parser.parseHomePage($);
+        const isLast = manga.length === 0 || this.parser.isLastPage($, page);
+        return App.createPagedResults({ results: manga, metadata: isLast ? undefined : { page: page + 1 } });
     }
     async getMangaDetails(mangaId) {
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/truyen-hentai/${mangaId}`, method: 'GET' }), 0);
@@ -933,7 +934,7 @@ class Parser {
             return true;
         });
     }
-    isLastPage($) {
+    isLastPage($, currentPage = 1) {
         let isLast = true;
         let hasPagination = false;
         $('a').each((_, el) => {
@@ -949,6 +950,9 @@ class Parser {
                 const rel = $(el).attr('rel') || '';
                 if (href.includes('page=')) {
                     if (text.includes('sau') || text.includes('next') || text.includes('»') || text.includes('>') || rel === 'next') {
+                        isLast = false;
+                    }
+                    if (href.includes(`page=${currentPage + 1}`)) {
                         isLast = false;
                     }
                 }
