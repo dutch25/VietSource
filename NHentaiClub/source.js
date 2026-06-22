@@ -466,7 +466,7 @@ const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.space';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.78',
+    version: '1.1.79',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -742,12 +742,12 @@ class Parser {
             }
         }
         if (!ogImage)
-            return 'https://i3.nhentaiclub.shop';
+            return 'https://vvcz.store';
         try {
             return new URL(ogImage).origin;
         }
         catch {
-            return 'https://i3.nhentaiclub.shop';
+            return 'https://vvcz.store';
         }
     }
     // ─── Chapters ─────────────────────────────────────────────────────────────
