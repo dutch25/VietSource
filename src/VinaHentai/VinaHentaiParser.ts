@@ -290,9 +290,19 @@ export class Parser {
             }
         });
 
+        $('button').each((_, el) => {
+            const text = $(el).text().trim().toLowerCase();
+            if (text === 'cuối' || text === 'tiếp' || text === 'sau' || text === '>') {
+                hasPagination = true;
+            }
+            if (text === String(currentPage + 1)) {
+                hasPagination = true;
+            }
+        });
+
         if (hasPagination) {
             $('a').each((_, el) => {
-                const text = $(el).text().toLowerCase();
+                const text = $(el).text().trim().toLowerCase();
                 const href = $(el).attr('href') || '';
                 const rel = $(el).attr('rel') || '';
                 if (href.includes('page=')) {
@@ -302,6 +312,16 @@ export class Parser {
                     if (href.includes(`page=${currentPage + 1}`)) {
                         isLast = false;
                     }
+                }
+            });
+
+            $('button').each((_, el) => {
+                const text = $(el).text().trim().toLowerCase();
+                if (text === 'cuối' || text === 'tiếp' || text === 'sau' || text === '>') {
+                    isLast = false;
+                }
+                if (text === String(currentPage + 1)) {
+                    isLast = false;
                 }
             });
         } else {

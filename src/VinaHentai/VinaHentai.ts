@@ -20,7 +20,7 @@ import { Parser } from './VinaHentaiParser'
 const BASE_URL = 'https://vinahentai.cloud'
 
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.5',
+    version: '1.1.6',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -130,9 +130,9 @@ export class VinaHentai extends Source {
                     const $ = this.cheerio.load(response.data as string)
 
                     if (section.id === 'hot') {
-                        manga = this.parser.parseSection($, 'Truyện HOT')
+                        manga = this.parser.parseSection($, 'hot')
                     } else if (section.id === 'latest') {
-                        manga = this.parser.parseSection($, 'Truyện hentai mới')
+                        manga = this.parser.parseSection($, 'mới')
                     } else if (section.id === 'cosplay') {
                         manga = this.parser.parseSection($, 'Ảnh cosplay')
                     } else {
