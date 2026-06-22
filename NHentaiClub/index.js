@@ -464,8 +464,9 @@ exports.NHentaiClub = exports.NHentaiClubInfo = void 0;
 const types_1 = require("@paperback/types");
 const NHentaiClubParser_1 = require("./NHentaiClubParser");
 const BASE_URL = 'https://nhentaiclub.space';
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.NHentaiClubInfo = {
-    version: '1.1.77',
+    version: '1.1.78',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -548,7 +549,7 @@ class NHentaiClub extends types_1.Source {
                 if (response.status === 403 || response.status === 503)
                     continue;
                 const $ = this.cheerio.load(response.data);
-                const manga = this.parser.parseHomePage($);
+                const manga = this.parser.parseHomePage($, PROXY_URL);
                 sectionCallback(App.createHomeSection({
                     id: section.id,
                     title: section.title,
@@ -584,7 +585,7 @@ class NHentaiClub extends types_1.Source {
         }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
-        const manga = this.parser.parseHomePage($);
+        const manga = this.parser.parseHomePage($, PROXY_URL);
         return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
     }
     async getSearchResults(query, metadata) {
@@ -606,12 +607,12 @@ class NHentaiClub extends types_1.Source {
         }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
-        return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: { page: page + 1 } });
+        return App.createPagedResults({ results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } });
     }
     async getMangaDetails(mangaId) {
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
-        return this.parser.parseMangaDetails($, mangaId);
+        return this.parser.parseMangaDetails($, mangaId, PROXY_URL);
     }
     async getChapters(mangaId) {
         const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0);
@@ -629,7 +630,7 @@ class NHentaiClub extends types_1.Source {
         const pages = [];
         for (let i = 1; i <= pageCount; i++) {
             const imgUrl = `${cdnBase}/${mangaId}/VI/${chapterId}/${i}.jpg`;
-            pages.push(imgUrl);
+            pages.push(`${PROXY_URL}?url=${encodeURIComponent(imgUrl)}`);
         }
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
@@ -648,7 +649,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
 class Parser {
     // ─── Home Page ─────────────────────────────────────────────────────────────
-    parseHomePage($) {
+    parseHomePage($, proxyUrl) {
         const results = [];
         $('a[href*="/g/"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
@@ -673,12 +674,13 @@ class Parser {
             }
             if (!title || title.length < 2 || !rawImage)
                 return;
-            results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }));
+            const image = proxyUrl ? `${proxyUrl}?url=${encodeURIComponent(rawImage)}` : rawImage;
+            results.push(App.createPartialSourceManga({ mangaId: id, title, image }));
         });
         return this.deduplicate(results);
     }
     // ─── Manga Details ─────────────────────────────────────────────────────────
-    parseMangaDetails($, mangaId) {
+    parseMangaDetails($, mangaId, proxyUrl) {
         const title = $('meta[property="og:title"]').attr('content')?.trim()
             || $('h1').first().text().trim()
             || mangaId;
@@ -695,6 +697,7 @@ class Parser {
         else if (rawImage.startsWith('/')) {
             rawImage = 'https://nhentaiclub.space' + rawImage;
         }
+        const image = rawImage ? `${proxyUrl}?url=${encodeURIComponent(rawImage)}` : '';
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? '';
         const authorLink = $('a[href*="/author/"]').first();
         const author = authorLink.text().trim() ?? '';
@@ -724,7 +727,7 @@ class Parser {
         }
         return App.createSourceManga({
             id: mangaId,
-            mangaInfo: App.createMangaInfo({ titles: [title], image: rawImage, desc, author, artist: author, status, tags: tagSections }),
+            mangaInfo: App.createMangaInfo({ titles: [title], image, desc, author, artist: author, status, tags: tagSections }),
         });
     }
     // ─── CDN base from og:image ────────────────────────────────────────────────
