@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.cloud';
 exports.VinaHentaiInfo = {
-    version: '1.1.8',
+    version: '1.1.9',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -532,33 +532,14 @@ class VinaHentai extends types_1.Source {
             try {
                 let manga = [];
                 if (section.id === 'private') {
-                    let mangaAnal = [];
-                    let mangaKhongChe = [];
                     try {
-                        const resAnal = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/danh-sach?genres=anal&notgenres=furry,yaoi`, method: 'GET' }), 0);
-                        if (resAnal.status === 200) {
-                            const $anal = this.cheerio.load(resAnal.data);
-                            mangaAnal = this.parser.parseHomePage($anal);
+                        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Cfurry&includeGenres=anal%2Ckhong-che&page=1`, method: 'GET' }), 0);
+                        if (response.status === 200) {
+                            const $ = this.cheerio.load(response.data);
+                            manga = this.parser.parseHomePage($);
                         }
                     }
                     catch (e) { }
-                    try {
-                        const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/danh-sach?genres=hentai-khong-che&notgenres=furry,yaoi`, method: 'GET' }), 0);
-                        if (resKhongChe.status === 200) {
-                            const $khongChe = this.cheerio.load(resKhongChe.data);
-                            mangaKhongChe = this.parser.parseHomePage($khongChe);
-                        }
-                    }
-                    catch (e) { }
-                    const combined = [];
-                    const maxLength = Math.max(mangaAnal.length, mangaKhongChe.length);
-                    for (let i = 0; i < maxLength; i++) {
-                        if (i < mangaAnal.length)
-                            combined.push(mangaAnal[i]);
-                        if (i < mangaKhongChe.length)
-                            combined.push(mangaKhongChe[i]);
-                    }
-                    manga = this.parser.deduplicate(combined);
                     if (manga.length === 0)
                         continue;
                 }
@@ -596,34 +577,16 @@ class VinaHentai extends types_1.Source {
         const page = metadata?.page ?? 1;
         let url = `${BASE_URL}/danh-sach?page=${page}`;
         if (homepageSectionId === 'private') {
-            let mangaAnal = [];
-            let mangaKhongChe = [];
             try {
-                const resAnal = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/danh-sach?genres=anal&notgenres=furry,yaoi&page=${page}`, method: 'GET' }), 0);
-                if (resAnal.status === 200) {
-                    const $anal = this.cheerio.load(resAnal.data);
-                    mangaAnal = this.parser.parseHomePage($anal);
+                const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Cfurry&includeGenres=anal%2Ckhong-che&page=${page}`, method: 'GET' }), 0);
+                if (response.status === 200) {
+                    const $ = this.cheerio.load(response.data);
+                    const manga = this.parser.parseHomePage($);
+                    return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
                 }
             }
             catch (e) { }
-            try {
-                const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/danh-sach?genres=hentai-khong-che&notgenres=furry,yaoi&page=${page}`, method: 'GET' }), 0);
-                if (resKhongChe.status === 200) {
-                    const $khongChe = this.cheerio.load(resKhongChe.data);
-                    mangaKhongChe = this.parser.parseHomePage($khongChe);
-                }
-            }
-            catch (e) { }
-            const combined = [];
-            const maxLength = Math.max(mangaAnal.length, mangaKhongChe.length);
-            for (let i = 0; i < maxLength; i++) {
-                if (i < mangaAnal.length)
-                    combined.push(mangaAnal[i]);
-                if (i < mangaKhongChe.length)
-                    combined.push(mangaKhongChe[i]);
-            }
-            const manga = this.parser.deduplicate(combined);
-            return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
+            return App.createPagedResults({ results: [], metadata: undefined });
         }
         if (homepageSectionId === 'cosplay') {
             url = `${BASE_URL}/genres/anh-cosplay?page=${page}`;
