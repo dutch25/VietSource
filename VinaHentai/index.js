@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.cloud';
 exports.VinaHentaiInfo = {
-    version: '1.1.5',
+    version: '1.1.6',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -568,10 +568,10 @@ class VinaHentai extends types_1.Source {
                         continue;
                     const $ = this.cheerio.load(response.data);
                     if (section.id === 'hot') {
-                        manga = this.parser.parseSection($, 'Truyện HOT');
+                        manga = this.parser.parseSection($, 'hot');
                     }
                     else if (section.id === 'latest') {
-                        manga = this.parser.parseSection($, 'Truyện hentai mới');
+                        manga = this.parser.parseSection($, 'mới');
                     }
                     else if (section.id === 'cosplay') {
                         manga = this.parser.parseSection($, 'Ảnh cosplay');
@@ -947,9 +947,18 @@ class Parser {
                 hasPagination = true;
             }
         });
+        $('button').each((_, el) => {
+            const text = $(el).text().trim().toLowerCase();
+            if (text === 'cuối' || text === 'tiếp' || text === 'sau' || text === '>') {
+                hasPagination = true;
+            }
+            if (text === String(currentPage + 1)) {
+                hasPagination = true;
+            }
+        });
         if (hasPagination) {
             $('a').each((_, el) => {
-                const text = $(el).text().toLowerCase();
+                const text = $(el).text().trim().toLowerCase();
                 const href = $(el).attr('href') || '';
                 const rel = $(el).attr('rel') || '';
                 if (href.includes('page=')) {
@@ -959,6 +968,15 @@ class Parser {
                     if (href.includes(`page=${currentPage + 1}`)) {
                         isLast = false;
                     }
+                }
+            });
+            $('button').each((_, el) => {
+                const text = $(el).text().trim().toLowerCase();
+                if (text === 'cuối' || text === 'tiếp' || text === 'sau' || text === '>') {
+                    isLast = false;
+                }
+                if (text === String(currentPage + 1)) {
+                    isLast = false;
                 }
             });
         }
