@@ -114,8 +114,8 @@ export class Parser {
             }
         }
 
-        if (!ogImage) return 'https://i3.nhentaiclub.shop'
-        try { return new URL(ogImage).origin } catch { return 'https://i3.nhentaiclub.shop' }
+        if (!ogImage) return 'https://vvcz.store'
+        try { return new URL(ogImage).origin } catch { return 'https://vvcz.store' }
     }
 
     // ─── Chapters ─────────────────────────────────────────────────────────────
