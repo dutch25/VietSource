@@ -11,7 +11,7 @@ import { CheerioAPI } from 'cheerio'
 export class Parser {
 
     // ─── Home Page ─────────────────────────────────────────────────────────────
-    parseHomePage($: CheerioAPI, proxyUrl: string): PartialSourceManga[] {
+    parseHomePage($: CheerioAPI): PartialSourceManga[] {
         const results: PartialSourceManga[] = []
 
         $('a[href*="/g/"]').each((_: any, el: any) => {
@@ -37,15 +37,14 @@ export class Parser {
 
             if (!title || title.length < 2 || !rawImage) return
 
-            const image = `${proxyUrl}?url=${encodeURIComponent(rawImage)}`
-            results.push(App.createPartialSourceManga({ mangaId: id, title, image }))
+            results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }))
         })
 
         return this.deduplicate(results)
     }
 
     // ─── Manga Details ─────────────────────────────────────────────────────────
-    parseMangaDetails($: CheerioAPI, mangaId: string, proxyUrl: string): SourceManga {
+    parseMangaDetails($: CheerioAPI, mangaId: string): SourceManga {
         const title = $('meta[property="og:title"]').attr('content')?.trim()
             || $('h1').first().text().trim()
             || mangaId
@@ -62,7 +61,6 @@ export class Parser {
             rawImage = 'https://nhentaiclub.space' + rawImage;
         }
 
-        const image = rawImage ? `${proxyUrl}?url=${encodeURIComponent(rawImage)}` : ''
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? ''
 
         const authorLink = $('a[href*="/author/"]').first()
@@ -97,7 +95,7 @@ export class Parser {
 
         return App.createSourceManga({
             id: mangaId,
-            mangaInfo: App.createMangaInfo({ titles: [title], image, desc, author, artist: author, status, tags: tagSections }),
+            mangaInfo: App.createMangaInfo({ titles: [title], image: rawImage, desc, author, artist: author, status, tags: tagSections }),
         })
     }
 
