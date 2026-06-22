@@ -17,9 +17,10 @@ import {
 import { Parser } from './NHentaiClubParser'
 
 const BASE_URL = 'https://nhentaiclub.space'
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const NHentaiClubInfo: SourceInfo = {
-    version: '1.1.77',
+    version: '1.1.78',
     name: 'NHentaiClub',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -109,7 +110,7 @@ export class NHentaiClub extends Source {
                 )
                 if (response.status === 403 || response.status === 503) continue
                 const $ = this.cheerio.load(response.data as string)
-                const manga = this.parser.parseHomePage($)
+                const manga = this.parser.parseHomePage($, PROXY_URL)
 
                 sectionCallback(App.createHomeSection({
                     id: section.id,
@@ -150,7 +151,7 @@ export class NHentaiClub extends Source {
             App.createRequest({ url, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        const manga = this.parser.parseHomePage($)
+        const manga = this.parser.parseHomePage($, PROXY_URL)
 
         return App.createPagedResults({ results: manga, metadata: { page: page + 1 } })
     }
@@ -177,7 +178,7 @@ export class NHentaiClub extends Source {
             App.createRequest({ url, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: { page: page + 1 } })
+        return App.createPagedResults({ results: this.parser.parseHomePage($, PROXY_URL), metadata: { page: page + 1 } })
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
@@ -185,7 +186,7 @@ export class NHentaiClub extends Source {
             App.createRequest({ url: `${BASE_URL}/g/${mangaId}`, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
-        return this.parser.parseMangaDetails($, mangaId)
+        return this.parser.parseMangaDetails($, mangaId, PROXY_URL)
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
@@ -211,7 +212,7 @@ export class NHentaiClub extends Source {
         const pages: string[] = []
         for (let i = 1; i <= pageCount; i++) {
             const imgUrl = `${cdnBase}/${mangaId}/VI/${chapterId}/${i}.jpg`
-            pages.push(imgUrl)
+            pages.push(`${PROXY_URL}?url=${encodeURIComponent(imgUrl)}`)
         }
 
         return App.createChapterDetails({ id: chapterId, mangaId, pages })
