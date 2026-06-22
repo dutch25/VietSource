@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.cloud';
 exports.VinaHentaiInfo = {
-    version: '1.1.7',
+    version: '1.1.8',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -535,7 +535,7 @@ class VinaHentai extends types_1.Source {
                     let mangaAnal = [];
                     let mangaKhongChe = [];
                     try {
-                        const resAnal = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/anal`, method: 'GET' }), 0);
+                        const resAnal = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/danh-sach?genres=anal&notgenres=furry,yaoi`, method: 'GET' }), 0);
                         if (resAnal.status === 200) {
                             const $anal = this.cheerio.load(resAnal.data);
                             mangaAnal = this.parser.parseHomePage($anal);
@@ -543,7 +543,7 @@ class VinaHentai extends types_1.Source {
                     }
                     catch (e) { }
                     try {
-                        const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che`, method: 'GET' }), 0);
+                        const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/danh-sach?genres=hentai-khong-che&notgenres=furry,yaoi`, method: 'GET' }), 0);
                         if (resKhongChe.status === 200) {
                             const $khongChe = this.cheerio.load(resKhongChe.data);
                             mangaKhongChe = this.parser.parseHomePage($khongChe);
@@ -599,7 +599,7 @@ class VinaHentai extends types_1.Source {
             let mangaAnal = [];
             let mangaKhongChe = [];
             try {
-                const resAnal = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/anal?page=${page}`, method: 'GET' }), 0);
+                const resAnal = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/danh-sach?genres=anal&notgenres=furry,yaoi&page=${page}`, method: 'GET' }), 0);
                 if (resAnal.status === 200) {
                     const $anal = this.cheerio.load(resAnal.data);
                     mangaAnal = this.parser.parseHomePage($anal);
@@ -607,7 +607,7 @@ class VinaHentai extends types_1.Source {
             }
             catch (e) { }
             try {
-                const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che?page=${page}`, method: 'GET' }), 0);
+                const resKhongChe = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/danh-sach?genres=hentai-khong-che&notgenres=furry,yaoi&page=${page}`, method: 'GET' }), 0);
                 if (resKhongChe.status === 200) {
                     const $khongChe = this.cheerio.load(resKhongChe.data);
                     mangaKhongChe = this.parser.parseHomePage($khongChe);

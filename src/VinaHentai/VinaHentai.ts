@@ -20,7 +20,7 @@ import { Parser } from './VinaHentaiParser'
 const BASE_URL = 'https://vinahentai.cloud'
 
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.7',
+    version: '1.1.8',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -96,7 +96,7 @@ export class VinaHentai extends Source {
 
                     try {
                         const resAnal = await this.requestManager.schedule(
-                            App.createRequest({ url: `${BASE_URL}/genres/anal`, method: 'GET' }), 0
+                            App.createRequest({ url: `${BASE_URL}/danh-sach?genres=anal&notgenres=furry,yaoi`, method: 'GET' }), 0
                         )
                         if (resAnal.status === 200) {
                             const $anal = this.cheerio.load(resAnal.data as string)
@@ -106,7 +106,7 @@ export class VinaHentai extends Source {
 
                     try {
                         const resKhongChe = await this.requestManager.schedule(
-                            App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che`, method: 'GET' }), 0
+                            App.createRequest({ url: `${BASE_URL}/danh-sach?genres=hentai-khong-che&notgenres=furry,yaoi`, method: 'GET' }), 0
                         )
                         if (resKhongChe.status === 200) {
                             const $khongChe = this.cheerio.load(resKhongChe.data as string)
@@ -162,7 +162,7 @@ export class VinaHentai extends Source {
 
             try {
                 const resAnal = await this.requestManager.schedule(
-                    App.createRequest({ url: `${BASE_URL}/genres/anal?page=${page}`, method: 'GET' }), 0
+                    App.createRequest({ url: `${BASE_URL}/danh-sach?genres=anal&notgenres=furry,yaoi&page=${page}`, method: 'GET' }), 0
                 )
                 if (resAnal.status === 200) {
                     const $anal = this.cheerio.load(resAnal.data as string)
@@ -172,7 +172,7 @@ export class VinaHentai extends Source {
 
             try {
                 const resKhongChe = await this.requestManager.schedule(
-                    App.createRequest({ url: `${BASE_URL}/genres/hentai-khong-che?page=${page}`, method: 'GET' }), 0
+                    App.createRequest({ url: `${BASE_URL}/danh-sach?genres=hentai-khong-che&notgenres=furry,yaoi&page=${page}`, method: 'GET' }), 0
                 )
                 if (resKhongChe.status === 200) {
                     const $khongChe = this.cheerio.load(resKhongChe.data as string)
