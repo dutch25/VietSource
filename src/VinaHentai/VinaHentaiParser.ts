@@ -274,7 +274,7 @@ export class Parser {
         })
     }
 
-    isLastPage($: CheerioAPI): boolean {
+    isLastPage($: CheerioAPI, currentPage: number = 1): boolean {
         let isLast = true;
         let hasPagination = false;
 
@@ -292,6 +292,9 @@ export class Parser {
                 const rel = $(el).attr('rel') || '';
                 if (href.includes('page=')) {
                     if (text.includes('sau') || text.includes('next') || text.includes('»') || text.includes('>') || rel === 'next') {
+                        isLast = false;
+                    }
+                    if (href.includes(`page=${currentPage + 1}`)) {
                         isLast = false;
                     }
                 }
