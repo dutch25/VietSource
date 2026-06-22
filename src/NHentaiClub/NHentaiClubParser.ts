@@ -22,7 +22,18 @@ export class Parser {
 
             const img = $(el).find('img').first()
             const title = img.attr('alt')?.trim() ?? ''
-            const rawImage = img.attr('src') ?? img.attr('data-src') ?? ''
+            let rawImage = img.attr('src') ?? img.attr('data-src') ?? ''
+
+            if (rawImage.startsWith('/_next/image')) {
+                const urlMatch = rawImage.match(/[?&]url=([^&]+)/);
+                if (urlMatch) {
+                    rawImage = decodeURIComponent(urlMatch[1]);
+                } else {
+                    rawImage = 'https://nhentaiclub.space' + rawImage;
+                }
+            } else if (rawImage.startsWith('/')) {
+                rawImage = 'https://nhentaiclub.space' + rawImage;
+            }
 
             if (!title || title.length < 2 || !rawImage) return
 
@@ -38,7 +49,19 @@ export class Parser {
         const title = $('meta[property="og:title"]').attr('content')?.trim()
             || $('h1').first().text().trim()
             || mangaId
-        const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? ''
+        let rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? ''
+        
+        if (rawImage.startsWith('/_next/image')) {
+            const urlMatch = rawImage.match(/[?&]url=([^&]+)/);
+            if (urlMatch) {
+                rawImage = decodeURIComponent(urlMatch[1]);
+            } else {
+                rawImage = 'https://nhentaiclub.space' + rawImage;
+            }
+        } else if (rawImage.startsWith('/')) {
+            rawImage = 'https://nhentaiclub.space' + rawImage;
+        }
+
         const image = rawImage ? `${proxyUrl}?url=${encodeURIComponent(rawImage)}` : ''
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? ''
 
@@ -82,9 +105,17 @@ export class Parser {
     // e.g. og:image = https://vvcz.store/7054059/thumbnail.jpg
     //      returns   https://vvcz.store
     getCdnBase($: CheerioAPI): string {
-        const ogImage = $('meta[property="og:image"]').attr('content')?.trim() ?? ''
-        if (!ogImage) return 'https://vvcz.store'
-        try { return new URL(ogImage).origin } catch { return 'https://vvcz.store' }
+        let ogImage = $('meta[property="og:image"]').attr('content')?.trim() ?? ''
+        
+        if (ogImage.startsWith('/_next/image')) {
+            const urlMatch = ogImage.match(/[?&]url=([^&]+)/);
+            if (urlMatch) {
+                ogImage = decodeURIComponent(urlMatch[1]);
+            }
+        }
+
+        if (!ogImage) return 'https://i3.nhentaiclub.shop'
+        try { return new URL(ogImage).origin } catch { return 'https://i3.nhentaiclub.shop' }
     }
 
     // ─── Chapters ─────────────────────────────────────────────────────────────

@@ -17,7 +17,7 @@ export class Parser {
     }
 
     parseSection($: CheerioAPI, sectionTitle: string): PartialSourceManga[] {
-        const header = $('h2').filter((_, el) => $(el).text().trim().toLowerCase() === sectionTitle.toLowerCase())
+        const header = $('h2').filter((_, el) => $(el).text().trim().toLowerCase().includes(sectionTitle.toLowerCase()))
         if (header.length === 0) return []
 
         const imageMap = this.buildImageMap($)
@@ -148,6 +148,11 @@ export class Parser {
             const title = $(el).find('.text-txt-primary').first().text().trim()
                 || $(el).text().trim()
                 || `Chapter ${chapterId}`
+
+            const lowerTitle = title.toLowerCase()
+            if (lowerTitle.includes('từ đầu') || lowerTitle.includes('mới nhất') || lowerTitle.includes('đọc tiếp')) {
+                return
+            }
 
             const timeStr = $(el).find('time').first().attr('dateTime') ?? ''
             const time = timeStr ? new Date(timeStr) : new Date()
