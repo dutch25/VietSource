@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.one';
 exports.VinaHentaiInfo = {
-    version: '1.1.12',
+    version: '1.1.13',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -533,7 +533,7 @@ class VinaHentai extends types_1.Source {
                 let manga = [];
                 if (section.id === 'private') {
                     try {
-                        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Cfurry&includeGenres=anal%2Ckhong-che&page=1`, method: 'GET' }), 0);
+                        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=1&status=`, method: 'GET' }), 0);
                         if (response.status === 200) {
                             const $ = this.cheerio.load(response.data);
                             manga = this.parser.parseHomePage($);
@@ -578,7 +578,7 @@ class VinaHentai extends types_1.Source {
         let url = `${BASE_URL}/danh-sach?page=${page}`;
         if (homepageSectionId === 'private') {
             try {
-                const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Cfurry&includeGenres=anal%2Ckhong-che&page=${page}`, method: 'GET' }), 0);
+                const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=${page}&status=`, method: 'GET' }), 0);
                 if (response.status === 200) {
                     const $ = this.cheerio.load(response.data);
                     const manga = this.parser.parseHomePage($);
