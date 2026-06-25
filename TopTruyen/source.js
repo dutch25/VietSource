@@ -482,7 +482,7 @@ const isLastPage = ($) => {
 };
 exports.isLastPage = isLastPage;
 exports.TopTruyenInfo = {
-    version: '1.1.8',
+    version: '1.1.9',
     name: 'TopTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -517,8 +517,14 @@ class TopTruyen {
                             'user-agent': await this.requestManager.getDefaultUserAgent(),
                         }
                     };
-                    if (request.url.startsWith(DOMAIN)) {
-                        request.url = `${PROXY_URL}?url=${encodeURIComponent(request.url)}`;
+                    if (!request.url.startsWith(PROXY_URL)) {
+                        return App.createRequest({
+                            url: `${PROXY_URL}?url=${encodeURIComponent(request.url)}`,
+                            method: request.method,
+                            headers: request.headers,
+                            data: request.data,
+                            param: request.param
+                        });
                     }
                     return request;
                 },
