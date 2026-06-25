@@ -19,7 +19,7 @@ import { Parser } from './VinaHentaiParser'
 
 const BASE_URL = 'https://vinahentai.one'
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.12',
+    version: '1.1.13',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -92,7 +92,7 @@ export class VinaHentai extends Source {
                 if (section.id === 'private') {
                     try {
                         const response = await this.requestManager.schedule(
-                            App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Cfurry&includeGenres=anal%2Ckhong-che&page=1`, method: 'GET' }), 0
+                            App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=1&status=`, method: 'GET' }), 0
                         )
                         if (response.status === 200) {
                             const $ = this.cheerio.load(response.data as string)
@@ -137,7 +137,7 @@ export class VinaHentai extends Source {
         if (homepageSectionId === 'private') {
             try {
                 const response = await this.requestManager.schedule(
-                    App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Cfurry&includeGenres=anal%2Ckhong-che&page=${page}`, method: 'GET' }), 0
+                    App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=${page}&status=`, method: 'GET' }), 0
                 )
                 if (response.status === 200) {
                     const $ = this.cheerio.load(response.data as string)
