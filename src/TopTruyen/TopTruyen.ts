@@ -45,7 +45,7 @@ export const isLastPage = ($: CheerioAPI): boolean => {
 };
 
 export const TopTruyenInfo: SourceInfo = {
-    version: '1.1.8',
+    version: '1.1.9',
     name: 'TopTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -83,8 +83,14 @@ export class TopTruyen implements SearchResultsProviding, MangaProviding, Chapte
                     }
                 };
                 
-                if (request.url.startsWith(DOMAIN)) {
-                    request.url = `${PROXY_URL}?url=${encodeURIComponent(request.url)}`;
+                if (!request.url.startsWith(PROXY_URL)) {
+                    return App.createRequest({
+                        url: `${PROXY_URL}?url=${encodeURIComponent(request.url)}`,
+                        method: request.method,
+                        headers: request.headers,
+                        data: request.data,
+                        param: request.param
+                    });
                 }
 
                 return request;
