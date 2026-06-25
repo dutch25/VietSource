@@ -463,9 +463,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TruyenVN = exports.TruyenVNInfo = void 0;
 const types_1 = require("@paperback/types");
 const TruyenVNParser_1 = require("./TruyenVNParser");
-const BASE_URL = 'https://truyenvn.sbs';
+const BASE_URL = 'https://www.truyenvn.onl';
 exports.TruyenVNInfo = {
-    version: '1.0.8',
+    version: '1.0.9',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
