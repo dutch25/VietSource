@@ -1,4 +1,4 @@
-﻿import { CheerioAPI } from 'cheerio';
+import { CheerioAPI } from 'cheerio';
 import {
     TagSection,
     SourceManga,
@@ -23,6 +23,7 @@ import {
 import { Parser } from './TopTruyenParser';
 
 const DOMAIN = 'https://www.toptruyenzone4.com/';
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 
 export const isLastPage = ($: CheerioAPI): boolean => {
     // try with span else a tag
@@ -44,7 +45,7 @@ export const isLastPage = ($: CheerioAPI): boolean => {
 };
 
 export const TopTruyenInfo: SourceInfo = {
-    version: '1.1.7',
+    version: '1.1.8',
     name: 'TopTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -81,6 +82,11 @@ export class TopTruyen implements SearchResultsProviding, MangaProviding, Chapte
                         'user-agent': await this.requestManager.getDefaultUserAgent(),
                     }
                 };
+                
+                if (request.url.startsWith(DOMAIN)) {
+                    request.url = `${PROXY_URL}?url=${encodeURIComponent(request.url)}`;
+                }
+
                 return request;
             },
             interceptResponse: async (response: Response): Promise<Response> => {

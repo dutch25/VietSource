@@ -16,10 +16,10 @@ import {
 
 import { Parser } from './TruyenVNParser'
 
-const BASE_URL = 'https://truyenvn.sbs'
+const BASE_URL = 'https://www.truyenvn.onl'
 
 export const TruyenVNInfo: SourceInfo = {
-    version: '1.0.8',
+    version: '1.0.9',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',

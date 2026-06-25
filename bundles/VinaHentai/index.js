@@ -464,8 +464,9 @@ exports.VinaHentai = exports.VinaHentaiInfo = void 0;
 const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.cloud';
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.VinaHentaiInfo = {
-    version: '1.1.9',
+    version: '1.1.10',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -495,6 +496,9 @@ class VinaHentai extends types_1.Source {
                         'referer': BASE_URL,
                         'user-agent': await this.requestManager.getDefaultUserAgent(),
                     };
+                    if (request.url.startsWith(BASE_URL)) {
+                        request.url = `${PROXY_URL}?url=${encodeURIComponent(request.url)}`;
+                    }
                     return request;
                 },
                 interceptResponse: async (response) => response,

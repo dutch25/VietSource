@@ -18,9 +18,9 @@ import {
 import { Parser } from './VinaHentaiParser'
 
 const BASE_URL = 'https://vinahentai.cloud'
-
+const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.9',
+    version: '1.1.10',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -51,6 +51,11 @@ export class VinaHentai extends Source {
                     'referer': BASE_URL,
                     'user-agent': await this.requestManager.getDefaultUserAgent(),
                 }
+                
+                if (request.url.startsWith(BASE_URL)) {
+                    request.url = `${PROXY_URL}?url=${encodeURIComponent(request.url)}`;
+                }
+
                 return request
             },
             interceptResponse: async (response) => response,
