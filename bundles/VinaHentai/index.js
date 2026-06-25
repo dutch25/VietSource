@@ -463,10 +463,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VinaHentai = exports.VinaHentaiInfo = void 0;
 const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
-const BASE_URL = 'https://vinahentai.cloud';
-const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
+const BASE_URL = 'https://vinahentai.one';
 exports.VinaHentaiInfo = {
-    version: '1.1.11',
+    version: '1.1.12',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -496,15 +495,6 @@ class VinaHentai extends types_1.Source {
                         'referer': BASE_URL,
                         'user-agent': await this.requestManager.getDefaultUserAgent(),
                     };
-                    if (!request.url.startsWith(PROXY_URL)) {
-                        return App.createRequest({
-                            url: `${PROXY_URL}?url=${encodeURIComponent(request.url)}`,
-                            method: request.method,
-                            headers: request.headers,
-                            data: request.data,
-                            param: request.param
-                        });
-                    }
                     return request;
                 },
                 interceptResponse: async (response) => response,
@@ -817,7 +807,7 @@ class Parser {
     }
     parseChapterPages($) {
         const html = $.html();
-        const regex = /https:\/\/cdn\.vinahentai\.cloud\/manga-images\/[^\s"'\\]+\.(webp|jpg|jpeg|png|gif)/g;
+        const regex = /https:\/\/cdn\.vinahentai\.one\/manga-images\/[^\s"'\\]+\.(webp|jpg|jpeg|png|gif)/g;
         const matches = html.match(regex) ?? [];
         const pages = [];
         const seen = new Set();
@@ -840,7 +830,7 @@ class Parser {
         }
         for (let i = 0; i < tokens.length; i++) {
             const part = tokens[i];
-            if (part && /^https:\/\/cdn\.vinahentai\.cloud\/[^\s"'\\]+\.(webp|jpg|jpeg|png)$/.test(part)) {
+            if (part && /^https:\/\/cdn\.vinahentai\.one\/[^\s"'\\]+\.(webp|jpg|jpeg|png)$/.test(part)) {
                 for (let j = 1; j <= 20; j++) {
                     const prev = tokens[i - j];
                     if (prev && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(prev) && prev.length > 3 && prev.length < 100) {
