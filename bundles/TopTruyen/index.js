@@ -463,8 +463,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TopTruyen = exports.TopTruyenInfo = exports.isLastPage = void 0;
 const types_1 = require("@paperback/types");
 const TopTruyenParser_1 = require("./TopTruyenParser");
-const DOMAIN = 'https://www.toptruyenzone4.com/';
-const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
+const DOMAIN = 'https://www.toptruyenzone5.com/';
 const isLastPage = ($) => {
     // try with span else a tag
     let current = $('ul.pagination li.page-item.active span').text();
@@ -482,7 +481,7 @@ const isLastPage = ($) => {
 };
 exports.isLastPage = isLastPage;
 exports.TopTruyenInfo = {
-    version: '1.1.9',
+    version: '1.1.10',
     name: 'TopTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -517,15 +516,6 @@ class TopTruyen {
                             'user-agent': await this.requestManager.getDefaultUserAgent(),
                         }
                     };
-                    if (!request.url.startsWith(PROXY_URL)) {
-                        return App.createRequest({
-                            url: `${PROXY_URL}?url=${encodeURIComponent(request.url)}`,
-                            method: request.method,
-                            headers: request.headers,
-                            data: request.data,
-                            param: request.param
-                        });
-                    }
                     return request;
                 },
                 interceptResponse: async (response) => {
