@@ -19,7 +19,7 @@ import { Parser } from './VinaHentaiParser'
 
 const BASE_URL = 'https://vinahentai.one'
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.15',
+    version: '1.1.16',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -76,7 +76,6 @@ export class VinaHentai extends Source {
             { id: 'private', title: 'Bộ Sưu Tập Riêng', url: `${BASE_URL}/genres/anal` },
             { id: 'private2', title: 'Bộ Sưu Tập Riêng 2', url: `${BASE_URL}/genres/anal` },
             { id: 'private3', title: 'Bộ Sưu Tập Riêng 3', url: `${BASE_URL}/genres/anal` },
-            { id: 'cosplay', title: 'Ảnh Cosplay', url: `${BASE_URL}` },
         ]
 
         for (const section of sections) {
@@ -95,7 +94,7 @@ export class VinaHentai extends Source {
                     const sortParam = section.id === 'private2' ? '&sort=viewNumber' : section.id === 'private3' ? '&sort=likeNumber' : '';
                     try {
                         const response = await this.requestManager.schedule(
-                            App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=1&status=${sortParam}`, method: 'GET' }), 0
+                            App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=1${sortParam}`, method: 'GET' }), 0
                         )
                         if (response.status === 200) {
                             const $ = this.cheerio.load(response.data as string)
@@ -114,8 +113,6 @@ export class VinaHentai extends Source {
                         manga = this.parser.parseSection($, 'hot')
                     } else if (section.id === 'latest') {
                         manga = this.parser.parseSection($, 'mới')
-                    } else if (section.id === 'cosplay') {
-                        manga = this.parser.parseSection($, 'Ảnh cosplay')
                     } else {
                         manga = this.parser.parseHomePage($)
                     }
@@ -141,7 +138,7 @@ export class VinaHentai extends Source {
             const sortParam = homepageSectionId === 'private2' ? '&sort=viewNumber' : homepageSectionId === 'private3' ? '&sort=likeNumber' : '';
             try {
                 const response = await this.requestManager.schedule(
-                    App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=${page}&status=${sortParam}`, method: 'GET' }), 0
+                    App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=${page}${sortParam}`, method: 'GET' }), 0
                 )
                 if (response.status === 200) {
                     const $ = this.cheerio.load(response.data as string)
@@ -152,9 +149,7 @@ export class VinaHentai extends Source {
             return App.createPagedResults({ results: [], metadata: undefined })
         }
 
-        if (homepageSectionId === 'cosplay') {
-            url = `${BASE_URL}/genres/anh-cosplay?page=${page}`
-        } else if (homepageSectionId === 'week') {
+        if (homepageSectionId === 'week') {
             url = `${BASE_URL}/leaderboard/manga?period=weekly&page=${page}`
         } else if (homepageSectionId === 'month') {
             url = `${BASE_URL}/leaderboard/manga?period=monthly&page=${page}`
