@@ -463,9 +463,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DamCoNuong = exports.DamCoNuongInfo = void 0;
 const types_1 = require("@paperback/types");
 const DamCoNuongParser_1 = require("./DamCoNuongParser");
-const BASE_URL = 'https://damconuong.mom';
+const BASE_URL = 'https://damconuong.shop';
 exports.DamCoNuongInfo = {
-    version: '1.1.3',
+    version: '1.1.4',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
