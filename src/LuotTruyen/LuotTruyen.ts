@@ -36,7 +36,7 @@ export const isLastPage = ($: CheerioAPI): boolean => {
 };
 
 export const LuotTruyenInfo: SourceInfo = {
-    version: '1.1.3',
+    version: '1.1.4',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -74,13 +74,15 @@ export class LuotTruyen implements ChapterProviding, MangaProviding, SearchResul
                     'referer': `${await this.getBaseUrl()}/`,
                     'user-agent': await this.requestManager.getDefaultUserAgent(),
                 };
+                let existingCookie = request.headers?.['Cookie'] || request.headers?.['cookie'] || '';
                 if (cookie) {
-                    headers['Cookie'] = cookie;
+                    existingCookie = existingCookie ? `${existingCookie}; ${cookie}` : cookie;
                 }
                 
                 request.headers = {
                     ...(request.headers ?? {}),
-                    ...headers
+                    ...headers,
+                    'Cookie': existingCookie
                 };
                 return request;
             },
