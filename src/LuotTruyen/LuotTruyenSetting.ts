@@ -5,15 +5,20 @@ import {
 } from '@paperback/types';
 
 const DEFAULT_BASE_URL = 'https://luottruyen13.com';
+const DEFAULT_COOKIE = '';
 
 export const getDomain = async (stateManager: SourceStateManager): Promise<string> => {
     return (await stateManager.retrieve('baseUrl') as string) ?? DEFAULT_BASE_URL;
 };
 
+export const getCookie = async (stateManager: SourceStateManager): Promise<string> => {
+    return (await stateManager.retrieve('cookie') as string) ?? DEFAULT_COOKIE;
+};
+
 export const domainSettings = (stateManager: SourceStateManager): DUINavigationButton => {
     return App.createDUINavigationButton({
         id: 'domain_settings',
-        label: 'Ghi đè URL cơ sở',
+        label: 'Cài đặt nguồn',
         form: App.createDUIForm({
             sections: async () => [
                 App.createDUISection({
@@ -31,6 +36,16 @@ export const domainSettings = (stateManager: SourceStateManager): DUINavigationB
                                 },
                             }),
                         }),
+                        App.createDUIInputField({
+                            id: 'cookie',
+                            label: 'Cookie (Tài khoản)',
+                            value: App.createDUIBinding({
+                                get: async () => await getCookie(stateManager),
+                                set: async (value: string) => {
+                                    await stateManager.store('cookie', value.trim() || DEFAULT_COOKIE);
+                                },
+                            }),
+                        }),
                     ],
                 }),
             ],
@@ -44,6 +59,7 @@ export function resetSettings(stateManager: SourceStateManager): DUIButton {
         label: 'Đặt lại mặc định',
         onTap: async () => {
             await stateManager.store('baseUrl', DEFAULT_BASE_URL);
+            await stateManager.store('cookie', DEFAULT_COOKIE);
         },
     });
 }
