@@ -466,7 +466,7 @@ const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.TruyenTuoiThoInfo = {
-    version: '1.1.7',
+    version: '1.1.8',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -642,9 +642,7 @@ class TruyenTuoiTho extends types_1.Source {
         if (pages.length === 0) {
             throw new Error(`No pages found for chapter ${chapterId}`);
         }
-        // Apply proxy to all page image URLs
-        const proxiedPages = pages.map(page => `${PROXY_URL}/?url=${encodeURIComponent(page)}`);
-        return App.createChapterDetails({ id: chapterId, mangaId, pages: proxiedPages });
+        return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     getMangaShareUrl(mangaId) {
         return `${BASE_URL}/manga/${mangaId}/`;
@@ -710,8 +708,7 @@ class Parser {
             }
             if (!rawImage || rawImage.includes('data:image'))
                 return;
-            const image = proxyUrl ? `${proxyUrl}/?url=${encodeURIComponent(rawImage)}` : rawImage;
-            results.push(App.createPartialSourceManga({ mangaId: id, title, image }));
+            results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }));
         });
         return this.deduplicate(results);
     }
@@ -734,7 +731,7 @@ class Parser {
             || $('.summary_image img').attr('src')
             || $('.summary_image img').attr('data-src')
             || '';
-        const image = proxyUrl && rawImage ? `${proxyUrl}/?url=${encodeURIComponent(rawImage)}` : rawImage;
+        const image = rawImage;
         const desc = $('meta[property="og:description"]').attr('content')?.trim()
             || $('.description-summary').text().trim()
             || $('.summary__content').text().trim()
