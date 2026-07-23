@@ -466,7 +466,7 @@ const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.TruyenTuoiThoInfo = {
-    version: '1.1.6',
+    version: '1.1.7',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -693,8 +693,22 @@ class Parser {
             if (!id)
                 return;
             const img = $('.item-thumb img, .manga-thumb img, .tab-thumb img, img', el).first();
-            const rawImage = img.attr('data-src') ?? img.attr('data-lazy-src') ?? img.attr('src') ?? '';
-            if (!rawImage)
+            let rawImage = img.attr('data-src') ?? img.attr('data-lazy-src') ?? img.attr('src') ?? '';
+            if (!rawImage || rawImage.includes('data:image')) {
+                rawImage = img.attr('data-original') ?? img.attr('data-srcset') ?? img.attr('srcset') ?? rawImage;
+            }
+            if (!rawImage || rawImage.includes('data:image')) {
+                const styleBg = $('.item-thumb, .manga-thumb, .tab-thumb', el).first().css('background-image');
+                if (styleBg && styleBg !== 'none') {
+                    const match = styleBg.match(/url\(["']?(.+?)["']?\)/);
+                    if (match)
+                        rawImage = match[1];
+                }
+            }
+            if (rawImage && rawImage.includes(' ')) {
+                rawImage = rawImage.split(' ')[0];
+            }
+            if (!rawImage || rawImage.includes('data:image'))
                 return;
             const image = proxyUrl ? `${proxyUrl}/?url=${encodeURIComponent(rawImage)}` : rawImage;
             results.push(App.createPartialSourceManga({ mangaId: id, title, image }));
