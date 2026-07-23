@@ -1425,7 +1425,7 @@ const isLastPage = ($) => {
 };
 exports.isLastPage = isLastPage;
 exports.LuotTruyenInfo = {
-    version: '1.1.2',
+    version: '1.1.3',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -1451,12 +1451,17 @@ class LuotTruyen {
             requestTimeout: 20000,
             interceptor: {
                 interceptRequest: async (request) => {
+                    const cookie = await (0, LuotTruyenSetting_1.getCookie)(this.stateManager);
+                    const headers = {
+                        'referer': `${await this.getBaseUrl()}/`,
+                        'user-agent': await this.requestManager.getDefaultUserAgent(),
+                    };
+                    if (cookie) {
+                        headers['Cookie'] = cookie;
+                    }
                     request.headers = {
                         ...(request.headers ?? {}),
-                        ...{
-                            'referer': `${await this.getBaseUrl()}/`,
-                            'user-agent': await this.requestManager.getDefaultUserAgent(),
-                        }
+                        ...headers
                     };
                     return request;
                 },
@@ -1913,16 +1918,21 @@ exports.Parser = Parser;
 },{"entities":69}],72:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetSettings = exports.domainSettings = exports.getDomain = void 0;
+exports.resetSettings = exports.domainSettings = exports.getCookie = exports.getDomain = void 0;
 const DEFAULT_BASE_URL = 'https://luottruyen13.com';
+const DEFAULT_COOKIE = '';
 const getDomain = async (stateManager) => {
     return await stateManager.retrieve('baseUrl') ?? DEFAULT_BASE_URL;
 };
 exports.getDomain = getDomain;
+const getCookie = async (stateManager) => {
+    return await stateManager.retrieve('cookie') ?? DEFAULT_COOKIE;
+};
+exports.getCookie = getCookie;
 const domainSettings = (stateManager) => {
     return App.createDUINavigationButton({
         id: 'domain_settings',
-        label: 'Ghi đè URL cơ sở',
+        label: 'Cài đặt nguồn',
         form: App.createDUIForm({
             sections: async () => [
                 App.createDUISection({
@@ -1940,6 +1950,16 @@ const domainSettings = (stateManager) => {
                                 },
                             }),
                         }),
+                        App.createDUIInputField({
+                            id: 'cookie',
+                            label: 'Cookie (Tài khoản)',
+                            value: App.createDUIBinding({
+                                get: async () => await (0, exports.getCookie)(stateManager),
+                                set: async (value) => {
+                                    await stateManager.store('cookie', value.trim() || DEFAULT_COOKIE);
+                                },
+                            }),
+                        }),
                     ],
                 }),
             ],
@@ -1953,6 +1973,7 @@ function resetSettings(stateManager) {
         label: 'Đặt lại mặc định',
         onTap: async () => {
             await stateManager.store('baseUrl', DEFAULT_BASE_URL);
+            await stateManager.store('cookie', DEFAULT_COOKIE);
         },
     });
 }
