@@ -25,6 +25,7 @@ import { Parser } from './LuotTruyenParser';
 import {
     getDomain,
     getCookie,
+    getUserAgent,
     domainSettings,
     resetSettings,
 } from './LuotTruyenSetting';
@@ -36,7 +37,7 @@ export const isLastPage = ($: CheerioAPI): boolean => {
 };
 
 export const LuotTruyenInfo: SourceInfo = {
-    version: '1.1.4',
+    version: '1.1.5',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -70,19 +71,26 @@ export class LuotTruyen implements ChapterProviding, MangaProviding, SearchResul
         interceptor: {
             interceptRequest: async (request: Request): Promise<Request> => {
                 const cookie = await getCookie(this.stateManager);
+                const customUA = await getUserAgent(this.stateManager);
+                const ua = customUA || await this.requestManager.getDefaultUserAgent();
                 const headers: Record<string, string> = {
                     'referer': `${await this.getBaseUrl()}/`,
-                    'user-agent': await this.requestManager.getDefaultUserAgent(),
+                    'user-agent': ua,
                 };
                 let existingCookie = request.headers?.['Cookie'] || request.headers?.['cookie'] || '';
                 if (cookie) {
                     existingCookie = existingCookie ? `${existingCookie}; ${cookie}` : cookie;
                 }
                 
+                if (request.headers) {
+                    delete request.headers['Cookie'];
+                    delete request.headers['cookie'];
+                }
+
                 request.headers = {
                     ...(request.headers ?? {}),
                     ...headers,
-                    'Cookie': existingCookie
+                    'cookie': existingCookie
                 };
                 return request;
             },

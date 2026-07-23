@@ -6,6 +6,7 @@ import {
 
 const DEFAULT_BASE_URL = 'https://luottruyen13.com';
 const DEFAULT_COOKIE = '';
+const DEFAULT_UA = '';
 
 export const getDomain = async (stateManager: SourceStateManager): Promise<string> => {
     return (await stateManager.retrieve('baseUrl') as string) ?? DEFAULT_BASE_URL;
@@ -13,6 +14,10 @@ export const getDomain = async (stateManager: SourceStateManager): Promise<strin
 
 export const getCookie = async (stateManager: SourceStateManager): Promise<string> => {
     return (await stateManager.retrieve('cookie') as string) ?? DEFAULT_COOKIE;
+};
+
+export const getUserAgent = async (stateManager: SourceStateManager): Promise<string> => {
+    return (await stateManager.retrieve('useragent') as string) ?? DEFAULT_UA;
 };
 
 export const domainSettings = (stateManager: SourceStateManager): DUINavigationButton => {
@@ -46,6 +51,16 @@ export const domainSettings = (stateManager: SourceStateManager): DUINavigationB
                                 },
                             }),
                         }),
+                        App.createDUIInputField({
+                            id: 'useragent',
+                            label: 'User-Agent (Bắt buộc nếu dùng Cookie)',
+                            value: App.createDUIBinding({
+                                get: async () => await getUserAgent(stateManager),
+                                set: async (value: string) => {
+                                    await stateManager.store('useragent', value.trim() || DEFAULT_UA);
+                                },
+                            }),
+                        }),
                     ],
                 }),
             ],
@@ -60,6 +75,7 @@ export function resetSettings(stateManager: SourceStateManager): DUIButton {
         onTap: async () => {
             await stateManager.store('baseUrl', DEFAULT_BASE_URL);
             await stateManager.store('cookie', DEFAULT_COOKIE);
+            await stateManager.store('useragent', DEFAULT_UA);
         },
     });
 }
