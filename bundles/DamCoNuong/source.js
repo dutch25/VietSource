@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const DamCoNuongParser_1 = require("./DamCoNuongParser");
 const BASE_URL = 'https://damconuong.store';
 exports.DamCoNuongInfo = {
-    version: '1.1.5',
+    version: '1.1.6',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -634,11 +634,12 @@ class Parser {
         return this.deduplicate(results);
     }
     parseMangaDetails($, mangaId) {
-        const title = $('meta[property="og:title"]').attr('content')?.trim()
-            || $('h1').first().text().trim()
-            || mangaId;
+        let title = $('h1.text-xl').text().trim() || $('h1').not('.text-sm').first().text().trim();
+        if (!title || title.includes('Tên Miền Chính Thức')) {
+            title = $('h1').last().text().trim() || mangaId;
+        }
         const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? '';
-        const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? '';
+        const desc = $('.summary-content, .description, .manga-content, #synopsis, .mt-4.text-sm, .prose').text().trim() || '';
         const genres = [];
         $('.genre a, .the-loai a').each((_, el) => {
             const href = $(el).attr('href') ?? '';

@@ -41,11 +41,13 @@ export class Parser {
     }
 
     parseMangaDetails($: CheerioAPI, mangaId: string): SourceManga {
-        const title = $('meta[property="og:title"]').attr('content')?.trim()
-            || $('h1').first().text().trim()
-            || mangaId
+        let title = $('h1.text-xl').text().trim() || $('h1').not('.text-sm').first().text().trim()
+        if (!title || title.includes('Tên Miền Chính Thức')) {
+            title = $('h1').last().text().trim() || mangaId
+        }
+
         const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? ''
-        const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? ''
+        const desc = $('.summary-content, .description, .manga-content, #synopsis, .mt-4.text-sm, .prose').text().trim() || ''
 
         const genres: Tag[] = []
         $('.genre a, .the-loai a').each((_: any, el: any) => {
