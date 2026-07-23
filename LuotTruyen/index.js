@@ -1425,7 +1425,7 @@ const isLastPage = ($) => {
 };
 exports.isLastPage = isLastPage;
 exports.LuotTruyenInfo = {
-    version: '1.1.5',
+    version: '1.1.6',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -1451,16 +1451,28 @@ class LuotTruyen {
             requestTimeout: 20000,
             interceptor: {
                 interceptRequest: async (request) => {
-                    const cookie = await (0, LuotTruyenSetting_1.getCookie)(this.stateManager);
+                    const cookieString = await (0, LuotTruyenSetting_1.getCookie)(this.stateManager);
                     const customUA = await (0, LuotTruyenSetting_1.getUserAgent)(this.stateManager);
                     const ua = customUA || await this.requestManager.getDefaultUserAgent();
                     const headers = {
                         'referer': `${await this.getBaseUrl()}/`,
                         'user-agent': ua,
                     };
-                    let existingCookie = request.headers?.['Cookie'] || request.headers?.['cookie'] || '';
-                    if (cookie) {
-                        existingCookie = existingCookie ? `${existingCookie}; ${cookie}` : cookie;
+                    // Native cookie injection for iOS URLSession
+                    if (cookieString && this.requestManager.cookieStore) {
+                        const cookies = cookieString.split(';');
+                        for (const c of cookies) {
+                            const [key, ...vals] = c.split('=');
+                            if (key && vals.length > 0) {
+                                const cookieObj = App.createCookie({
+                                    name: key.trim(),
+                                    value: vals.join('=').trim(),
+                                    domain: 'luottruyen13.com',
+                                    path: '/'
+                                });
+                                this.requestManager.cookieStore.addCookie(cookieObj);
+                            }
+                        }
                     }
                     if (request.headers) {
                         delete request.headers['Cookie'];
@@ -1469,7 +1481,6 @@ class LuotTruyen {
                     request.headers = {
                         ...(request.headers ?? {}),
                         ...headers,
-                        'cookie': existingCookie
                     };
                     return request;
                 },
