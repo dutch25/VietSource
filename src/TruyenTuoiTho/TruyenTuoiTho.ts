@@ -21,7 +21,7 @@ const BASE_URL = 'https://truyentuoitho.com'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
-    version: '1.1.7',
+    version: '1.1.8',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -224,10 +224,7 @@ export class TruyenTuoiTho extends Source {
             throw new Error(`No pages found for chapter ${chapterId}`)
         }
 
-        // Apply proxy to all page image URLs
-        const proxiedPages = pages.map(page => `${PROXY_URL}/?url=${encodeURIComponent(page)}`)
-
-        return App.createChapterDetails({ id: chapterId, mangaId, pages: proxiedPages })
+        return App.createChapterDetails({ id: chapterId, mangaId, pages })
     }
 
     getMangaShareUrl(mangaId: string): string {

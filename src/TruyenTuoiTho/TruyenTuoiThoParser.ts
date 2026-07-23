@@ -55,9 +55,7 @@ export class Parser {
 
             if (!rawImage || rawImage.includes('data:image')) return
 
-            const image = proxyUrl ? `${proxyUrl}/?url=${encodeURIComponent(rawImage)}` : rawImage
-
-            results.push(App.createPartialSourceManga({ mangaId: id, title, image }))
+            results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }))
         })
 
         return this.deduplicate(results)
@@ -85,7 +83,7 @@ export class Parser {
             || $('.summary_image img').attr('data-src')
             || ''
 
-        const image = proxyUrl && rawImage ? `${proxyUrl}/?url=${encodeURIComponent(rawImage)}` : rawImage
+        const image = rawImage
 
         const desc = $('meta[property="og:description"]').attr('content')?.trim()
             || $('.description-summary').text().trim()
