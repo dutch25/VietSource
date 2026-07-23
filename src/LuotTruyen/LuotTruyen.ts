@@ -37,7 +37,7 @@ export const isLastPage = ($: CheerioAPI): boolean => {
 };
 
 export const LuotTruyenInfo: SourceInfo = {
-    version: '1.1.6',
+    version: '1.1.7',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',

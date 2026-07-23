@@ -113,7 +113,7 @@ export class Parser {
     parseChapterDetails($: CheerioAPI): string[] {
         const pages: string[] = [];
 
-        $('#view-chapter img, .chapter-content img, .reading-content img, .content-chapter img').each((_: any, obj: any) => {
+        $('#view-chapter img, .chapter-content img, .reading-content img, .content-chapter img, .reading-detail img, .page-chapter img').each((_: any, obj: any) => {
             const attributes = ['src', 'data-src', 'data-cfsrc', 'data-original'];
             let link = '';
 

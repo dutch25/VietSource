@@ -1425,7 +1425,7 @@ const isLastPage = ($) => {
 };
 exports.isLastPage = isLastPage;
 exports.LuotTruyenInfo = {
-    version: '1.1.6',
+    version: '1.1.7',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -1788,7 +1788,7 @@ class Parser {
     }
     parseChapterDetails($) {
         const pages = [];
-        $('#view-chapter img, .chapter-content img, .reading-content img, .content-chapter img').each((_, obj) => {
+        $('#view-chapter img, .chapter-content img, .reading-content img, .content-chapter img, .reading-detail img, .page-chapter img').each((_, obj) => {
             const attributes = ['src', 'data-src', 'data-cfsrc', 'data-original'];
             let link = '';
             for (const attr of attributes) {
