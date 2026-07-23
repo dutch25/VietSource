@@ -1425,7 +1425,7 @@ const isLastPage = ($) => {
 };
 exports.isLastPage = isLastPage;
 exports.LuotTruyenInfo = {
-    version: '1.1.4',
+    version: '1.1.5',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -1452,18 +1452,24 @@ class LuotTruyen {
             interceptor: {
                 interceptRequest: async (request) => {
                     const cookie = await (0, LuotTruyenSetting_1.getCookie)(this.stateManager);
+                    const customUA = await (0, LuotTruyenSetting_1.getUserAgent)(this.stateManager);
+                    const ua = customUA || await this.requestManager.getDefaultUserAgent();
                     const headers = {
                         'referer': `${await this.getBaseUrl()}/`,
-                        'user-agent': await this.requestManager.getDefaultUserAgent(),
+                        'user-agent': ua,
                     };
                     let existingCookie = request.headers?.['Cookie'] || request.headers?.['cookie'] || '';
                     if (cookie) {
                         existingCookie = existingCookie ? `${existingCookie}; ${cookie}` : cookie;
                     }
+                    if (request.headers) {
+                        delete request.headers['Cookie'];
+                        delete request.headers['cookie'];
+                    }
                     request.headers = {
                         ...(request.headers ?? {}),
                         ...headers,
-                        'Cookie': existingCookie
+                        'cookie': existingCookie
                     };
                     return request;
                 },
@@ -1920,9 +1926,10 @@ exports.Parser = Parser;
 },{"entities":69}],72:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetSettings = exports.domainSettings = exports.getCookie = exports.getDomain = void 0;
+exports.resetSettings = exports.domainSettings = exports.getUserAgent = exports.getCookie = exports.getDomain = void 0;
 const DEFAULT_BASE_URL = 'https://luottruyen13.com';
 const DEFAULT_COOKIE = '';
+const DEFAULT_UA = '';
 const getDomain = async (stateManager) => {
     return await stateManager.retrieve('baseUrl') ?? DEFAULT_BASE_URL;
 };
@@ -1931,6 +1938,10 @@ const getCookie = async (stateManager) => {
     return await stateManager.retrieve('cookie') ?? DEFAULT_COOKIE;
 };
 exports.getCookie = getCookie;
+const getUserAgent = async (stateManager) => {
+    return await stateManager.retrieve('useragent') ?? DEFAULT_UA;
+};
+exports.getUserAgent = getUserAgent;
 const domainSettings = (stateManager) => {
     return App.createDUINavigationButton({
         id: 'domain_settings',
@@ -1962,6 +1973,16 @@ const domainSettings = (stateManager) => {
                                 },
                             }),
                         }),
+                        App.createDUIInputField({
+                            id: 'useragent',
+                            label: 'User-Agent (Bắt buộc nếu dùng Cookie)',
+                            value: App.createDUIBinding({
+                                get: async () => await (0, exports.getUserAgent)(stateManager),
+                                set: async (value) => {
+                                    await stateManager.store('useragent', value.trim() || DEFAULT_UA);
+                                },
+                            }),
+                        }),
                     ],
                 }),
             ],
@@ -1976,6 +1997,7 @@ function resetSettings(stateManager) {
         onTap: async () => {
             await stateManager.store('baseUrl', DEFAULT_BASE_URL);
             await stateManager.store('cookie', DEFAULT_COOKIE);
+            await stateManager.store('useragent', DEFAULT_UA);
         },
     });
 }
