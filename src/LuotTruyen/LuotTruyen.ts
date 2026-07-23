@@ -37,7 +37,7 @@ export const isLastPage = ($: CheerioAPI): boolean => {
 };
 
 export const LuotTruyenInfo: SourceInfo = {
-    version: '1.1.5',
+    version: '1.1.6',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -70,18 +70,31 @@ export class LuotTruyen implements ChapterProviding, MangaProviding, SearchResul
         requestTimeout: 20000,
         interceptor: {
             interceptRequest: async (request: Request): Promise<Request> => {
-                const cookie = await getCookie(this.stateManager);
+                const cookieString = await getCookie(this.stateManager);
                 const customUA = await getUserAgent(this.stateManager);
                 const ua = customUA || await this.requestManager.getDefaultUserAgent();
                 const headers: Record<string, string> = {
                     'referer': `${await this.getBaseUrl()}/`,
                     'user-agent': ua,
                 };
-                let existingCookie = request.headers?.['Cookie'] || request.headers?.['cookie'] || '';
-                if (cookie) {
-                    existingCookie = existingCookie ? `${existingCookie}; ${cookie}` : cookie;
-                }
                 
+                // Native cookie injection for iOS URLSession
+                if (cookieString && this.requestManager.cookieStore) {
+                    const cookies = cookieString.split(';');
+                    for (const c of cookies) {
+                        const [key, ...vals] = c.split('=');
+                        if (key && vals.length > 0) {
+                            const cookieObj = App.createCookie({ 
+                                name: key.trim(), 
+                                value: vals.join('=').trim(), 
+                                domain: 'luottruyen13.com',
+                                path: '/'
+                            });
+                            this.requestManager.cookieStore.addCookie(cookieObj);
+                        }
+                    }
+                }
+
                 if (request.headers) {
                     delete request.headers['Cookie'];
                     delete request.headers['cookie'];
@@ -90,7 +103,6 @@ export class LuotTruyen implements ChapterProviding, MangaProviding, SearchResul
                 request.headers = {
                     ...(request.headers ?? {}),
                     ...headers,
-                    'cookie': existingCookie
                 };
                 return request;
             },
