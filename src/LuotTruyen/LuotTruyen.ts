@@ -37,14 +37,14 @@ export const isLastPage = ($: CheerioAPI): boolean => {
 };
 
 export const LuotTruyenInfo: SourceInfo = {
-    version: '1.1.7',
+    version: '1.1.8',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
     authorWebsite: 'https://github.com/AlanNois',
     description: 'Extension that pulls manga from LuotTruyen',
     contentRating: ContentRating.MATURE,
-    websiteBaseURL: 'https://luottruyen13.com',
+    websiteBaseURL: 'https://luottruyen14.com',
     sourceTags: [
         {
             text: 'Vietnamese',
@@ -87,7 +87,7 @@ export class LuotTruyen implements ChapterProviding, MangaProviding, SearchResul
                             const cookieObj = App.createCookie({ 
                                 name: key.trim(), 
                                 value: vals.join('=').trim(), 
-                                domain: 'luottruyen13.com',
+                                domain: 'luottruyen14.com',
                                 path: '/'
                             });
                             this.requestManager.cookieStore.addCookie(cookieObj);
