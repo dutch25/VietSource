@@ -23,7 +23,7 @@ import {
 import { Parser } from './MiMiParser';
 
 export const MiMiInfo: SourceInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -134,8 +134,7 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
         const response = await this.apiRequest(endpoint, params);
         const mangas = this.parser.parseSearchResults(response.items ?? []);
         
-        // Cần lấy has_next từ JSON api trả về
-        const hasNextPage = response.has_next ?? false;
+        const hasNextPage = mangas.length > 0;
 
         metadata = hasNextPage ? { page: page + 1 } : undefined;
 
@@ -215,7 +214,7 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
         }
 
         const mangas = this.parser.parseSearchResults(response.items ?? []);
-        const hasNextPage = response.has_next ?? false;
+        const hasNextPage = mangas.length > 0;
         metadata = hasNextPage ? { page: page + 1 } : undefined;
 
         return App.createPagedResults({
