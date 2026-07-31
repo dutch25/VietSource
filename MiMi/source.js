@@ -464,7 +464,7 @@ exports.MiMi = exports.MiMiInfo = void 0;
 const types_1 = require("@paperback/types");
 const MiMiParser_1 = require("./MiMiParser");
 exports.MiMiInfo = {
-    version: '1.0.6',
+    version: '1.0.7',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -587,7 +587,7 @@ class MiMi {
             let response;
             switch (section.id) {
                 case 'genre_183_223':
-                    response = await this.apiRequest('manga/advanced-search', 'genre=183,223&exclude_genre=196,213&page=1&page_size=25');
+                    response = await this.apiRequest('manga/advanced-search', 'genre=183,223&exclude_genre=196,213,184,308,349,351,381&page=1&page_size=25');
                     break;
                 case 'album_1080':
                     response = await this.apiRequest('albums/1080/manga', 'page=1&page_size=25');
@@ -616,7 +616,7 @@ class MiMi {
         let response;
         switch (homepageSectionId) {
             case 'genre_183_223':
-                response = await this.apiRequest('manga/advanced-search', `genre=183,223&exclude_genre=196,213&page=${page}&page_size=25`);
+                response = await this.apiRequest('manga/advanced-search', `genre=183,223&exclude_genre=196,213,184,308,349,351,381&page=${page}&page_size=25`);
                 break;
             case 'album_1080':
                 response = await this.apiRequest('albums/1080/manga', `page=${page}&page_size=25`);
