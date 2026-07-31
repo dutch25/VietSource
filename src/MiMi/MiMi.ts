@@ -23,7 +23,7 @@ import {
 import { Parser } from './MiMiParser';
 
 export const MiMiInfo: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -145,6 +145,7 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const sections = [
+            App.createHomeSection({ id: 'genre_183_223', title: 'Anal - Không Che', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'album_1080', title: 'Art siêu nứng', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'popular', title: 'Phổ Biến Nhất', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'latest', title: 'Mới Cập Nhật', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
@@ -155,6 +156,9 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
             let response;
 
             switch (section.id) {
+                case 'genre_183_223':
+                    response = await this.apiRequest('manga/advanced-search', 'genre=183,223&page=1&page_size=25');
+                    break;
                 case 'album_1080':
                     response = await this.apiRequest('albums/1080/manga', 'page=1&page_size=25');
                     break;
@@ -178,6 +182,9 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
         let response;
 
         switch (homepageSectionId) {
+            case 'genre_183_223':
+                response = await this.apiRequest('manga/advanced-search', `genre=183,223&page=${page}&page_size=25`);
+                break;
             case 'album_1080':
                 response = await this.apiRequest('albums/1080/manga', `page=${page}&page_size=25`);
                 break;
