@@ -23,7 +23,7 @@ import {
 import { Parser } from './MiMiParser';
 
 export const MiMiInfo: SourceInfo = {
-    version: '1.0.2',
+    version: '1.0.4',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -115,24 +115,26 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page = metadata?.page ?? 1;
-        const tag = query.includedTags?.[0]?.id;
+        const tag = query.includedTags?.map(t => t.id).join(',');
 
         let endpoint: string;
         let params: string;
 
         if (query.title) {
             endpoint = 'manga/search';
-            params = `title=${encodeURIComponent(query.title)}&page=${page}&page_size=24`;
+            params = `title=${encodeURIComponent(query.title)}&page=${page}&page_size=25`;
         } else if (tag) {
             endpoint = 'manga/advanced-search';
-            params = `genre=${tag}&page=${page}&page_size=24`;
+            params = `genre=${tag}&page=${page}&page_size=25`;
         } else {
             endpoint = 'manga/search';
-            params = `page=${page}&page_size=24`;
+            params = `page=${page}&page_size=25`;
         }
 
         const response = await this.apiRequest(endpoint, params);
         const mangas = this.parser.parseSearchResults(response.items ?? []);
+        
+        // Cần lấy has_next từ JSON api trả về
         const hasNextPage = response.has_next ?? false;
 
         metadata = hasNextPage ? { page: page + 1 } : undefined;
@@ -147,6 +149,8 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
         const sections = [
             App.createHomeSection({ id: 'genre_183_223', title: 'Anal - Không Che', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'album_1080', title: 'Art siêu nứng', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'album_156', title: 'Cool Art', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'album_1665', title: 'Peak', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'popular', title: 'Phổ Biến Nhất', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'latest', title: 'Mới Cập Nhật', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
         ];
@@ -161,6 +165,12 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
                     break;
                 case 'album_1080':
                     response = await this.apiRequest('albums/1080/manga', 'page=1&page_size=25');
+                    break;
+                case 'album_156':
+                    response = await this.apiRequest('albums/156/manga', 'page=1&page_size=25');
+                    break;
+                case 'album_1665':
+                    response = await this.apiRequest('albums/1665/manga', 'page=1&page_size=25');
                     break;
                 case 'popular':
                     response = await this.apiRequest('manga', 'sort=views&exclude_genre=196&page=1&page_size=25');
@@ -187,6 +197,12 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
                 break;
             case 'album_1080':
                 response = await this.apiRequest('albums/1080/manga', `page=${page}&page_size=25`);
+                break;
+            case 'album_156':
+                response = await this.apiRequest('albums/156/manga', `page=${page}&page_size=25`);
+                break;
+            case 'album_1665':
+                response = await this.apiRequest('albums/1665/manga', `page=${page}&page_size=25`);
                 break;
             case 'popular':
                 response = await this.apiRequest('manga', `sort=views&exclude_genre=196&page=${page}&page_size=25`);
