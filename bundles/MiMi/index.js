@@ -464,7 +464,7 @@ exports.MiMi = exports.MiMiInfo = void 0;
 const types_1 = require("@paperback/types");
 const MiMiParser_1 = require("./MiMiParser");
 exports.MiMiInfo = {
-    version: '1.0.9',
+    version: '1.1.0',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -575,7 +575,6 @@ class MiMi {
     async getHomePageSections(sectionCallback) {
         const sections = [
             App.createHomeSection({ id: 'genre_183_223', title: 'Private Section', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
-            App.createHomeSection({ id: 'genre_183_223_views', title: 'Private 2 (Top View)', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'album_1080', title: 'Art siêu nứng', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'album_156', title: 'Cool Art', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'album_1665', title: 'Peak', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
@@ -588,9 +587,6 @@ class MiMi {
             switch (section.id) {
                 case 'genre_183_223':
                     response = await this.apiRequest('manga/advanced-search', 'genre=183,223&exclude_genre=196,213,184,308,349,351,381&page=1&page_size=25');
-                    break;
-                case 'genre_183_223_views':
-                    response = await this.apiRequest('manga/advanced-search', 'genre=183,223&exclude_genre=196,213,184,308,349,351,381&sort=views&page=1&page_size=25');
                     break;
                 case 'album_1080':
                     response = await this.apiRequest('albums/1080/manga', 'page=1&page_size=25');
@@ -620,9 +616,6 @@ class MiMi {
         switch (homepageSectionId) {
             case 'genre_183_223':
                 response = await this.apiRequest('manga/advanced-search', `genre=183,223&exclude_genre=196,213,184,308,349,351,381&page=${page}&page_size=25`);
-                break;
-            case 'genre_183_223_views':
-                response = await this.apiRequest('manga/advanced-search', `genre=183,223&exclude_genre=196,213,184,308,349,351,381&sort=views&page=${page}&page_size=25`);
                 break;
             case 'album_1080':
                 response = await this.apiRequest('albums/1080/manga', `page=${page}&page_size=25`);
