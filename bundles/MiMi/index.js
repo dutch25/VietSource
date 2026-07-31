@@ -464,7 +464,7 @@ exports.MiMi = exports.MiMiInfo = void 0;
 const types_1 = require("@paperback/types");
 const MiMiParser_1 = require("./MiMiParser");
 exports.MiMiInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -547,7 +547,7 @@ class MiMi {
         });
     }
     async getSearchResults(query, metadata) {
-        const page = metadata?.page ?? 1;
+        const page = metadata?.page ? Number(metadata.page) : 1;
         const tag = query.includedTags?.map(t => t.id).join(',');
         let endpoint;
         let params;
@@ -612,7 +612,7 @@ class MiMi {
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
-        const page = metadata?.page ?? 1;
+        const page = metadata?.page ? Number(metadata.page) : 1;
         let response;
         switch (homepageSectionId) {
             case 'genre_183_223':

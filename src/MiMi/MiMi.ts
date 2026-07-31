@@ -23,7 +23,7 @@ import {
 import { Parser } from './MiMiParser';
 
 export const MiMiInfo: SourceInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -114,7 +114,7 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
-        const page = metadata?.page ?? 1;
+        const page = metadata?.page ? Number(metadata.page) : 1;
         const tag = query.includedTags?.map(t => t.id).join(',');
 
         let endpoint: string;
@@ -188,7 +188,7 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
     }
 
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
-        const page = metadata?.page ?? 1;
+        const page = metadata?.page ? Number(metadata.page) : 1;
         let response;
 
         switch (homepageSectionId) {
