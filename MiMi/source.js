@@ -464,7 +464,7 @@ exports.MiMi = exports.MiMiInfo = void 0;
 const types_1 = require("@paperback/types");
 const MiMiParser_1 = require("./MiMiParser");
 exports.MiMiInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -565,8 +565,7 @@ class MiMi {
         }
         const response = await this.apiRequest(endpoint, params);
         const mangas = this.parser.parseSearchResults(response.items ?? []);
-        // Cần lấy has_next từ JSON api trả về
-        const hasNextPage = response.has_next ?? false;
+        const hasNextPage = mangas.length > 0;
         metadata = hasNextPage ? { page: page + 1 } : undefined;
         return App.createPagedResults({
             results: mangas,
@@ -637,7 +636,7 @@ class MiMi {
                 throw new Error('Invalid section ID');
         }
         const mangas = this.parser.parseSearchResults(response.items ?? []);
-        const hasNextPage = response.has_next ?? false;
+        const hasNextPage = mangas.length > 0;
         metadata = hasNextPage ? { page: page + 1 } : undefined;
         return App.createPagedResults({
             results: mangas,
