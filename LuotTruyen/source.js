@@ -1425,14 +1425,14 @@ const isLastPage = ($) => {
 };
 exports.isLastPage = isLastPage;
 exports.LuotTruyenInfo = {
-    version: '1.1.8',
+    version: '1.1.9',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
     authorWebsite: 'https://github.com/AlanNois',
     description: 'Extension that pulls manga from LuotTruyen',
     contentRating: types_1.ContentRating.MATURE,
-    websiteBaseURL: 'https://luottruyen14.com',
+    websiteBaseURL: 'https://luottruyen15.com',
     sourceTags: [
         {
             text: 'Vietnamese',
@@ -1467,7 +1467,7 @@ class LuotTruyen {
                                 const cookieObj = App.createCookie({
                                     name: key.trim(),
                                     value: vals.join('=').trim(),
-                                    domain: 'luottruyen14.com',
+                                    domain: 'luottruyen15.com',
                                     path: '/'
                                 });
                                 this.requestManager.cookieStore.addCookie(cookieObj);
@@ -1938,7 +1938,7 @@ exports.Parser = Parser;
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resetSettings = exports.domainSettings = exports.getUserAgent = exports.getCookie = exports.getDomain = void 0;
-const DEFAULT_BASE_URL = 'https://luottruyen14.com';
+const DEFAULT_BASE_URL = 'https://luottruyen15.com';
 const DEFAULT_COOKIE = '';
 const DEFAULT_UA = '';
 const getDomain = async (stateManager) => {
