@@ -19,7 +19,7 @@ import { Parser } from './VinaHentaiParser'
 
 const BASE_URL = 'https://vinahentai.one'
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.16',
+    version: '1.1.17',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',

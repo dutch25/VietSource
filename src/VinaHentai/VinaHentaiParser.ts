@@ -115,11 +115,17 @@ export class Parser {
         })
 
         const tagSections: TagSection[] = []
+        const combinedTags: Tag[] = []
+        
         if (authors.length > 0) {
-            tagSections.push(App.createTagSection({ id: 'author', label: 'Tác Giả', tags: authors }))
+            combinedTags.push(...authors)
         }
         if (genres.length > 0) {
-            tagSections.push(App.createTagSection({ id: 'genres', label: 'Thể Loại', tags: genres }))
+            combinedTags.push(...genres)
+        }
+        
+        if (combinedTags.length > 0) {
+            tagSections.push(App.createTagSection({ id: 'genres', label: 'Thể Loại', tags: combinedTags }))
         }
 
         const authorName = authors.length > 0 ? authors[0].label : ''

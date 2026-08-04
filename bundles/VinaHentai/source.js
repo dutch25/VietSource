@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.one';
 exports.VinaHentaiInfo = {
-    version: '1.1.16',
+    version: '1.1.17',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -753,11 +753,15 @@ class Parser {
             }
         });
         const tagSections = [];
+        const combinedTags = [];
         if (authors.length > 0) {
-            tagSections.push(App.createTagSection({ id: 'author', label: 'Tác Giả', tags: authors }));
+            combinedTags.push(...authors);
         }
         if (genres.length > 0) {
-            tagSections.push(App.createTagSection({ id: 'genres', label: 'Thể Loại', tags: genres }));
+            combinedTags.push(...genres);
+        }
+        if (combinedTags.length > 0) {
+            tagSections.push(App.createTagSection({ id: 'genres', label: 'Thể Loại', tags: combinedTags }));
         }
         const authorName = authors.length > 0 ? authors[0].label : '';
         return App.createSourceManga({
