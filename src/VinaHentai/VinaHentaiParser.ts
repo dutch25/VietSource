@@ -182,7 +182,7 @@ export class Parser {
 
     parseChapterPages($: CheerioAPI): string[] {
         const html = $.html()
-        const regex = /https:\/\/cdn\.vinahentai\.one\/manga-images\/[^\s"'\\]+\.(webp|jpg|jpeg|png|gif)/g
+        const regex = /https:\/\/cdn\.vinahentai\.[a-z]+\/manga-images\/[^\s"'\\]+\.(webp|jpg|jpeg|png|gif)/g
         const matches = html.match(regex) ?? []
 
         const pages: string[] = []
@@ -209,7 +209,7 @@ export class Parser {
         
         for (let i = 0; i < tokens.length; i++) {
             const part = tokens[i]
-            if (part && /^https:\/\/cdn\.vinahentai\.one\/[^\s"'\\]+\.(webp|jpg|jpeg|png)$/.test(part)) {
+            if (part && /^https:\/\/cdn\.vinahentai\.[a-z]+\/[^\s"'\\]+\.(webp|jpg|jpeg|png)$/.test(part)) {
                 for (let j = 1; j <= 20; j++) {
                     const prev = tokens[i - j]
                     if (prev && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(prev) && prev.length > 3 && prev.length < 100) {
