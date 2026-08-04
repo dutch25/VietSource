@@ -50,9 +50,15 @@ interface ApiChapterDetails {
 export class Parser {
 
     parseMangaDetails(data: ApiManga, mangaId: string): SourceManga {
-        const tags: Tag[] = (data.genres ?? []).map(g =>
-            App.createTag({ label: g.name, id: g.id.toString() })
-        );
+        const tags: Tag[] = [];
+        
+        if (data.authors && data.authors.length > 0) {
+            tags.push(...data.authors.map(a => App.createTag({ label: a.name, id: `author:${a.id}` })));
+        }
+        
+        if (data.genres && data.genres.length > 0) {
+            tags.push(...data.genres.map(g => App.createTag({ label: g.name, id: g.id.toString() })));
+        }
 
         // Build title list: primary + alt names
         const titles = [data.title ?? ''];
