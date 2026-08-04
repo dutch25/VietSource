@@ -12,7 +12,10 @@
     "dependencies": {
         "@paperback/toolchain": "0.8.0-alpha.47",
         "@paperback/types": "0.8.0-alpha.47",
-        "node-fetch": "^3.3.2"
+        "node-fetch": "^3.3.2",
+        "puppeteer": "^25.4.0",
+        "puppeteer-extra": "^3.3.6",
+        "puppeteer-extra-plugin-stealth": "^2.11.2"
     },
     "devDependencies": {
         "typescript": "^4.3.2"

@@ -463,9 +463,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VinaHentai = exports.VinaHentaiInfo = void 0;
 const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
-const BASE_URL = 'https://vinahentai.one';
+const BASE_URL = 'https://vinahentai.vip';
 exports.VinaHentaiInfo = {
-    version: '1.1.17',
+    version: '1.1.18',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
