@@ -1425,7 +1425,7 @@ const isLastPage = ($) => {
 };
 exports.isLastPage = isLastPage;
 exports.LuotTruyenInfo = {
-    version: '1.1.9',
+    version: '1.1.10',
     name: 'LuotTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
