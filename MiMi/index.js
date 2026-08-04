@@ -464,7 +464,7 @@ exports.MiMi = exports.MiMiInfo = void 0;
 const types_1 = require("@paperback/types");
 const MiMiParser_1 = require("./MiMiParser");
 exports.MiMiInfo = {
-    version: '1.1.0',
+    version: '1.1.1',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -548,16 +548,25 @@ class MiMi {
     }
     async getSearchResults(query, metadata) {
         const page = metadata?.page ? Number(metadata.page) : 1;
-        const tag = query.includedTags?.map(t => t.id).join(',');
+        const includedTags = query.includedTags ?? [];
+        const authorTag = includedTags.find(t => t.id.startsWith('author:'));
+        const genreTags = includedTags.filter(t => !t.id.startsWith('author:'));
+        const genreParams = genreTags.map(t => t.id).join(',');
         let endpoint;
         let params;
         if (query.title) {
             endpoint = 'manga/search';
             params = `title=${encodeURIComponent(query.title)}&page=${page}&page_size=25`;
         }
-        else if (tag) {
+        else if (authorTag) {
+            const authorId = authorTag.id.replace('author:', '');
+            // MiMi might use author query param for advanced-search
             endpoint = 'manga/advanced-search';
-            params = `genre=${tag}&page=${page}&page_size=25`;
+            params = `author=${authorId}&page=${page}&page_size=25`;
+        }
+        else if (genreParams) {
+            endpoint = 'manga/advanced-search';
+            params = `genre=${genreParams}&page=${page}&page_size=25`;
         }
         else {
             endpoint = 'manga/search';
@@ -663,7 +672,13 @@ exports.Parser = void 0;
 // ── Parser ────────────────────────────────────────────────────────────────────
 class Parser {
     parseMangaDetails(data, mangaId) {
-        const tags = (data.genres ?? []).map(g => App.createTag({ label: g.name, id: g.id.toString() }));
+        const tags = [];
+        if (data.authors && data.authors.length > 0) {
+            tags.push(...data.authors.map(a => App.createTag({ label: a.name, id: `author:${a.id}` })));
+        }
+        if (data.genres && data.genres.length > 0) {
+            tags.push(...data.genres.map(g => App.createTag({ label: g.name, id: g.id.toString() })));
+        }
         // Build title list: primary + alt names
         const titles = [data.title ?? ''];
         if (data.alt_names?.length) {
