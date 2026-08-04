@@ -23,7 +23,7 @@ import {
 import { Parser } from './MiMiParser';
 
 export const MiMiInfo: SourceInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',

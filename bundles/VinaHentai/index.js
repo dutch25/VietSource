@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.vip';
 exports.VinaHentaiInfo = {
-    version: '1.1.18',
+    version: '1.1.19',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
