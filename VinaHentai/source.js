@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.vip';
 exports.VinaHentaiInfo = {
-    version: '1.1.20',
+    version: '1.1.21',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -624,17 +624,17 @@ class VinaHentai extends types_1.Source {
         return App.createPagedResults({ results: manga, metadata: isLast ? undefined : { page: page + 1 } });
     }
     async getMangaDetails(mangaId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/truyen-hentai/${mangaId}`, method: 'GET' }), 0);
+        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}`, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/truyen-hentai/${mangaId}`, method: 'GET' }), 0);
+        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}`, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseChapters($);
     }
     async getChapterDetails(mangaId, chapterId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/truyen-hentai/${mangaId}/${chapterId}`, method: 'GET' }), 0);
+        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/${chapterId}`, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         const pages = this.parser.parseChapterPages($);
         if (pages.length === 0) {
@@ -643,7 +643,7 @@ class VinaHentai extends types_1.Source {
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     getMangaShareUrl(mangaId) {
-        return `${BASE_URL}/truyen-hentai/${mangaId}`;
+        return `${BASE_URL}/manga/${mangaId}`;
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
@@ -657,7 +657,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
 class Parser {
     parseHomePage($) {
-        const cards = $('a[href^="/truyen-hentai/"]');
+        const cards = $('a[href^="/manga/"]');
         const imageMap = this.buildImageMap($);
         return this.parseCards($, cards, imageMap);
     }
@@ -670,14 +670,14 @@ class Parser {
         for (let i = 0; i < 5; i++) {
             const next = current.next();
             if (next.length > 0) {
-                const cards = next.find('a[href^="/truyen-hentai/"]');
+                const cards = next.find('a[href^="/manga/"]');
                 if (cards.length > 0) {
                     return this.parseCards($, cards, imageMap);
                 }
             }
             const parentNext = current.parent().next();
             if (parentNext.length > 0) {
-                const cards = parentNext.find('a[href^="/truyen-hentai/"]');
+                const cards = parentNext.find('a[href^="/manga/"]');
                 if (cards.length > 0) {
                     return this.parseCards($, cards, imageMap);
                 }
@@ -779,11 +779,11 @@ class Parser {
     }
     parseChapters($) {
         const chapters = [];
-        $('a[href^="/truyen-hentai/"]').each((_, el) => {
+        $('a[href^="/manga/"]').each((_, el) => {
             const href = $(el).attr('href') ?? '';
             const parts = href.split('/').filter(Boolean);
             if (parts.length !== 3)
-                return; // /truyen-hentai/{slug}/{chapterSlug}
+                return; // /manga/{slug}/{chapterSlug}
             const chapterId = parts[2];
             const title = $(el).find('.text-txt-primary').first().text().trim()
                 || $(el).text().trim()
