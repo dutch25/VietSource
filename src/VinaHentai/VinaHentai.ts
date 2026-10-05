@@ -19,7 +19,7 @@ import { Parser } from './VinaHentaiParser'
 
 const BASE_URL = 'https://vinahentai.vip'
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.20',
+    version: '1.1.21',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -193,7 +193,7 @@ export class VinaHentai extends Source {
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/truyen-hentai/${mangaId}`, method: 'GET' }), 0
+            App.createRequest({ url: `${BASE_URL}/manga/${mangaId}`, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
         return this.parser.parseMangaDetails($, mangaId)
@@ -201,7 +201,7 @@ export class VinaHentai extends Source {
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/truyen-hentai/${mangaId}`, method: 'GET' }), 0
+            App.createRequest({ url: `${BASE_URL}/manga/${mangaId}`, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
         return this.parser.parseChapters($)
@@ -209,7 +209,7 @@ export class VinaHentai extends Source {
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/truyen-hentai/${mangaId}/${chapterId}`, method: 'GET' }), 0
+            App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/${chapterId}`, method: 'GET' }), 0
         )
         const $ = this.cheerio.load(response.data as string)
         const pages = this.parser.parseChapterPages($)
@@ -222,7 +222,7 @@ export class VinaHentai extends Source {
     }
 
     getMangaShareUrl(mangaId: string): string {
-        return `${BASE_URL}/truyen-hentai/${mangaId}`
+        return `${BASE_URL}/manga/${mangaId}`
     }
 
     async getSearchTags(): Promise<TagSection[]> {

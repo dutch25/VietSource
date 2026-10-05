@@ -11,7 +11,7 @@ import { CheerioAPI } from 'cheerio'
 export class Parser {
 
     parseHomePage($: CheerioAPI): PartialSourceManga[] {
-        const cards = $('a[href^="/truyen-hentai/"]')
+        const cards = $('a[href^="/manga/"]')
         const imageMap = this.buildImageMap($)
         return this.parseCards($, cards, imageMap)
     }
@@ -26,7 +26,7 @@ export class Parser {
         for (let i = 0; i < 5; i++) {
             const next = current.next()
             if (next.length > 0) {
-                const cards = next.find('a[href^="/truyen-hentai/"]')
+                const cards = next.find('a[href^="/manga/"]')
                 if (cards.length > 0) {
                     return this.parseCards($, cards, imageMap)
                 }
@@ -34,7 +34,7 @@ export class Parser {
 
             const parentNext = current.parent().next()
             if (parentNext.length > 0) {
-                const cards = parentNext.find('a[href^="/truyen-hentai/"]')
+                const cards = parentNext.find('a[href^="/manga/"]')
                 if (cards.length > 0) {
                     return this.parseCards($, cards, imageMap)
                 }
@@ -147,10 +147,10 @@ export class Parser {
     parseChapters($: CheerioAPI): Chapter[] {
         const chapters: Chapter[] = []
 
-        $('a[href^="/truyen-hentai/"]').each((_: any, el: any) => {
+        $('a[href^="/manga/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
             const parts = href.split('/').filter(Boolean)
-            if (parts.length !== 3) return // /truyen-hentai/{slug}/{chapterSlug}
+            if (parts.length !== 3) return // /manga/{slug}/{chapterSlug}
 
             const chapterId = parts[2]
             const title = $(el).find('.text-txt-primary').first().text().trim()
