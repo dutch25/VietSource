@@ -1,0 +1,1 @@
+const html = require('fs').readFileSync('test_damconuong_manga.html', 'utf8'); const cheerio = require('cheerio'); const $ = cheerio.load(html); p.each((i, el) => console.log('p ' + i + ': ' + $(el).text().trim().substring(0, 50))); div[class*="content"].each((i, el) => console.log('content ' + i + ': ' + $(el).text().trim().substring(0, 50)));

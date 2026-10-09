@@ -34,7 +34,9 @@ export default {
       'goctruyentranhvui30.com',
     ]
 
-    const isImage = imageAllowed.some(prefix => target.startsWith(prefix))
+    const isImage = imageAllowed.some(prefix => target.startsWith(prefix)) || 
+                    target.includes('.nhentaiclub.shop') || 
+                    target.includes('nhentaiclub.space')
     const isPage = pageAllowed.some(domain => target.includes(domain)) && !isImage
 
     if (!isImage && !isPage) {
@@ -42,7 +44,7 @@ export default {
     }
 
     // Determine the referer based on the target URL
-    let referer = 'https://nhentaiclub.site'
+    let referer = 'https://nhentaiclub.space'
     if (target.includes('hv2t.store') || target.includes('cdn.hv2t.com')) {
       referer = 'https://hv2t.store'
     } else if (target.includes('truyentuoitho.com') || target.includes('resourcehub.shop')) {
@@ -103,6 +105,8 @@ export default {
 
     if (isImage) {
       return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
         headers: {
           'Content-Type': response.headers.get('Content-Type') ?? 'image/jpeg',
           'Cache-Control': 'public, max-age=86400',

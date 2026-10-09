@@ -1,0 +1,1 @@
+function r(n){return typeof n=="string"&&n.trim().length>0?n.trim():null}function e(n){return n?typeof n=="string"?r(n):r(n.slug)??r(n.id)??r(n._id):null}function i(n){const t=e(n);return t?`/truyen-hentai/${t}`:"/truyen-hentai"}export{i as b,e as g};
