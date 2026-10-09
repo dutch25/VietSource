@@ -190,14 +190,19 @@ export class Parser {
         return 0
     }
 
-    parseChapterPages($: CheerioAPI): string[] {
+    parseChapterPages($: CheerioAPI, proxyUrl?: string): string[] {
         const pages: string[] = []
 
         $('.reading-content img, .page-break img').each((_: any, el: any) => {
             const imgSrc = ($(el).attr('data-src') ?? $(el).attr('data-lazy-src') ?? $(el).attr('src') ?? '').trim()
             if (!imgSrc || imgSrc.includes('logo') || imgSrc.includes('data:image')) return
 
-            if (!pages.includes(imgSrc)) pages.push(imgSrc)
+            let finalImage = imgSrc
+            if (proxyUrl && finalImage.startsWith('http')) {
+                finalImage = `${proxyUrl}/?url=${encodeURIComponent(finalImage)}`
+            }
+
+            if (!pages.includes(finalImage)) pages.push(finalImage)
         })
 
         return pages

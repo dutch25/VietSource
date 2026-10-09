@@ -21,7 +21,7 @@ const BASE_URL = 'https://truyentuoitho.com'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
-    version: '1.1.10',
+    version: '1.1.11',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -218,7 +218,7 @@ export class TruyenTuoiTho extends Source {
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/${chapterId}/`)
         const $ = this.cheerio.load(response.data as string)
-        const pages = this.parser.parseChapterPages($)
+        const pages = this.parser.parseChapterPages($, PROXY_URL)
 
         if (pages.length === 0) {
             throw new Error(`No pages found for chapter ${chapterId}`)
