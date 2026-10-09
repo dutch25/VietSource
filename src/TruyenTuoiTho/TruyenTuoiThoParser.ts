@@ -161,19 +161,23 @@ export class Parser {
 
             chapters.push(App.createChapter({
                 id: chapterId,
-                chapNum: this.extractChapterNumber(chapterId),
+                chapNum: this.extractChapterNumber(title, chapterId),
                 name: title,
                 time: time,
             }))
         })
 
-        return chapters.reverse()
+        return chapters
     }
 
-    private extractChapterNumber(chapterId: string): number {
-        const numMatch = chapterId.match(/(\d+)/)
+    private extractChapterNumber(name: string, chapterId: string): number {
+        const titleMatch = name.match(/(Chap|Tập|Tap|Chapter)\s*(\d+(\.\d+)?)/i)
+        if (titleMatch) {
+            return parseFloat(titleMatch[2]!)
+        }
+        const numMatch = chapterId.match(/(\d+(\.\d+)?)/)
         if (numMatch) {
-            return parseFloat(numMatch[1])
+            return parseFloat(numMatch[1]!)
         }
         return 0
     }
