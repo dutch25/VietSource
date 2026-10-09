@@ -22,7 +22,7 @@ import {
 
 import { Parser } from './TopTruyenParser';
 
-const DOMAIN = 'https://www.toptruyenzone10.com/';
+const DOMAIN = 'https://www.toptruyenzone12.com/';
 
 export const isLastPage = ($: CheerioAPI): boolean => {
     // try with span else a tag
@@ -44,7 +44,7 @@ export const isLastPage = ($: CheerioAPI): boolean => {
 };
 
 export const TopTruyenInfo: SourceInfo = {
-    version: '1.1.13',
+    version: '1.1.14',
     name: 'TopTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
