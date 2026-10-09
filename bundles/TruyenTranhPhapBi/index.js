@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTranhPhapBiParser_1 = require("./TruyenTranhPhapBiParser");
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com';
 exports.TruyenTranhPhapBiInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',

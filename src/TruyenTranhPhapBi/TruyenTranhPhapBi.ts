@@ -18,7 +18,7 @@ import { Parser } from './TruyenTranhPhapBiParser'
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com'
 
 export const TruyenTranhPhapBiInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
