@@ -18,7 +18,7 @@ import { Parser } from './TruyenTranhPhapBiParser'
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com'
 
 export const TruyenTranhPhapBiInfo: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -29,7 +29,8 @@ export const TruyenTranhPhapBiInfo: SourceInfo = {
     sourceTags: [],
     intents:
         SourceIntents.MANGA_CHAPTERS |
-        SourceIntents.HOMEPAGE_SECTIONS,
+        SourceIntents.HOMEPAGE_SECTIONS |
+        SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 }
 
 export class TruyenTranhPhapBi extends Source {
@@ -51,18 +52,30 @@ export class TruyenTranhPhapBi extends Source {
         }
     })
 
+    async getCloudflareBypassRequestAsync(): Promise<any> {
+        return App.createRequest({
+            url: BASE_URL,
+            method: 'GET',
+            headers: {
+                'referer': BASE_URL,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            }
+        })
+    }
+
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const section = App.createHomeSection({
             id: 'latest',
             title: 'Mới Cập Nhật',
             containsMoreItems: true,
             type: HomeSectionType.singleRowNormal,
+            items: [],
         })
         sectionCallback(section)
 
         try {
             const response = await this.requestManager.schedule(
-                App.createRequest({ url: BASE_URL, method: 'GET' }), 0
+                App.createRequest({ url: BASE_URL + '/', method: 'GET' }), 0
             )
             const $ = this.cheerio.load(response.data as string)
             const manga = this.parser.parseHomePage($)
