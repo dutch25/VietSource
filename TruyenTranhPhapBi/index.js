@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTranhPhapBiParser_1 = require("./TruyenTranhPhapBiParser");
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com';
 exports.TruyenTranhPhapBiInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -475,7 +475,8 @@ exports.TruyenTranhPhapBiInfo = {
     websiteBaseURL: BASE_URL,
     sourceTags: [],
     intents: types_1.SourceIntents.MANGA_CHAPTERS |
-        types_1.SourceIntents.HOMEPAGE_SECTIONS,
+        types_1.SourceIntents.HOMEPAGE_SECTIONS |
+        types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
 class TruyenTranhPhapBi extends types_1.Source {
     constructor() {
@@ -497,16 +498,27 @@ class TruyenTranhPhapBi extends types_1.Source {
             }
         });
     }
+    async getCloudflareBypassRequestAsync() {
+        return App.createRequest({
+            url: BASE_URL,
+            method: 'GET',
+            headers: {
+                'referer': BASE_URL,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            }
+        });
+    }
     async getHomePageSections(sectionCallback) {
         const section = App.createHomeSection({
             id: 'latest',
             title: 'Mới Cập Nhật',
             containsMoreItems: true,
             type: types_1.HomeSectionType.singleRowNormal,
+            items: [],
         });
         sectionCallback(section);
         try {
-            const response = await this.requestManager.schedule(App.createRequest({ url: BASE_URL, method: 'GET' }), 0);
+            const response = await this.requestManager.schedule(App.createRequest({ url: BASE_URL + '/', method: 'GET' }), 0);
             const $ = this.cheerio.load(response.data);
             const manga = this.parser.parseHomePage($);
             section.items = manga;
