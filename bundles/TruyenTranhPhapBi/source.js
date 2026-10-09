@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTranhPhapBiParser_1 = require("./TruyenTranhPhapBiParser");
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com';
 exports.TruyenTranhPhapBiInfo = {
-    version: '1.0.5',
+    version: '1.0.6',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -509,30 +509,29 @@ class TruyenTranhPhapBi extends types_1.Source {
         });
     }
     async getHomePageSections(sectionCallback) {
-        const manga = [
-            App.createPartialSourceManga({
-                mangaId: '2026_09_dragon-ball-super-tap-24-ke-thua-cho_0231872861',
-                title: 'Dragon Ball Super Tập 24 - Kế thừa cho tương lai',
-                image: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7b3DqX3P9jD3D53C-R7d5D-2fG-34R33X34_5Z3/s0/cover.jpg'
-            }),
-            App.createPartialSourceManga({
-                mangaId: '2025_08_dragon-ball-super-tap-23-son-gohan-ai',
-                title: 'Dragon Ball Super tập 23 - Son Gohan đại thức tỉnh (Preview)',
-                image: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZfE7v6B_9/s0/cover.jpg'
-            }),
-            App.createPartialSourceManga({
-                mangaId: '2021_11_dragon-ball-super-tap-1-truyen-mau',
-                title: 'Dragon Ball Super tập 1 (Truyện màu) - Những chiến binh từ vũ trụ thứ 6',
-                image: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZfE7v6B_9/s0/cover.jpg'
-            })
-        ];
-        sectionCallback(App.createHomeSection({
+        const section = App.createHomeSection({
             id: 'latest',
-            title: 'Dragon Ball Super (Hardcoded)',
-            containsMoreItems: false,
+            title: 'Mới Cập Nhật',
+            containsMoreItems: true,
             type: types_1.HomeSectionType.singleRowNormal,
-            items: manga,
-        }));
+            items: [],
+        });
+        sectionCallback(section);
+        try {
+            const response = await this.requestManager.schedule(App.createRequest({ url: BASE_URL + '/?m=0', method: 'GET' }), 0);
+            const $ = this.cheerio.load(response.data);
+            const manga = this.parser.parseHomePage($);
+            sectionCallback(App.createHomeSection({
+                id: 'latest',
+                title: 'Mới Cập Nhật',
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+                items: manga,
+            }));
+        }
+        catch (e) {
+            console.log(e);
+        }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
         return App.createPagedResults({ results: [], metadata: undefined });
@@ -540,28 +539,28 @@ class TruyenTranhPhapBi extends types_1.Source {
     async getSearchResults(query, metadata) {
         const page = metadata?.page ?? 1;
         const searchQuery = encodeURIComponent(query.title ?? '');
-        const url = `${BASE_URL}/search?q=${searchQuery}`;
+        const url = `${BASE_URL}/search?q=${searchQuery}&m=0`;
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: undefined });
     }
     async getMangaDetails(mangaId) {
         const realId = mangaId.replace(/_/g, '/');
-        const url = `${BASE_URL}/${realId}.html`;
+        const url = `${BASE_URL}/${realId}.html?m=0`;
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
         const realId = mangaId.replace(/_/g, '/');
-        const url = `${BASE_URL}/${realId}.html`;
+        const url = `${BASE_URL}/${realId}.html?m=0`;
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseChapters($, mangaId);
     }
     async getChapterDetails(mangaId, chapterId) {
         const realId = mangaId.replace(/_/g, '/');
-        const url = `${BASE_URL}/${realId}.html`;
+        const url = `${BASE_URL}/${realId}.html?m=0`;
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 1);
         const $ = this.cheerio.load(response.data);
         const pages = this.parser.parseChapterPages($);
