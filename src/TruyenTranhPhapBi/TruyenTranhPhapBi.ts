@@ -18,7 +18,7 @@ import { Parser } from './TruyenTranhPhapBiParser'
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com'
 
 export const TruyenTranhPhapBiInfo: SourceInfo = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -80,6 +80,7 @@ export class TruyenTranhPhapBi extends Source {
             const $ = this.cheerio.load(response.data as string)
             const manga = this.parser.parseHomePage($)
 
+
             sectionCallback(App.createHomeSection({
                 id: 'latest',
                 title: 'Mới Cập Nhật',
@@ -109,7 +110,8 @@ export class TruyenTranhPhapBi extends Source {
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
-        const url = `${BASE_URL}/${mangaId}.html`
+        const realId = mangaId.replace(/_/g, '/')
+        const url = `${BASE_URL}/${realId}.html`
         const response = await this.requestManager.schedule(
             App.createRequest({ url, method: 'GET' }), 0
         )
@@ -118,7 +120,8 @@ export class TruyenTranhPhapBi extends Source {
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        const url = `${BASE_URL}/${mangaId}.html`
+        const realId = mangaId.replace(/_/g, '/')
+        const url = `${BASE_URL}/${realId}.html`
         const response = await this.requestManager.schedule(
             App.createRequest({ url, method: 'GET' }), 0
         )
@@ -127,7 +130,8 @@ export class TruyenTranhPhapBi extends Source {
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        const url = `${BASE_URL}/${mangaId}.html`
+        const realId = mangaId.replace(/_/g, '/')
+        const url = `${BASE_URL}/${realId}.html`
         const response = await this.requestManager.schedule(
             App.createRequest({ url, method: 'GET' }), 1
         )
@@ -142,7 +146,8 @@ export class TruyenTranhPhapBi extends Source {
     }
 
     getMangaShareUrl(mangaId: string): string {
-        return `${BASE_URL}/${mangaId}.html`
+        const realId = mangaId.replace(/_/g, '/')
+        return `${BASE_URL}/${realId}.html`
     }
 
     async getSearchTags(): Promise<TagSection[]> {

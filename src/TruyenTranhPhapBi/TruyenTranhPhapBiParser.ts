@@ -24,7 +24,7 @@ export class Parser {
 
             const match = href.match(/\/(\d{4}\/\d{2}\/[^/]+)\.html/);
             if (!match) return;
-            const id = match[1];
+            const id = match[1].replace(/\//g, '_');
 
             let image = 'https://truyentranhphapbi.blogspot.com/favicon.ico'
             const htmlContent = $(el).html() || ''
