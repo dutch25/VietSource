@@ -466,7 +466,7 @@ const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.TruyenTuoiThoInfo = {
-    version: '1.1.8',
+    version: '1.1.9',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -798,15 +798,19 @@ class Parser {
             }
             chapters.push(App.createChapter({
                 id: chapterId,
-                chapNum: this.extractChapterNumber(chapterId),
+                chapNum: this.extractChapterNumber(title, chapterId),
                 name: title,
                 time: time,
             }));
         });
-        return chapters.reverse();
+        return chapters;
     }
-    extractChapterNumber(chapterId) {
-        const numMatch = chapterId.match(/(\d+)/);
+    extractChapterNumber(name, chapterId) {
+        const titleMatch = name.match(/(Chap|Tập|Tap|Chapter)\s*(\d+(\.\d+)?)/i);
+        if (titleMatch) {
+            return parseFloat(titleMatch[2]);
+        }
+        const numMatch = chapterId.match(/(\d+(\.\d+)?)/);
         if (numMatch) {
             return parseFloat(numMatch[1]);
         }
