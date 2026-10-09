@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTranhPhapBiParser_1 = require("./TruyenTranhPhapBiParser");
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com';
 exports.TruyenTranhPhapBiInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -521,10 +521,16 @@ class TruyenTranhPhapBi extends types_1.Source {
             const response = await this.requestManager.schedule(App.createRequest({ url: BASE_URL + '/', method: 'GET' }), 0);
             const $ = this.cheerio.load(response.data);
             const manga = this.parser.parseHomePage($);
-            section.items = manga;
-            sectionCallback(section);
+            sectionCallback(App.createHomeSection({
+                id: 'latest',
+                title: 'Mới Cập Nhật',
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+                items: manga,
+            }));
         }
         catch (e) {
+            console.log(e);
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
@@ -588,8 +594,18 @@ class Parser {
             if (!match)
                 return;
             const id = match[1];
-            const img = $(el).find('img').first();
-            let image = img.attr('src') ?? 'https://truyentranhphapbi.blogspot.com/favicon.ico';
+            let image = 'https://truyentranhphapbi.blogspot.com/favicon.ico';
+            const htmlContent = $(el).html() || '';
+            const imgMatch = htmlContent.match(/snips_image_creator\("([^"]+)"/);
+            if (imgMatch) {
+                image = imgMatch[1].replace(/\/s\d+[a-z-]*\//, '/s0/');
+            }
+            else {
+                const fallbackImg = $(el).find('img').first().attr('src');
+                if (fallbackImg && !fallbackImg.includes('icon18_edit')) {
+                    image = fallbackImg;
+                }
+            }
             results.push(App.createPartialSourceManga({ mangaId: id, title, image }));
         });
         return results;
