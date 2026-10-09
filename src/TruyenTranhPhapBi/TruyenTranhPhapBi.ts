@@ -45,7 +45,7 @@ const DRAGON_BALL_CHAPTERS = [
 ]
 
 export const TruyenTranhPhapBiInfo: SourceInfo = {
-    version: '1.0.9',
+    version: '1.1.0',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -195,7 +195,6 @@ export class TruyenTranhPhapBi extends Source {
                 id: ch.id,
                 name: ch.name,
                 chapNum: ch.num,
-                mangaId: mangaId,
                 langCode: 'vi'
             }))
         }

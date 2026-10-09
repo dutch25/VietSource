@@ -491,7 +491,7 @@ const DRAGON_BALL_CHAPTERS = [
     { id: '2021_11_dragon-ball-super-tap-1-truyen-mau', num: 1, name: 'Tập 1: Những chiến binh từ vũ trụ thứ 6' }
 ];
 exports.TruyenTranhPhapBiInfo = {
-    version: '1.0.9',
+    version: '1.1.0',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -622,7 +622,6 @@ class TruyenTranhPhapBi extends types_1.Source {
                 id: ch.id,
                 name: ch.name,
                 chapNum: ch.num,
-                mangaId: mangaId,
                 langCode: 'vi'
             }));
         }
