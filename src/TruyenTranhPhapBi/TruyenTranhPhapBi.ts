@@ -18,7 +18,7 @@ import { Parser } from './TruyenTranhPhapBiParser'
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com'
 
 export const TruyenTranhPhapBiInfo: SourceInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -64,33 +64,31 @@ export class TruyenTranhPhapBi extends Source {
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        const section = App.createHomeSection({
+        const manga = [
+            App.createPartialSourceManga({
+                mangaId: '2026_09_dragon-ball-super-tap-24-ke-thua-cho_0231872861',
+                title: 'Dragon Ball Super Tập 24 - Kế thừa cho tương lai',
+                image: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7b3DqX3P9jD3D53C-R7d5D-2fG-34R33X34_5Z3/s0/cover.jpg'
+            }),
+            App.createPartialSourceManga({
+                mangaId: '2025_08_dragon-ball-super-tap-23-son-gohan-ai',
+                title: 'Dragon Ball Super tập 23 - Son Gohan đại thức tỉnh (Preview)',
+                image: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZfE7v6B_9/s0/cover.jpg'
+            }),
+            App.createPartialSourceManga({
+                mangaId: '2021_11_dragon-ball-super-tap-1-truyen-mau',
+                title: 'Dragon Ball Super tập 1 (Truyện màu) - Những chiến binh từ vũ trụ thứ 6',
+                image: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgZfE7v6B_9/s0/cover.jpg'
+            })
+        ]
+
+        sectionCallback(App.createHomeSection({
             id: 'latest',
-            title: 'Mới Cập Nhật',
-            containsMoreItems: true,
+            title: 'Dragon Ball Super (Hardcoded)',
+            containsMoreItems: false,
             type: HomeSectionType.singleRowNormal,
-            items: [],
-        })
-        sectionCallback(section)
-
-        try {
-            const response = await this.requestManager.schedule(
-                App.createRequest({ url: BASE_URL + '/', method: 'GET' }), 0
-            )
-            const $ = this.cheerio.load(response.data as string)
-            const manga = this.parser.parseHomePage($)
-
-
-            sectionCallback(App.createHomeSection({
-                id: 'latest',
-                title: 'Mới Cập Nhật',
-                containsMoreItems: true,
-                type: HomeSectionType.singleRowNormal,
-                items: manga,
-            }))
-        } catch (e) {
-            console.log(e)
-        }
+            items: manga,
+        }))
     }
 
     async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
