@@ -18,7 +18,7 @@ import { Parser } from './TruyenTranhPhapBiParser'
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com'
 
 export const TruyenTranhPhapBiInfo: SourceInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -64,32 +64,43 @@ export class TruyenTranhPhapBi extends Source {
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        const section = App.createHomeSection({
-            id: 'latest',
-            title: 'Mới Cập Nhật',
-            containsMoreItems: true,
-            type: HomeSectionType.singleRowNormal,
-            items: [],
-        })
-        sectionCallback(section)
+        const sections = [
+            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/?m=0` },
+            { id: 'Asterix', title: 'Asterix', url: `${BASE_URL}/search/label/Asterix?m=0` },
+            { id: 'Lucky Luke', title: 'Lucky Luke', url: `${BASE_URL}/search/label/Lucky%20Luke?m=0` },
+            { id: 'Xì trum', title: 'Xì trum', url: `${BASE_URL}/search/label/X%C3%AC%20trum?m=0` },
+            { id: 'Tintin', title: 'Tintin', url: `${BASE_URL}/search/label/Tintin?m=0` },
+            { id: 'Dragon Ball Super', title: 'Dragon Ball Super', url: `${BASE_URL}/search/label/Dragon%20Ball%20Super?m=0` },
+            { id: 'Doremon', title: 'Doremon', url: `${BASE_URL}/search/label/Doremon?m=0` },
+        ]
 
-        try {
-            const response = await this.requestManager.schedule(
-                App.createRequest({ url: BASE_URL + '/?m=0', method: 'GET' }), 0
-            )
-            const $ = this.cheerio.load(response.data as string)
-            const manga = this.parser.parseHomePage($)
-
-
+        for (const section of sections) {
             sectionCallback(App.createHomeSection({
-                id: 'latest',
-                title: 'Mới Cập Nhật',
+                id: section.id,
+                title: section.title,
                 containsMoreItems: true,
                 type: HomeSectionType.singleRowNormal,
-                items: manga,
             }))
-        } catch (e) {
-            console.log(e)
+        }
+
+        for (const section of sections) {
+            try {
+                const response = await this.requestManager.schedule(
+                    App.createRequest({ url: section.url, method: 'GET' }), 0
+                )
+                const $ = this.cheerio.load(response.data as string)
+                const manga = this.parser.parseHomePage($)
+
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items: manga,
+                }))
+            } catch (e) {
+                console.log(e)
+            }
         }
     }
 
