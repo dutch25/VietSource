@@ -54,7 +54,7 @@ export class Parser {
             if (href && (href.includes('chap') || href.includes('tap'))) {
                 let name = $(el).text().trim()
                 if (name) {
-                    const match = name.match(/(Chap|Tập|Tap)\\s*(\\d+(\\.\\d+)?)/i)
+                    const match = name.match(/(Chap|Tập|Tap)\s*(\d+(\.\d+)?)/i)
                     let num = 0
                     if (match) {
                         num = parseFloat(match[2]!)
@@ -69,7 +69,7 @@ export class Parser {
             }
         })
         
-        return chapters
+        return chapters.reverse()
     }
 
     parsePages($: any): string[] {

@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const DragonBallWikiParser_1 = require("./DragonBallWikiParser");
 const BASE_URL = 'https://dragonballwiki.net/doctruyen';
 exports.DragonBallWikiInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'DragonBallWiki',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -614,7 +614,7 @@ class Parser {
             if (href && (href.includes('chap') || href.includes('tap'))) {
                 let name = $(el).text().trim();
                 if (name) {
-                    const match = name.match(/(Chap|Tập|Tap)\\s*(\\d+(\\.\\d+)?)/i);
+                    const match = name.match(/(Chap|Tập|Tap)\s*(\d+(\.\d+)?)/i);
                     let num = 0;
                     if (match) {
                         num = parseFloat(match[2]);
@@ -628,7 +628,7 @@ class Parser {
                 }
             }
         });
-        return chapters;
+        return chapters.reverse();
     }
     parsePages($) {
         const pages = [];
