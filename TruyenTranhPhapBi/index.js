@@ -572,7 +572,7 @@ class Parser {
             const href = titleLink.attr('href') ?? '';
             if (!href || !title)
                 return;
-            const match = href.match(/blogspot\.com\/(.+)\.html/);
+            const match = href.match(/\/(\d{4}\/\d{2}\/[^/]+)\.html/);
             if (!match)
                 return;
             const id = match[1];
