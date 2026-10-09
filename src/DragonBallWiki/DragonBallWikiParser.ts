@@ -28,12 +28,12 @@ export class Parser {
     }
 
     parseMangaDetails($: any, mangaId: string): SourceManga {
-        const title = $('.title-manga').text().trim() || $('h1.title').text().trim() || mangaId
-        let image = $('.info-image img').attr('src') || $('.image-info img').attr('src') || ''
+        const title = $('.title').first().text().trim() || $('.title-manga').text().trim() || $('h1.title').text().trim() || mangaId
+        let image = $('.info-image img').attr('src') || $('.image-info img').attr('src') || $('img.image').attr('src') || $('.book img').attr('src') || ''
         if (image && image.includes('timthumb.php?src=')) {
             image = image.split('timthumb.php?src=')[1]?.split('&')[0] || image
         }
-        const desc = $('.desc-text').text().trim() || $('.story-detail-info').text().trim() || ''
+        const desc = $('.desc-text').text().trim() || $('.story-detail-info').text().trim() || $('.desc').text().trim() || ''
 
         return App.createSourceManga({
             id: mangaId,

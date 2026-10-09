@@ -21,7 +21,7 @@ const BASE_URL = 'https://truyentuoitho.com'
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
-    version: '1.1.9',
+    version: '1.1.10',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',

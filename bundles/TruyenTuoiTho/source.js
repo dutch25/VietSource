@@ -466,7 +466,7 @@ const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.TruyenTuoiThoInfo = {
-    version: '1.1.9',
+    version: '1.1.10',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -708,7 +708,11 @@ class Parser {
             }
             if (!rawImage || rawImage.includes('data:image'))
                 return;
-            results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }));
+            let finalImage = rawImage;
+            if (proxyUrl && finalImage.startsWith('http')) {
+                finalImage = `${proxyUrl}/?url=${encodeURIComponent(finalImage)}`;
+            }
+            results.push(App.createPartialSourceManga({ mangaId: id, title, image: finalImage }));
         });
         return this.deduplicate(results);
     }
@@ -731,7 +735,10 @@ class Parser {
             || $('.summary_image img').attr('src')
             || $('.summary_image img').attr('data-src')
             || '';
-        const image = rawImage;
+        let image = rawImage;
+        if (proxyUrl && image && image.startsWith('http')) {
+            image = `${proxyUrl}/?url=${encodeURIComponent(image)}`;
+        }
         const desc = $('meta[property="og:description"]').attr('content')?.trim()
             || $('.description-summary').text().trim()
             || $('.summary__content').text().trim()

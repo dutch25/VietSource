@@ -17,7 +17,7 @@ import { Parser } from './DragonBallWikiParser'
 const BASE_URL = 'https://dragonballwiki.net/doctruyen'
 
 export const DragonBallWikiInfo: SourceInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'DragonBallWiki',
     icon: 'icon.png',
     author: 'Dutch25',

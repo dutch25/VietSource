@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const DragonBallWikiParser_1 = require("./DragonBallWikiParser");
 const BASE_URL = 'https://dragonballwiki.net/doctruyen';
 exports.DragonBallWikiInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'DragonBallWiki',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -591,12 +591,12 @@ class Parser {
         return manga.filter((v, i, a) => a.findIndex(t => (t.mangaId === v.mangaId)) === i);
     }
     parseMangaDetails($, mangaId) {
-        const title = $('.title-manga').text().trim() || $('h1.title').text().trim() || mangaId;
-        let image = $('.info-image img').attr('src') || $('.image-info img').attr('src') || '';
+        const title = $('.title').first().text().trim() || $('.title-manga').text().trim() || $('h1.title').text().trim() || mangaId;
+        let image = $('.info-image img').attr('src') || $('.image-info img').attr('src') || $('img.image').attr('src') || $('.book img').attr('src') || '';
         if (image && image.includes('timthumb.php?src=')) {
             image = image.split('timthumb.php?src=')[1]?.split('&')[0] || image;
         }
-        const desc = $('.desc-text').text().trim() || $('.story-detail-info').text().trim() || '';
+        const desc = $('.desc-text').text().trim() || $('.story-detail-info').text().trim() || $('.desc').text().trim() || '';
         return App.createSourceManga({
             id: mangaId,
             mangaInfo: App.createMangaInfo({
