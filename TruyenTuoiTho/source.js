@@ -466,7 +466,7 @@ const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
 const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
 exports.TruyenTuoiThoInfo = {
-    version: '1.1.10',
+    version: '1.1.11',
     name: 'TruyenTuoiTho',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -638,7 +638,7 @@ class TruyenTuoiTho extends types_1.Source {
     async getChapterDetails(mangaId, chapterId) {
         const response = await this.fetchHTML(`${BASE_URL}/manga/${mangaId}/${chapterId}/`);
         const $ = this.cheerio.load(response.data);
-        const pages = this.parser.parseChapterPages($);
+        const pages = this.parser.parseChapterPages($, PROXY_URL);
         if (pages.length === 0) {
             throw new Error(`No pages found for chapter ${chapterId}`);
         }
@@ -823,14 +823,18 @@ class Parser {
         }
         return 0;
     }
-    parseChapterPages($) {
+    parseChapterPages($, proxyUrl) {
         const pages = [];
         $('.reading-content img, .page-break img').each((_, el) => {
             const imgSrc = ($(el).attr('data-src') ?? $(el).attr('data-lazy-src') ?? $(el).attr('src') ?? '').trim();
             if (!imgSrc || imgSrc.includes('logo') || imgSrc.includes('data:image'))
                 return;
-            if (!pages.includes(imgSrc))
-                pages.push(imgSrc);
+            let finalImage = imgSrc;
+            if (proxyUrl && finalImage.startsWith('http')) {
+                finalImage = `${proxyUrl}/?url=${encodeURIComponent(finalImage)}`;
+            }
+            if (!pages.includes(finalImage))
+                pages.push(finalImage);
         });
         return pages;
     }
