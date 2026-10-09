@@ -22,9 +22,9 @@ export class Parser {
 
             if (!href || !title) return
 
-            const match = href.match(/blogspot\.com\/(.+)\.html/)
-            if (!match) return
-            const id = match[1]
+            const match = href.match(/\/(\d{4}\/\d{2}\/[^/]+)\.html/);
+            if (!match) return;
+            const id = match[1];
 
             const img = $(el).find('img').first()
             let image = img.attr('src') ?? 'https://truyentranhphapbi.blogspot.com/favicon.ico'
