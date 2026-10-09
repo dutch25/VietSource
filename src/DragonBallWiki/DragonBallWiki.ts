@@ -2,7 +2,7 @@ import {
     Chapter,
     ChapterDetails,
     HomeSection,
-    Manga,
+    SourceManga,
     PagedResults,
     SearchRequest,
     Source,
@@ -17,7 +17,7 @@ import { Parser } from './DragonBallWikiParser'
 const BASE_URL = 'https://dragonballwiki.net/doctruyen'
 
 export const DragonBallWikiInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'DragonBallWiki',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -41,49 +41,47 @@ export class DragonBallWiki extends Source {
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        const section = App.createHomeSection({
-            id: 'dbs',
-            title: 'Dragon Ball Super',
-            containsMoreItems: false,
-            type: HomeSectionType.singleRowNormal,
-        })
-        sectionCallback(section)
+        const sections = [
+            { id: 'truyen-dang-hot', title: 'Truyện Đang Hot' },
+            { id: 'truyen-moi-cap-nhat', title: 'Truyện Mới Cập Nhật' },
+            { id: 'truyen-da-hoan-thanh', title: 'Truyện Đã Hoàn Thành' },
+        ];
 
-        const url = `${BASE_URL}/dragon-ball-super`
+        for (const sec of sections) {
+            const section = App.createHomeSection({
+                id: sec.id,
+                title: sec.title,
+                containsMoreItems: false,
+                type: HomeSectionType.singleRowNormal,
+            })
+            sectionCallback(section)
+
+            const url = `${BASE_URL}/${sec.id}/`
+            const request = App.createRequest({
+                url: url,
+                method: 'GET',
+            })
+
+            const response = await this.requestManager.schedule(request, 1)
+            const $ = this.cheerio.load(response.data as string)
+            section.items = this.parser.parseMangaList($)
+            sectionCallback(section)
+        }
+    }
+
+    async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const request = App.createRequest({
-            url: url,
+            url: `${BASE_URL}/${mangaId}/`,
             method: 'GET',
         })
 
         const response = await this.requestManager.schedule(request, 1)
         const $ = this.cheerio.load(response.data as string)
-
-        const items = [
-            App.createPartialSourceManga({
-                mangaId: 'dragon-ball-super',
-                title: 'Dragon Ball Super',
-                image: 'https://dragonballwiki.net/doctruyen/wp-content/uploads/2019/08/Dragon_Ball_Dragon_Ball_Super_Black_Goku_Super_Saiyan_Ros_selective_coloring_manga-1276619.jpg',
-            })
-        ]
-
-        section.items = items
-        sectionCallback(section)
-    }
-
-    async getMangaDetails(mangaId: string): Promise<Manga> {
-        return App.createSourceManga({
-            id: mangaId,
-            mangaInfo: App.createMangaInfo({
-                titles: ['Dragon Ball Super'],
-                image: 'https://dragonballwiki.net/doctruyen/wp-content/uploads/2019/08/Dragon_Ball_Dragon_Ball_Super_Black_Goku_Super_Saiyan_Ros_selective_coloring_manga-1276619.jpg',
-                status: 'ONGOING',
-                desc: 'Dragon Ball Super Tiếng Việt',
-            })
-        })
+        return this.parser.parseMangaDetails($, mangaId)
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        const url = `${BASE_URL}/${mangaId}`
+        const url = `${BASE_URL}/${mangaId}/`
         const request = App.createRequest({
             url: url,
             method: 'GET',
@@ -112,14 +110,18 @@ export class DragonBallWiki extends Source {
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
+        const url = `${BASE_URL}/?s=${encodeURIComponent(query.title ?? '')}`
+        const request = App.createRequest({
+            url: url,
+            method: 'GET',
+        })
+
+        const response = await this.requestManager.schedule(request, 1)
+        const $ = this.cheerio.load(response.data as string)
+        const results = this.parser.parseMangaList($)
+
         return App.createPagedResults({
-            results: [
-                App.createPartialSourceManga({
-                    mangaId: 'dragon-ball-super',
-                    title: 'Dragon Ball Super',
-                    image: 'https://dragonballwiki.net/doctruyen/wp-content/uploads/2019/08/Dragon_Ball_Dragon_Ball_Super_Black_Goku_Super_Saiyan_Ros_selective_coloring_manga-1276619.jpg',
-                })
-            ],
+            results,
             metadata: undefined
         })
     }

@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const DragonBallWikiParser_1 = require("./DragonBallWikiParser");
 const BASE_URL = 'https://dragonballwiki.net/doctruyen';
 exports.DragonBallWikiInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'DragonBallWiki',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -488,43 +488,41 @@ class DragonBallWiki extends types_1.Source {
         return `${BASE_URL}/${mangaId}`;
     }
     async getHomePageSections(sectionCallback) {
-        const section = App.createHomeSection({
-            id: 'dbs',
-            title: 'Dragon Ball Super',
-            containsMoreItems: false,
-            type: types_1.HomeSectionType.singleRowNormal,
-        });
-        sectionCallback(section);
-        const url = `${BASE_URL}/dragon-ball-super`;
+        const sections = [
+            { id: 'truyen-dang-hot', title: 'Truyện Đang Hot' },
+            { id: 'truyen-moi-cap-nhat', title: 'Truyện Mới Cập Nhật' },
+            { id: 'truyen-da-hoan-thanh', title: 'Truyện Đã Hoàn Thành' },
+        ];
+        for (const sec of sections) {
+            const section = App.createHomeSection({
+                id: sec.id,
+                title: sec.title,
+                containsMoreItems: false,
+                type: types_1.HomeSectionType.singleRowNormal,
+            });
+            sectionCallback(section);
+            const url = `${BASE_URL}/${sec.id}/`;
+            const request = App.createRequest({
+                url: url,
+                method: 'GET',
+            });
+            const response = await this.requestManager.schedule(request, 1);
+            const $ = this.cheerio.load(response.data);
+            section.items = this.parser.parseMangaList($);
+            sectionCallback(section);
+        }
+    }
+    async getMangaDetails(mangaId) {
         const request = App.createRequest({
-            url: url,
+            url: `${BASE_URL}/${mangaId}/`,
             method: 'GET',
         });
         const response = await this.requestManager.schedule(request, 1);
         const $ = this.cheerio.load(response.data);
-        const items = [
-            App.createPartialSourceManga({
-                mangaId: 'dragon-ball-super',
-                title: 'Dragon Ball Super',
-                image: 'https://dragonballwiki.net/doctruyen/wp-content/uploads/2019/08/Dragon_Ball_Dragon_Ball_Super_Black_Goku_Super_Saiyan_Ros_selective_coloring_manga-1276619.jpg',
-            })
-        ];
-        section.items = items;
-        sectionCallback(section);
-    }
-    async getMangaDetails(mangaId) {
-        return App.createSourceManga({
-            id: mangaId,
-            mangaInfo: App.createMangaInfo({
-                titles: ['Dragon Ball Super'],
-                image: 'https://dragonballwiki.net/doctruyen/wp-content/uploads/2019/08/Dragon_Ball_Dragon_Ball_Super_Black_Goku_Super_Saiyan_Ros_selective_coloring_manga-1276619.jpg',
-                status: 'ONGOING',
-                desc: 'Dragon Ball Super Tiếng Việt',
-            })
-        });
+        return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
-        const url = `${BASE_URL}/${mangaId}`;
+        const url = `${BASE_URL}/${mangaId}/`;
         const request = App.createRequest({
             url: url,
             method: 'GET',
@@ -547,14 +545,16 @@ class DragonBallWiki extends types_1.Source {
         });
     }
     async getSearchResults(query, metadata) {
+        const url = `${BASE_URL}/?s=${encodeURIComponent(query.title ?? '')}`;
+        const request = App.createRequest({
+            url: url,
+            method: 'GET',
+        });
+        const response = await this.requestManager.schedule(request, 1);
+        const $ = this.cheerio.load(response.data);
+        const results = this.parser.parseMangaList($);
         return App.createPagedResults({
-            results: [
-                App.createPartialSourceManga({
-                    mangaId: 'dragon-ball-super',
-                    title: 'Dragon Ball Super',
-                    image: 'https://dragonballwiki.net/doctruyen/wp-content/uploads/2019/08/Dragon_Ball_Dragon_Ball_Super_Black_Goku_Super_Saiyan_Ros_selective_coloring_manga-1276619.jpg',
-                })
-            ],
+            results,
             metadata: undefined
         });
     }
@@ -566,17 +566,58 @@ exports.DragonBallWiki = DragonBallWiki;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
 class Parser {
+    parseMangaList($) {
+        const manga = [];
+        $('.comic-item, .hot-comic, .full-comic, .item').each((_, el) => {
+            const a = $(el).find('a').first();
+            const href = a.attr('href');
+            if (href && href.includes('/doctruyen/')) {
+                const title = a.attr('title') || $(el).find('.name').text().trim() || a.text().trim();
+                let image = $(el).find('img').attr('src') || $(el).find('img').attr('data-src') || '';
+                if (image && image.includes('timthumb.php?src=')) {
+                    image = image.split('timthumb.php?src=')[1]?.split('&')[0] || image;
+                }
+                const mangaId = href.split('/doctruyen/')[1]?.replace(new RegExp('/', 'g'), '');
+                if (mangaId && title) {
+                    manga.push(App.createPartialSourceManga({
+                        mangaId,
+                        title,
+                        image: decodeURIComponent(image),
+                    }));
+                }
+            }
+        });
+        // Remove duplicates by ID
+        return manga.filter((v, i, a) => a.findIndex(t => (t.mangaId === v.mangaId)) === i);
+    }
+    parseMangaDetails($, mangaId) {
+        const title = $('.title-manga').text().trim() || $('h1.title').text().trim() || mangaId;
+        let image = $('.info-image img').attr('src') || $('.image-info img').attr('src') || '';
+        if (image && image.includes('timthumb.php?src=')) {
+            image = image.split('timthumb.php?src=')[1]?.split('&')[0] || image;
+        }
+        const desc = $('.desc-text').text().trim() || $('.story-detail-info').text().trim() || '';
+        return App.createSourceManga({
+            id: mangaId,
+            mangaInfo: App.createMangaInfo({
+                titles: [title],
+                image: decodeURIComponent(image),
+                status: 'ONGOING',
+                desc: desc,
+            })
+        });
+    }
     parseChapters($, mangaId) {
         const chapters = [];
-        $('a').each((_, el) => {
+        $('.list-chapter li a, table tbody tr td a').each((_, el) => {
             const href = $(el).attr('href');
-            if (href && href.includes('chap')) {
+            if (href && (href.includes('chap') || href.includes('tap'))) {
                 let name = $(el).text().trim();
                 if (name) {
-                    const match = name.match(/Chap (\\d+)/i);
+                    const match = name.match(/(Chap|Tập|Tap)\\s*(\\d+(\\.\\d+)?)/i);
                     let num = 0;
                     if (match) {
-                        num = parseFloat(match[1]);
+                        num = parseFloat(match[2]);
                     }
                     chapters.push(App.createChapter({
                         id: href,
@@ -587,12 +628,6 @@ class Parser {
                 }
             }
         });
-        // Return sorted if necessary, but we'll reverse since usually older is first or last.
-        // Actually the site lists 104 first, then 103, down to 1.
-        // Paperback expects newest first or whatever, but just return as is or reversed.
-        // I'll return reversed so chap 104 is at the top if the original was chap 1 at bottom?
-        // Wait, the page lists 104 -> 103 -> ... -> 1.
-        // Wait, Paperback usually likes them descending (highest chapter first).
         return chapters;
     }
     parsePages($) {
