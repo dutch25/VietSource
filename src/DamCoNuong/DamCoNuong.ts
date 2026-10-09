@@ -16,15 +16,15 @@ import {
 
 import { Parser } from './DamCoNuongParser'
 
-const BASE_URL = 'https://damconuong.store'
+const BASE_URL = 'https://damconuong.pet'
 
 export const DamCoNuongInfo: SourceInfo = {
-    version: '1.1.6',
+    version: '1.1.7',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
     authorWebsite: 'https://github.com/Dutch25',
-    description: 'Extension for damconuong.plus',
+    description: 'Extension for damconuong.pet',
     contentRating: ContentRating.ADULT,
     websiteBaseURL: BASE_URL,
     sourceTags: [

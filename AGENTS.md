@@ -131,20 +131,20 @@ dutch-extension/
 
 # Source: DamCoNuong
 
-**Website**: https://damconuong.lol
+**Website**: https://damconuong.pet
 
 ### SourceInfo
-- **Version**: 1.1.2
+- **Version**: 1.1.7
 - **Author**: Dutch25
 - **Content Rating**: ADULT (18+)
 - **Tags**: "Adult" (RED), "18+" (YELLOW)
 - **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
 
 ### URL Patterns
-- Homepage: `https://damconuong.lol/`
-- Manga: `https://damconuong.lol/truyen/{mangaId}`
-- Chapter: `https://damconuong.lol/truyen/{mangaId}/{chapterId}`
-- Search: `https://damconuong.lol/tim-kiem?q={search}`
+- Homepage: `https://damconuong.pet/`
+- Manga: `https://damconuong.pet/truyen/{mangaId}`
+- Chapter: `https://damconuong.pet/truyen/{mangaId}/{chapterId}`
+- Search: `https://damconuong.pet/tim-kiem?q={search}`
 
 ### How It Works
 
@@ -158,20 +158,20 @@ dutch-extension/
 
 # Source: TruyenVN
 
-**Website**: https://truyenvn.sbs
+**Website**: https://truyenvn.onl
 
 ### SourceInfo
-- **Version**: 1.0.8
+- **Version**: 1.1.2
 - **Author**: Dutch25
 - **Content Rating**: ADULT (18+)
 - **Tags**: "Adult" (RED), "18+" (YELLOW)
 - **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
 
 ### URL Patterns
-- Homepage: `https://truyenvn.sbs/`
-- Manga: `https://truyenvn.sbs/truyen-tranh/{mangaId}`
-- Chapter: `https://truyenvn.sbs/truyen-tranh/{mangaId}/{chapterId}`
-- Search: `https://truyenvn.sbs/?s={search}`
+- Homepage: `https://truyenvn.onl/`
+- Manga: `https://truyenvn.onl/truyen-tranh/{mangaId}`
+- Chapter: `https://truyenvn.onl/truyen-tranh/{mangaId}/{chapterId}`
+- Search: `https://truyenvn.onl/?s={search}`
 
 ---
 
