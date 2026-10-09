@@ -3,14 +3,18 @@
 ## Project Overview
 
 This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
-- **nhentaiclub.space** - Built-in source `NHentaiClub`
-- **damconuong.lol** - Built-in source `DamCoNuong`
-- **truyenvn.sbs** - Built-in source `TruyenVN`
-- **truyenqqko.com** - Built-in source `TruyenQQ`
-- **www.toptruyenzone2.com** - Built-in source `TopTruyen`
-- **hv2t.store** - Built-in source `HV2T`
-- **goctruyentranhvui30.com** - Built-in source `GocTruyenTranh`
-- **truyentuoitho.com** - Built-in source `TruyenTuoiTho`
+- **dragonballwiki.net/doctruyen** - `DragonBallWiki`
+- **truyentranhphapbi.blogspot.com** - `TruyenTranhPhapBi`
+- **truyentuoitho.com** - `TruyenTuoiTho`
+- **truyenqqko.com** - `TruyenQQ`
+- **www.toptruyenzone10.com** - `TopTruyen`
+- **goctruyentranhvui30.com** - `GocTruyenTranh`
+- **luottruyen16.com** - `LuotTruyen`
+- **damconuong.pet** - `DamCoNuong`
+- **truyenvn.onl** - `TruyenVN`
+- **nhentaiclub.space** - `NHentaiClub`
+- **vinahentai.vip** - `VinaHentai`
+- **mimimoe.moe** - `MiMi`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -25,22 +29,18 @@ Users can browse, search, and read manga from these sites through the Paperback 
 ```
 dutch-extension/
 ├── src/
-│   ├── NHentaiClub/
-│   │   ├── NHentaiClub.ts        ← Main source implementation
-│   │   ├── NHentaiClubParser.ts  ← HTML parsing logic
-│   │   └── includes/icon.png     ← Extension icon
-│   ├── DamCoNuong/
-│   │   ├── DamCoNuong.ts         ← Main source implementation
-│   │   ├── DamCoNuongParser.ts   ← HTML parsing logic
-│   │   └── includes/icon.png     ← Extension icon
-│   ├── TruyenVN/
-│   │   ├── TruyenVN.ts           ← Main source implementation
-│   │   ├── TruyenVNParser.ts     ← HTML parsing logic
-│   │   └── includes/icon.png     ← Extension icon
+│   ├── DragonBallWiki/
+│   ├── TruyenTranhPhapBi/
+│   ├── TruyenTuoiTho/
 │   ├── TruyenQQ/
 │   ├── TopTruyen/
-│   ├── HV2T/
-│   └── GocTruyenTranh/
+│   ├── GocTruyenTranh/
+│   ├── LuotTruyen/
+│   ├── DamCoNuong/
+│   ├── TruyenVN/
+│   ├── NHentaiClub/
+│   ├── VinaHentai/
+│   └── MiMi/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -53,29 +53,6 @@ dutch-extension/
 - `npm run bundle` - Build the extension
 - `npm run serve` - Start local server for Paperback to connect
 - `npm run dev` - Auto-rebuild on changes
-
----
-
-# Source: HV2T
-
-**Website**: https://hv2t.store
-
-### SourceInfo
-- **Version**: 1.0.3
-- **Author**: Dutch25
-- **Content Rating**: ADULT (18+)
-- **Tags**: "Adult" (RED), "18+" (YELLOW)
-- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
-
-### URL Patterns
-- Homepage: `https://hv2t.store`
-- Manga: `https://hv2t.store/comics/{mangaId}`
-- Chapter: `https://hv2t.store/comics/{mangaId}/{chapterId}`
-- Search: `https://hv2t.store/?q={search}`
-
-### Known Issues
-- ⚠️ **CLOUDLARE BLOCK**: Website đang bị Cloudflare chặn, cần tạo worker proxy để bypass
-- **Giải pháp**: Cần tạo Cloudflare worker riêng cho HV2T hoặc dùng chung worker với các source khác
 
 ---
 
