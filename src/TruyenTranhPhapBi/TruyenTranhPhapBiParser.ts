@@ -104,6 +104,9 @@ export class Parser {
             const isImage = /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(imgSrc) || imgSrc.includes('blogger.googleusercontent.com') || imgSrc.includes('bp.blogspot.com')
 
             if (imgSrc && isImage) {
+                // Handle /sXXX/ format
+                imgSrc = imgSrc.replace(/\/[swh]\d+[a-z-]*\//, '/s0/')
+                // Handle =sXXX format
                 imgSrc = imgSrc.replace(/=s\d+[^/]*$/, '=s0')
                 if (!pages.includes(imgSrc)) pages.push(imgSrc)
             }

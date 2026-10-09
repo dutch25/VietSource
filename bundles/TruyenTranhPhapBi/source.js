@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTranhPhapBiParser_1 = require("./TruyenTranhPhapBiParser");
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com';
 exports.TruyenTranhPhapBiInfo = {
-    version: '1.0.6',
+    version: '1.0.7',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -663,6 +663,9 @@ class Parser {
                 return;
             const isImage = /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(imgSrc) || imgSrc.includes('blogger.googleusercontent.com') || imgSrc.includes('bp.blogspot.com');
             if (imgSrc && isImage) {
+                // Handle /sXXX/ format
+                imgSrc = imgSrc.replace(/\/[swh]\d+[a-z-]*\//, '/s0/');
+                // Handle =sXXX format
                 imgSrc = imgSrc.replace(/=s\d+[^/]*$/, '=s0');
                 if (!pages.includes(imgSrc))
                     pages.push(imgSrc);
