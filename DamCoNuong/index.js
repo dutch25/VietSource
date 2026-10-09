@@ -463,14 +463,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DamCoNuong = exports.DamCoNuongInfo = void 0;
 const types_1 = require("@paperback/types");
 const DamCoNuongParser_1 = require("./DamCoNuongParser");
-const BASE_URL = 'https://damconuong.store';
+const BASE_URL = 'https://damconuong.pet';
 exports.DamCoNuongInfo = {
-    version: '1.1.6',
+    version: '1.1.7',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
     authorWebsite: 'https://github.com/Dutch25',
-    description: 'Extension for damconuong.plus',
+    description: 'Extension for damconuong.pet',
     contentRating: types_1.ContentRating.ADULT,
     websiteBaseURL: BASE_URL,
     sourceTags: [

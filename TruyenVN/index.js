@@ -465,12 +465,12 @@ const types_1 = require("@paperback/types");
 const TruyenVNParser_1 = require("./TruyenVNParser");
 const BASE_URL = 'https://truyenvn.onl';
 exports.TruyenVNInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
     authorWebsite: 'https://github.com/Dutch25',
-    description: 'Extension for truyenvn.shop',
+    description: 'Extension for truyenvn.onl',
     contentRating: types_1.ContentRating.ADULT,
     websiteBaseURL: BASE_URL,
     sourceTags: [
