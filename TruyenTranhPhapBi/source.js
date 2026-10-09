@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTranhPhapBiParser_1 = require("./TruyenTranhPhapBiParser");
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com';
 exports.TruyenTranhPhapBiInfo = {
-    version: '1.0.7',
+    version: '1.0.8',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -509,28 +509,39 @@ class TruyenTranhPhapBi extends types_1.Source {
         });
     }
     async getHomePageSections(sectionCallback) {
-        const section = App.createHomeSection({
-            id: 'latest',
-            title: 'Mới Cập Nhật',
-            containsMoreItems: true,
-            type: types_1.HomeSectionType.singleRowNormal,
-            items: [],
-        });
-        sectionCallback(section);
-        try {
-            const response = await this.requestManager.schedule(App.createRequest({ url: BASE_URL + '/?m=0', method: 'GET' }), 0);
-            const $ = this.cheerio.load(response.data);
-            const manga = this.parser.parseHomePage($);
+        const sections = [
+            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/?m=0` },
+            { id: 'Asterix', title: 'Asterix', url: `${BASE_URL}/search/label/Asterix?m=0` },
+            { id: 'Lucky Luke', title: 'Lucky Luke', url: `${BASE_URL}/search/label/Lucky%20Luke?m=0` },
+            { id: 'Xì trum', title: 'Xì trum', url: `${BASE_URL}/search/label/X%C3%AC%20trum?m=0` },
+            { id: 'Tintin', title: 'Tintin', url: `${BASE_URL}/search/label/Tintin?m=0` },
+            { id: 'Dragon Ball Super', title: 'Dragon Ball Super', url: `${BASE_URL}/search/label/Dragon%20Ball%20Super?m=0` },
+            { id: 'Doremon', title: 'Doremon', url: `${BASE_URL}/search/label/Doremon?m=0` },
+        ];
+        for (const section of sections) {
             sectionCallback(App.createHomeSection({
-                id: 'latest',
-                title: 'Mới Cập Nhật',
+                id: section.id,
+                title: section.title,
                 containsMoreItems: true,
                 type: types_1.HomeSectionType.singleRowNormal,
-                items: manga,
             }));
         }
-        catch (e) {
-            console.log(e);
+        for (const section of sections) {
+            try {
+                const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 0);
+                const $ = this.cheerio.load(response.data);
+                const manga = this.parser.parseHomePage($);
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: types_1.HomeSectionType.singleRowNormal,
+                    items: manga,
+                }));
+            }
+            catch (e) {
+                console.log(e);
+            }
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
