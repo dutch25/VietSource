@@ -26,8 +26,17 @@ export class Parser {
             if (!match) return;
             const id = match[1];
 
-            const img = $(el).find('img').first()
-            let image = img.attr('src') ?? 'https://truyentranhphapbi.blogspot.com/favicon.ico'
+            let image = 'https://truyentranhphapbi.blogspot.com/favicon.ico'
+            const htmlContent = $(el).html() || ''
+            const imgMatch = htmlContent.match(/snips_image_creator\("([^"]+)"/)
+            if (imgMatch) {
+                image = imgMatch[1].replace(/\/s\d+[a-z-]*\//, '/s0/')
+            } else {
+                const fallbackImg = $(el).find('img').first().attr('src')
+                if (fallbackImg && !fallbackImg.includes('icon18_edit')) {
+                    image = fallbackImg
+                }
+            }
 
             results.push(App.createPartialSourceManga({ mangaId: id, title, image }))
         })

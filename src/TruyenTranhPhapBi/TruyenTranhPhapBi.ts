@@ -18,7 +18,7 @@ import { Parser } from './TruyenTranhPhapBiParser'
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com'
 
 export const TruyenTranhPhapBiInfo: SourceInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -80,9 +80,15 @@ export class TruyenTranhPhapBi extends Source {
             const $ = this.cheerio.load(response.data as string)
             const manga = this.parser.parseHomePage($)
 
-            section.items = manga
-            sectionCallback(section)
+            sectionCallback(App.createHomeSection({
+                id: 'latest',
+                title: 'Mới Cập Nhật',
+                containsMoreItems: true,
+                type: HomeSectionType.singleRowNormal,
+                items: manga,
+            }))
         } catch (e) {
+            console.log(e)
         }
     }
 
