@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenTranhPhapBiParser_1 = require("./TruyenTranhPhapBiParser");
 const BASE_URL = 'https://truyentranhphapbi.blogspot.com';
 exports.TruyenTranhPhapBiInfo = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -545,19 +545,22 @@ class TruyenTranhPhapBi extends types_1.Source {
         return App.createPagedResults({ results: this.parser.parseHomePage($), metadata: undefined });
     }
     async getMangaDetails(mangaId) {
-        const url = `${BASE_URL}/${mangaId}.html`;
+        const realId = mangaId.replace(/_/g, '/');
+        const url = `${BASE_URL}/${realId}.html`;
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
-        const url = `${BASE_URL}/${mangaId}.html`;
+        const realId = mangaId.replace(/_/g, '/');
+        const url = `${BASE_URL}/${realId}.html`;
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseChapters($, mangaId);
     }
     async getChapterDetails(mangaId, chapterId) {
-        const url = `${BASE_URL}/${mangaId}.html`;
+        const realId = mangaId.replace(/_/g, '/');
+        const url = `${BASE_URL}/${realId}.html`;
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 1);
         const $ = this.cheerio.load(response.data);
         const pages = this.parser.parseChapterPages($);
@@ -567,7 +570,8 @@ class TruyenTranhPhapBi extends types_1.Source {
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     getMangaShareUrl(mangaId) {
-        return `${BASE_URL}/${mangaId}.html`;
+        const realId = mangaId.replace(/_/g, '/');
+        return `${BASE_URL}/${realId}.html`;
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
@@ -593,7 +597,7 @@ class Parser {
             const match = href.match(/\/(\d{4}\/\d{2}\/[^/]+)\.html/);
             if (!match)
                 return;
-            const id = match[1];
+            const id = match[1].replace(/\//g, '_');
             let image = 'https://truyentranhphapbi.blogspot.com/favicon.ico';
             const htmlContent = $(el).html() || '';
             const imgMatch = htmlContent.match(/snips_image_creator\("([^"]+)"/);
