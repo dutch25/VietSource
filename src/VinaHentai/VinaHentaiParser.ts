@@ -93,10 +93,10 @@ export class Parser {
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? ''
 
         const authors: Tag[] = []
-        $('a[href^="/authors/"]').each((_: any, el: any) => {
+        $('a[href^="/tac-gia/"], a[href^="/authors/"]').each((_: any, el: any) => {
             if (el.parent && el.parent.name === 'li') return
             const href = $(el).attr('href') ?? ''
-            const authorId = href.replace('/authors/', '').trim()
+            const authorId = href.replace(/^\/(?:tac-gia|authors)\//, '').trim()
             const label = $(el).find('span').first().text().trim() || $(el).text().trim()
             if (authorId && label) {
                 authors.push(App.createTag({ id: 'author:' + authorId, label }))
@@ -104,10 +104,10 @@ export class Parser {
         })
 
         const genres: Tag[] = []
-        $('a[href^="/genres/"]').each((_: any, el: any) => {
+        $('a[href^="/the-loai/"], a[href^="/genres/"]').each((_: any, el: any) => {
             if (el.parent && el.parent.name === 'li') return
             const href = $(el).attr('href') ?? ''
-            const genreId = href.replace('/genres/', '').trim()
+            const genreId = href.replace(/^\/(?:the-loai|genres)\//, '').trim()
             const label = $(el).text().trim()
             if (genreId && label) {
                 genres.push(App.createTag({ id: genreId, label }))

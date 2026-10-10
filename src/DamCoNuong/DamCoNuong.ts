@@ -15,11 +15,12 @@ import {
 } from '@paperback/types'
 
 import { Parser } from './DamCoNuongParser'
+import { BookmarkDecoder } from './DamCoNuongDecoder'
 
 const BASE_URL = 'https://damconuong.pet'
 
 export const DamCoNuongInfo: SourceInfo = {
-    version: '1.1.8',
+    version: '1.1.9',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -162,12 +163,39 @@ export class DamCoNuong extends Source {
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/truyen/${mangaId}/chapter-${chapterId}`, method: 'GET' }), 1
-        )
-        const html = response.data as string
-        const $ = this.cheerio.load(html)
-        const pages = this.parser.parseChapterPages($)
+        let pages: string[] = []
+
+        try {
+            const cipherPath = `${mangaId}/${chapterId}`
+            const decodedItems = await BookmarkDecoder.open(cipherPath, async (path: string) => {
+                const res = await this.requestManager.schedule(
+                    App.createRequest({
+                        url: `${BASE_URL}/_c${path}`,
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Referer': `${BASE_URL}/truyen/${mangaId}/${chapterId}`,
+                        }
+                    }), 0
+                )
+                return JSON.parse(res.data as string)
+            })
+
+            if (Array.isArray(decodedItems)) {
+                pages = decodedItems.map((item: any) => item.src).filter((src: any) => typeof src === 'string' && src.length > 0)
+            }
+        } catch (e) {
+        }
+
+        if (pages.length === 0) {
+            const response = await this.requestManager.schedule(
+                App.createRequest({ url: `${BASE_URL}/truyen/${mangaId}/${chapterId}`, method: 'GET' }), 1
+            )
+            const html = response.data as string
+            const $ = this.cheerio.load(html)
+            pages = this.parser.parseChapterPages($)
+        }
 
         if (pages.length === 0) {
             throw new Error(`No pages found for chapter ${chapterId}`)

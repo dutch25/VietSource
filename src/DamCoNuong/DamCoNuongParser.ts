@@ -76,20 +76,27 @@ export class Parser {
 
     parseChapters($: CheerioAPI): Chapter[] {
         const chapters: Chapter[] = []
+        const seen = new Set<string>()
 
-        $('a[href*="/chapter-"]').each((_: any, el: any) => {
-            const href = $(el).attr('href') ?? ''
-            const match = href.match(/\/chapter-([\d.]+)/)
+        // Look for chapter links: /chuong-123, /chapter-123, or /{mangaId}/{chapterId}
+        $('a[href*="/truyen/"]').each((_: any, el: any) => {
+            const href = ($(el).attr('href') ?? '').trim()
+            // Match /truyen/{mangaId}/{chapterId} where chapterId is numeric or chapter-X or chuong-X
+            const match = href.match(/\/truyen\/[^/?#]+\/((?:chapter-|chuong-)?[\d.]+)\/?$/i)
             if (!match) return
 
-            const chapterId = match[1]
+            const rawChapter = match[1]
+            const chapterNum = rawChapter.replace(/^(?:chapter|chuong)-/i, '')
+            if (seen.has(chapterNum)) return
+            seen.add(chapterNum)
+
             const title = $(el).find('.text-ellipsis').first().text().trim()
-                || $(el).text().trim()
-                || `Chapter ${chapterId}`
+                || $(el).text().trim().split('\n')[0].trim()
+                || `Chương ${chapterNum}`
 
             chapters.push(App.createChapter({
-                id: chapterId,
-                chapNum: parseFloat(chapterId) || chapters.length + 1,
+                id: rawChapter,
+                chapNum: parseFloat(chapterNum) || chapters.length + 1,
                 name: title,
                 time: new Date(),
             }))
