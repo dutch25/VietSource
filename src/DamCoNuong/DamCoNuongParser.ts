@@ -30,7 +30,11 @@ export class Parser {
             if (!id || id.includes('/')) return // Double check for sub-paths
 
             const img = $('.cover-frame img', el).first()
-            const rawImage = img.attr('src') ?? img.attr('data-src') ?? ''
+            let rawImage = img.attr('src') ?? img.attr('data-src') ?? ''
+            // Prepend base URL if relative
+            if (rawImage && rawImage.startsWith('/')) {
+                rawImage = `https://damconuong.pet${rawImage}`
+            }
 
             if (!title || !rawImage) return
 
@@ -100,6 +104,12 @@ export class Parser {
         $('img[data-original-src], img[data-src], img.chapter-img').each((_: any, el: any) => {
             let imgSrc = ($(el).attr('data-original-src') ?? $(el).attr('data-src') ?? $(el).attr('src') ?? '').trim()
             if (!imgSrc || imgSrc.includes('logo') || imgSrc.includes('data:image')) return
+
+            // Prepend base URL if relative or protocol‑relative
+            if (imgSrc.startsWith('/') || imgSrc.startsWith('//')) {
+                const prefix = imgSrc.startsWith('//') ? 'https:' : 'https://damconuong.pet'
+                imgSrc = `${prefix}${imgSrc}`
+            }
 
             const isImage = /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(imgSrc)
             const isChapterFolder = /\/(chapters|images|truyen)\//i.test(imgSrc)

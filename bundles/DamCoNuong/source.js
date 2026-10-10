@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const DamCoNuongParser_1 = require("./DamCoNuongParser");
 const BASE_URL = 'https://damconuong.pet';
 exports.DamCoNuongInfo = {
-    version: '1.1.7',
+    version: '1.1.8',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -626,7 +626,11 @@ class Parser {
             if (!id || id.includes('/'))
                 return; // Double check for sub-paths
             const img = $('.cover-frame img', el).first();
-            const rawImage = img.attr('src') ?? img.attr('data-src') ?? '';
+            let rawImage = img.attr('src') ?? img.attr('data-src') ?? '';
+            // Prepend base URL if relative
+            if (rawImage && rawImage.startsWith('/')) {
+                rawImage = `https://damconuong.pet${rawImage}`;
+            }
             if (!title || !rawImage)
                 return;
             results.push(App.createPartialSourceManga({ mangaId: id, title, image: rawImage }));
@@ -684,6 +688,11 @@ class Parser {
             let imgSrc = ($(el).attr('data-original-src') ?? $(el).attr('data-src') ?? $(el).attr('src') ?? '').trim();
             if (!imgSrc || imgSrc.includes('logo') || imgSrc.includes('data:image'))
                 return;
+            // Prepend base URL if relative or protocol‑relative
+            if (imgSrc.startsWith('/') || imgSrc.startsWith('//')) {
+                const prefix = imgSrc.startsWith('//') ? 'https:' : 'https://damconuong.pet';
+                imgSrc = `${prefix}${imgSrc}`;
+            }
             const isImage = /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(imgSrc);
             const isChapterFolder = /\/(chapters|images|truyen)\//i.test(imgSrc);
             if (imgSrc && (isImage || isChapterFolder)) {

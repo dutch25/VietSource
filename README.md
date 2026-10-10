@@ -40,7 +40,7 @@ Hoặc chạm trực tiếp vào nút **[Add to Paperback](paperback://addRepo?d
 | **TruyenQQ** | [truyenqqko.com](https://truyenqqko.com/) | Mọi lứa tuổi | ✅ Hoạt động | Cập nhật nhanh chóng, kho truyện phong phú đa thể loại, tìm kiếm nâng cao. |
 | **TopTruyen** | [toptruyenzone12.com](https://www.toptruyenzone12.com/) | Mọi lứa tuổi | ✅ Hoạt động | Tổng hợp manhwa, manhua và manga xu hướng hàng đầu. |
 | **GocTruyenTranh** | [goctruyentranhvui30.com](https://goctruyentranhvui30.com/) | Mọi lứa tuổi | ✅ Hoạt động | Đọc truyện bản quyền mượt mà, hỗ trợ tìm kiếm theo thể loại. |
-| **LuotTruyen** | [luottruyen16.com](https://luottruyen16.com) | Tuổi Teen | ✅ Hoạt động | Manhwa, truyện màu lãng mạn, hành động hấp dẫn. |
+| **LuotTruyen** | [luottruyen16.com](https://luottruyen16.com) | Tuổi Teen | ❌ Không hoạt động | Manhwa, truyện màu lãng mạn, hành động hấp dẫn. |
 
 ---
 

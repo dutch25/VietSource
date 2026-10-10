@@ -35,6 +35,11 @@ export class Parser {
 
             const img = $('.item-thumb img', el).first()
             let rawImage = img.attr('src') ?? img.attr('data-src') ?? img.attr('data-lazy-src') ?? ''
+            // Prepend base URL if relative or protocol‑relative
+            if (rawImage && (rawImage.startsWith('/') || rawImage.startsWith('//'))) {
+                const prefix = rawImage.startsWith('//') ? 'https:' : 'https://truyenvn.onl'
+                rawImage = `${prefix}${rawImage}`
+            }
             
             if (rawImage && rawImage.includes('khotruyen.ac')) {
                 rawImage = rawImage.replace('khotruyen.ac/wp-content', 'truyenvn.shop/wp-content')
