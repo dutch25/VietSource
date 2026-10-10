@@ -15,11 +15,12 @@ import {
 } from '@paperback/types'
 
 import { Parser } from './DamCoNuongParser'
+import { generateToken, decryptPages } from './DamCoNuongCrypto'
 
 const BASE_URL = 'https://damconuong.pet'
 
 export const DamCoNuongInfo: SourceInfo = {
-    version: '1.1.11',
+    version: '1.1.12',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -47,7 +48,8 @@ export class DamCoNuong extends Source {
             interceptRequest: async (request) => {
                 request.headers = {
                     ...(request.headers ?? {}),
-                    'referer': BASE_URL,
+                    'referer': `${BASE_URL}/`,
+                    'origin': BASE_URL,
                     'user-agent': await this.requestManager.getDefaultUserAgent(),
                 }
                 return request
@@ -169,12 +171,41 @@ export class DamCoNuong extends Source {
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        const response = await this.requestManager.schedule(
-            App.createRequest({ url: `${BASE_URL}/truyen/${mangaId}/${chapterId}`, method: 'GET' }), 1
-        )
-        const html = response.data as string
-        const $ = this.cheerio.load(html)
-        const pages = this.parser.parseChapterPages($)
+        let pages: string[] = []
+
+        try {
+            const cleanChapter = chapterId.replace(/^(?:chapter|chuong)-/i, '')
+            const chapterPath = `${mangaId}/${cleanChapter}`
+            const token = generateToken(chapterPath)
+            const apiUrl = `${BASE_URL}/_c/mangas/${mangaId}/chapters/${cleanChapter}/pages?_=${token}`
+
+            const apiResponse = await this.requestManager.schedule(
+                App.createRequest({
+                    url: apiUrl,
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Referer': `${BASE_URL}/truyen/${mangaId}/${chapterId}`,
+                    }
+                }), 0
+            )
+
+            const data = JSON.parse(apiResponse.data as string)
+            if (data && data.e) {
+                pages = decryptPages(data.e, token)
+            }
+        } catch {
+        }
+
+        if (pages.length === 0) {
+            const response = await this.requestManager.schedule(
+                App.createRequest({ url: `${BASE_URL}/truyen/${mangaId}/${chapterId}`, method: 'GET' }), 1
+            )
+            const html = response.data as string
+            const $ = this.cheerio.load(html)
+            pages = this.parser.parseChapterPages($)
+        }
 
         if (pages.length === 0) {
             throw new Error(`No pages found for chapter ${chapterId}`)
