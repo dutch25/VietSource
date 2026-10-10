@@ -7789,7 +7789,7 @@ const DamCoNuongParser_1 = require("./DamCoNuongParser");
 const DamCoNuongCrypto_1 = require("./DamCoNuongCrypto");
 const BASE_URL = 'https://damconuong.pet';
 exports.DamCoNuongInfo = {
-    version: '1.1.13',
+    version: '1.1.14',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -7918,26 +7918,36 @@ class DamCoNuong extends types_1.Source {
     }
     async getChapterDetails(mangaId, chapterId) {
         let pages = [];
-        try {
-            const cleanChapter = chapterId.replace(/^(?:chapter|chuong)-/i, '');
-            const chapterPath = `${mangaId}/${cleanChapter}`;
-            const token = (0, DamCoNuongCrypto_1.generateToken)(chapterPath);
-            const apiUrl = `${BASE_URL}/_c/mangas/${mangaId}/chapters/${cleanChapter}/pages?_=${token}`;
-            const apiResponse = await this.requestManager.schedule(App.createRequest({
-                url: apiUrl,
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Referer': `${BASE_URL}/truyen/${mangaId}/${chapterId}`,
-                }
-            }), 0);
-            const data = JSON.parse(apiResponse.data);
-            if (data && data.e) {
-                pages = (0, DamCoNuongCrypto_1.decryptPages)(data.e, token);
-            }
+        // Try raw chapterId first, then clean chapter number if different
+        const cleanChapter = chapterId.replace(/^(?:chapter|chuong)-/i, '');
+        const candidates = [chapterId];
+        if (cleanChapter !== chapterId && !candidates.includes(cleanChapter)) {
+            candidates.push(cleanChapter);
         }
-        catch {
+        for (const candidate of candidates) {
+            try {
+                const chapterPath = `${mangaId}/${candidate}`;
+                const token = (0, DamCoNuongCrypto_1.generateToken)(chapterPath);
+                const apiUrl = `${BASE_URL}/_c/mangas/${mangaId}/chapters/${candidate}/pages?_=${token}`;
+                const apiResponse = await this.requestManager.schedule(App.createRequest({
+                    url: apiUrl,
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Referer': `${BASE_URL}/truyen/${mangaId}/${chapterId}`,
+                    }
+                }), 0);
+                const data = JSON.parse(apiResponse.data);
+                if (data && data.e) {
+                    pages = (0, DamCoNuongCrypto_1.decryptPages)(data.e, token);
+                    if (pages.length > 0) {
+                        break;
+                    }
+                }
+            }
+            catch {
+            }
         }
         if (pages.length === 0) {
             const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/truyen/${mangaId}/${chapterId}`, method: 'GET' }), 1);

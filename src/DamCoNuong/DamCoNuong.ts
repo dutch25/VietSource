@@ -20,7 +20,7 @@ import { generateToken, decryptPages } from './DamCoNuongCrypto'
 const BASE_URL = 'https://damconuong.pet'
 
 export const DamCoNuongInfo: SourceInfo = {
-    version: '1.1.13',
+    version: '1.1.14',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -173,29 +173,40 @@ export class DamCoNuong extends Source {
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         let pages: string[] = []
 
-        try {
-            const cleanChapter = chapterId.replace(/^(?:chapter|chuong)-/i, '')
-            const chapterPath = `${mangaId}/${cleanChapter}`
-            const token = generateToken(chapterPath)
-            const apiUrl = `${BASE_URL}/_c/mangas/${mangaId}/chapters/${cleanChapter}/pages?_=${token}`
+        // Try raw chapterId first, then clean chapter number if different
+        const cleanChapter = chapterId.replace(/^(?:chapter|chuong)-/i, '')
+        const candidates = [chapterId]
+        if (cleanChapter !== chapterId && !candidates.includes(cleanChapter)) {
+            candidates.push(cleanChapter)
+        }
 
-            const apiResponse = await this.requestManager.schedule(
-                App.createRequest({
-                    url: apiUrl,
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Referer': `${BASE_URL}/truyen/${mangaId}/${chapterId}`,
+        for (const candidate of candidates) {
+            try {
+                const chapterPath = `${mangaId}/${candidate}`
+                const token = generateToken(chapterPath)
+                const apiUrl = `${BASE_URL}/_c/mangas/${mangaId}/chapters/${candidate}/pages?_=${token}`
+
+                const apiResponse = await this.requestManager.schedule(
+                    App.createRequest({
+                        url: apiUrl,
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Referer': `${BASE_URL}/truyen/${mangaId}/${chapterId}`,
+                        }
+                    }), 0
+                )
+
+                const data = JSON.parse(apiResponse.data as string)
+                if (data && data.e) {
+                    pages = decryptPages(data.e, token)
+                    if (pages.length > 0) {
+                        break
                     }
-                }), 0
-            )
-
-            const data = JSON.parse(apiResponse.data as string)
-            if (data && data.e) {
-                pages = decryptPages(data.e, token)
+                }
+            } catch {
             }
-        } catch {
         }
 
         if (pages.length === 0) {
