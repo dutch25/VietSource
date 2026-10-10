@@ -95,31 +95,39 @@ export class Parser {
         const chapters: Chapter[] = []
         const seen = new Set<string>()
 
-        // Look for chapter links: /chuong-123, /chapter-123, or /{mangaId}/{chapterId}
-        $('a[href*="/truyen/"]').each((_: any, el: any) => {
+        // Target the dedicated chapter list first, fallback to general truyen links
+        const listItems = $('#md-chapter-list li a, .md-ch')
+        const elements = listItems.length > 0 ? listItems : $('a[href*="/truyen/"]')
+
+        elements.each((_: any, el: any) => {
             const href = ($(el).attr('href') ?? '').trim()
-            // Match /truyen/{mangaId}/{chapterId} where chapterId is numeric or chapter-X or chuong-X
-            const match = href.match(/\/truyen\/[^/?#]+\/((?:chapter-|chuong-)?[\d.]+)\/?$/i)
+            // Match /truyen/{mangaId}/{chapterId}
+            const match = href.match(/\/truyen\/[^/?#]+\/([^/?#]+)\/?$/i)
             if (!match) return
 
             const rawChapter = match[1]
-            const chapterNum = rawChapter.replace(/^(?:chapter|chuong)-/i, '')
-            if (seen.has(chapterNum)) return
-            seen.add(chapterNum)
+            // Skip non-chapter navigation paths
+            if (['danh-sach', 'tim-kiem', 'the-loai'].includes(rawChapter.toLowerCase())) return
+            if (seen.has(rawChapter)) return
+            seen.add(rawChapter)
 
-            const title = $(el).find('.text-ellipsis').first().text().trim()
+            const titleEl = $(el).find('.md-ch-title, .text-ellipsis').first()
+            const title = titleEl.text().trim()
                 || $(el).text().trim().split('\n')[0].trim()
-                || `Chương ${chapterNum}`
+                || rawChapter
+
+            const numMatch = rawChapter.match(/[\d.]+/)
+            const chapNum = numMatch ? parseFloat(numMatch[0]) : chapters.length + 1
 
             chapters.push(App.createChapter({
                 id: rawChapter,
-                chapNum: parseFloat(chapterNum) || chapters.length + 1,
+                chapNum: isNaN(chapNum) ? chapters.length + 1 : chapNum,
                 name: title,
                 time: new Date(),
             }))
         })
 
-        return chapters.reverse()
+        return chapters
     }
 
     parseChapterPages($: CheerioAPI): string[] {
