@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.vip';
 exports.VinaHentaiInfo = {
-    version: '1.1.21',
+    version: '1.1.22',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -607,10 +607,10 @@ class VinaHentai extends types_1.Source {
         if (selectedTag) {
             if (selectedTag.id.startsWith('author:')) {
                 const authorId = selectedTag.id.replace('author:', '');
-                url = `${BASE_URL}/authors/${authorId}?page=${page}`;
+                url = `${BASE_URL}/tac-gia/${authorId}?page=${page}`;
             }
             else {
-                url = `${BASE_URL}/genres/${selectedTag.id}?page=${page}`;
+                url = `${BASE_URL}/the-loai/${selectedTag.id}?page=${page}`;
             }
         }
         else {
@@ -731,22 +731,22 @@ class Parser {
         const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? '';
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? '';
         const authors = [];
-        $('a[href^="/authors/"]').each((_, el) => {
+        $('a[href^="/tac-gia/"], a[href^="/authors/"]').each((_, el) => {
             if (el.parent && el.parent.name === 'li')
                 return;
             const href = $(el).attr('href') ?? '';
-            const authorId = href.replace('/authors/', '').trim();
+            const authorId = href.replace(/^\/(?:tac-gia|authors)\//, '').trim();
             const label = $(el).find('span').first().text().trim() || $(el).text().trim();
             if (authorId && label) {
                 authors.push(App.createTag({ id: 'author:' + authorId, label }));
             }
         });
         const genres = [];
-        $('a[href^="/genres/"]').each((_, el) => {
+        $('a[href^="/the-loai/"], a[href^="/genres/"]').each((_, el) => {
             if (el.parent && el.parent.name === 'li')
                 return;
             const href = $(el).attr('href') ?? '';
-            const genreId = href.replace('/genres/', '').trim();
+            const genreId = href.replace(/^\/(?:the-loai|genres)\//, '').trim();
             const label = $(el).text().trim();
             if (genreId && label) {
                 genres.push(App.createTag({ id: genreId, label }));
