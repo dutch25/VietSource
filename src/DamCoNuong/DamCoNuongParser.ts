@@ -45,16 +45,33 @@ export class Parser {
     }
 
     parseMangaDetails($: CheerioAPI, mangaId: string): SourceManga {
-        let title = $('h1.text-xl').text().trim() || $('h1').not('.text-sm').first().text().trim()
-        if (!title || title.includes('Tên Miền Chính Thức')) {
-            title = $('h1').last().text().trim() || mangaId
+        let title = $('h1.md-title, h1.text-xl').text().trim()
+            || $('h1').not('.text-sm').first().text().trim()
+
+        if (!title || title.includes('Tên Miền Chính Thức') || title.includes('Dâm Cô Nương')) {
+            const ogTitle = $('meta[property="og:title"]').attr('content')?.trim()
+            if (ogTitle && !ogTitle.startsWith('Truyện Tranh 18+')) {
+                title = ogTitle.replace(/\s*-\s*Dâm Cô Nương$/i, '').trim()
+            } else {
+                title = $('h1').last().text().trim() || mangaId
+            }
         }
 
-        const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? ''
-        const desc = $('.summary-content, .description, .manga-content, #synopsis, .mt-4.text-sm, .prose').text().trim() || ''
+        let rawImage = $('.md-cover img, .cover-frame img').first().attr('src')
+            ?? $('meta[property="og:image"]').attr('content')?.trim()
+            ?? ''
+
+        if (rawImage && rawImage.startsWith('/')) {
+            rawImage = `https://damconuong.pet${rawImage}`
+        }
+
+        const desc = $('.md-synopsis').text().trim()
+            || $('.summary-content, .description, .manga-content, #synopsis, .mt-4.text-sm, .prose').text().trim()
+            || $('meta[property="og:description"]').attr('content')?.trim()
+            || ''
 
         const genres: Tag[] = []
-        $('.genre a, .the-loai a').each((_: any, el: any) => {
+        $('.md-rail-genres a, .genre a, .the-loai a').each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
             const genreId = href.replace('/the-loai/', '').trim()
             const label = $(el).text().trim()

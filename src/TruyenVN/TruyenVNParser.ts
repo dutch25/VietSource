@@ -77,11 +77,26 @@ export class Parser {
     }
 
     parseMangaDetails($: CheerioAPI, mangaId: string): SourceManga {
-        const title = $('meta[property="og:title"]').attr('content')?.trim()
-            || $('h1').first().text().trim()
+        let title = $('.post-title h1, h1').first().text().trim()
+            || $('meta[property="og:title"]').attr('content')?.trim()
             || mangaId
-        const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? ''
-        const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? ''
+
+        if (title.startsWith('Đọc Truyện ')) {
+            title = title.replace(/^Đọc Truyện\s+/i, '').replace(/\s*Tiếng Việt\s*\|\s*TruyenVN$/i, '').trim()
+        }
+
+        let rawImage = $('.summary_image img, .item-thumb img').first().attr('src')
+            ?? $('meta[property="og:image"]').attr('content')?.trim()
+            ?? ''
+
+        if (rawImage && (rawImage.startsWith('/') || rawImage.startsWith('//'))) {
+            const prefix = rawImage.startsWith('//') ? 'https:' : 'https://truyenvn.onl'
+            rawImage = `${prefix}${rawImage}`
+        }
+
+        const desc = $('meta[property="og:description"]').attr('content')?.trim()
+            || $('.description-summary, .summary__content').text().trim()
+            || ''
 
         const genres: Tag[] = []
         $('.genres-content a, .manga-genres a').each((_: any, el: any) => {

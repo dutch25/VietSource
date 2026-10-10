@@ -19,7 +19,7 @@ import { Parser } from './TruyenVNParser'
 const BASE_URL = 'https://truyenvn.onl'
 
 export const TruyenVNInfo: SourceInfo = {
-    version: '1.1.4',
+    version: '1.1.5',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -45,9 +45,10 @@ export class TruyenVN extends Source {
         requestTimeout: 30000,
         interceptor: {
             interceptRequest: async (request) => {
+                const isImggo = request.url?.includes('imggo.net')
                 request.headers = {
                     ...(request.headers ?? {}),
-                    'referer': BASE_URL,
+                    'referer': isImggo ? '' : `${BASE_URL}/`,
                     'user-agent': await this.requestManager.getDefaultUserAgent(),
                 }
                 return request

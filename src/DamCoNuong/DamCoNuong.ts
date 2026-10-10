@@ -20,7 +20,7 @@ import { generateToken, decryptPages } from './DamCoNuongCrypto'
 const BASE_URL = 'https://damconuong.pet'
 
 export const DamCoNuongInfo: SourceInfo = {
-    version: '1.1.12',
+    version: '1.1.13',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
