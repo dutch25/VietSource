@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenVNParser_1 = require("./TruyenVNParser");
 const BASE_URL = 'https://truyenvn.onl';
 exports.TruyenVNInfo = {
-    version: '1.1.4',
+    version: '1.1.5',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -490,9 +490,10 @@ class TruyenVN extends types_1.Source {
             requestTimeout: 30000,
             interceptor: {
                 interceptRequest: async (request) => {
+                    const isImggo = request.url?.includes('imggo.net');
                     request.headers = {
                         ...(request.headers ?? {}),
-                        'referer': BASE_URL,
+                        'referer': isImggo ? '' : `${BASE_URL}/`,
                         'user-agent': await this.requestManager.getDefaultUserAgent(),
                     };
                     return request;
@@ -675,11 +676,22 @@ class Parser {
         return this.deduplicate(results);
     }
     parseMangaDetails($, mangaId) {
-        const title = $('meta[property="og:title"]').attr('content')?.trim()
-            || $('h1').first().text().trim()
+        let title = $('.post-title h1, h1').first().text().trim()
+            || $('meta[property="og:title"]').attr('content')?.trim()
             || mangaId;
-        const rawImage = $('meta[property="og:image"]').attr('content')?.trim() ?? '';
-        const desc = $('meta[property="og:description"]').attr('content')?.trim() ?? '';
+        if (title.startsWith('Đọc Truyện ')) {
+            title = title.replace(/^Đọc Truyện\s+/i, '').replace(/\s*Tiếng Việt\s*\|\s*TruyenVN$/i, '').trim();
+        }
+        let rawImage = $('.summary_image img, .item-thumb img').first().attr('src')
+            ?? $('meta[property="og:image"]').attr('content')?.trim()
+            ?? '';
+        if (rawImage && (rawImage.startsWith('/') || rawImage.startsWith('//'))) {
+            const prefix = rawImage.startsWith('//') ? 'https:' : 'https://truyenvn.onl';
+            rawImage = `${prefix}${rawImage}`;
+        }
+        const desc = $('meta[property="og:description"]').attr('content')?.trim()
+            || $('.description-summary, .summary__content').text().trim()
+            || '';
         const genres = [];
         $('.genres-content a, .manga-genres a').each((_, el) => {
             const href = $(el).attr('href') ?? '';
