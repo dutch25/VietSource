@@ -20,7 +20,7 @@ import { BookmarkDecoder } from './DamCoNuongDecoder'
 const BASE_URL = 'https://damconuong.pet'
 
 export const DamCoNuongInfo: SourceInfo = {
-    version: '1.1.9',
+    version: '1.1.10',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -57,6 +57,12 @@ export class DamCoNuong extends Source {
         }
     })
 
+    CloudFlareError(status: number): void {
+        if (status === 503 || status === 403) {
+            throw new Error(`CLOUDFLARE BYPASS ERROR:\nPlease go to home page ${DamCoNuongInfo.name} source and press the cloud icon.`)
+        }
+    }
+
     async getCloudflareBypassRequestAsync(): Promise<any> {
         return App.createRequest({
             url: BASE_URL,
@@ -69,39 +75,40 @@ export class DamCoNuong extends Source {
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
-        const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/tim-kiem?sort=-updated_at` },
-            { id: 'day', title: 'Top Ngày', url: `${BASE_URL}/tim-kiem?sort=-views_day` },
-            { id: 'week', title: 'Top Tuần', url: `${BASE_URL}/tim-kiem?sort=-views_week` },
-            { id: 'month', title: 'Top Tháng', url: `${BASE_URL}/tim-kiem?sort=-views` },
+        const sections: { section: HomeSection; url: string }[] = [
+            {
+                section: App.createHomeSection({ id: 'latest', title: 'Mới Cập Nhật', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/tim-kiem?sort=-updated_at`
+            },
+            {
+                section: App.createHomeSection({ id: 'day', title: 'Top Ngày', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/tim-kiem?sort=-views_day`
+            },
+            {
+                section: App.createHomeSection({ id: 'week', title: 'Top Tuần', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/tim-kiem?sort=-views_week`
+            },
+            {
+                section: App.createHomeSection({ id: 'month', title: 'Top Tháng', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/tim-kiem?sort=-views`
+            },
         ]
 
-        for (const section of sections) {
-            sectionCallback(App.createHomeSection({
-                id: section.id,
-                title: section.title,
-                containsMoreItems: true,
-                type: HomeSectionType.singleRowNormal,
-            }))
-        }
-
-        for (const section of sections) {
+        for (const item of sections) {
+            sectionCallback(item.section)
             try {
                 const response = await this.requestManager.schedule(
-                    App.createRequest({ url: section.url, method: 'GET' }), 0
+                    App.createRequest({ url: item.url, method: 'GET' }), 1
                 )
-                if (response.status === 403 || response.status === 503) continue
+                this.CloudFlareError(response.status)
                 const $ = this.cheerio.load(response.data as string)
-                const manga = this.parser.parseHomePage($)
-
-                sectionCallback(App.createHomeSection({
-                    id: section.id,
-                    title: section.title,
-                    containsMoreItems: true,
-                    type: HomeSectionType.singleRowNormal,
-                    items: manga,
-                }))
+                item.section.items = this.parser.parseHomePage($)
+                sectionCallback(item.section)
             } catch (e) {
+                // If cloudflare error, rethrow so Paperback displays Cloudflare bypass
+                if (e instanceof Error && e.message.includes('CLOUDFLARE BYPASS ERROR')) {
+                    throw e
+                }
             }
         }
     }

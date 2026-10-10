@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenVNParser_1 = require("./TruyenVNParser");
 const BASE_URL = 'https://truyenvn.onl';
 exports.TruyenVNInfo = {
-    version: '1.1.3',
+    version: '1.1.4',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -501,6 +501,11 @@ class TruyenVN extends types_1.Source {
             }
         });
     }
+    CloudFlareError(status) {
+        if (status === 503 || status === 403) {
+            throw new Error(`CLOUDFLARE BYPASS ERROR:\nPlease go to home page ${exports.TruyenVNInfo.name} source and press the cloud icon.`);
+        }
+    }
     async getCloudflareBypassRequestAsync() {
         return App.createRequest({
             url: BASE_URL,
@@ -513,35 +518,37 @@ class TruyenVN extends types_1.Source {
     }
     async getHomePageSections(sectionCallback) {
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/truyen-tranh/` },
-            { id: '18+', title: 'Truyện tranh 18+', url: `${BASE_URL}/the-loai/truyen-tranh-18/?m_orderby=views` },
-            { id: 'manhwa', title: 'Manhwa', url: `${BASE_URL}/the-loai/manhwa/` },
-            { id: 'manhua', title: 'Manhua', url: `${BASE_URL}/the-loai/manhua/` },
+            {
+                section: App.createHomeSection({ id: 'latest', title: 'Mới Cập Nhật', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/truyen-tranh/`
+            },
+            {
+                section: App.createHomeSection({ id: '18+', title: 'Truyện tranh 18+', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/the-loai/truyen-tranh-18/?m_orderby=views`
+            },
+            {
+                section: App.createHomeSection({ id: 'manhwa', title: 'Manhwa', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/the-loai/manhwa/`
+            },
+            {
+                section: App.createHomeSection({ id: 'manhua', title: 'Manhua', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/the-loai/manhua/`
+            },
         ];
-        for (const section of sections) {
-            sectionCallback(App.createHomeSection({
-                id: section.id,
-                title: section.title,
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal,
-            }));
-        }
-        for (const section of sections) {
+        for (const item of sections) {
+            sectionCallback(item.section);
             try {
-                const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 0);
-                if (response.status === 403 || response.status === 503)
-                    continue;
+                const response = await this.requestManager.schedule(App.createRequest({ url: item.url, method: 'GET' }), 1);
+                this.CloudFlareError(response.status);
                 const $ = this.cheerio.load(response.data);
-                const manga = this.parser.parseHomePage($);
-                sectionCallback(App.createHomeSection({
-                    id: section.id,
-                    title: section.title,
-                    containsMoreItems: true,
-                    type: types_1.HomeSectionType.singleRowNormal,
-                    items: manga,
-                }));
+                item.section.items = this.parser.parseHomePage($);
+                sectionCallback(item.section);
             }
             catch (e) {
+                // If cloudflare error, rethrow so Paperback displays Cloudflare bypass
+                if (e instanceof Error && e.message.includes('CLOUDFLARE BYPASS ERROR')) {
+                    throw e;
+                }
             }
         }
     }
