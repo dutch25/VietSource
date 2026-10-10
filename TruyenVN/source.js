@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const TruyenVNParser_1 = require("./TruyenVNParser");
 const BASE_URL = 'https://truyenvn.onl';
 exports.TruyenVNInfo = {
-    version: '1.1.2',
+    version: '1.1.3',
     name: 'TruyenVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -630,6 +630,11 @@ class Parser {
                 return null;
             const img = $('.item-thumb img', el).first();
             let rawImage = img.attr('src') ?? img.attr('data-src') ?? img.attr('data-lazy-src') ?? '';
+            // Prepend base URL if relative or protocol‑relative
+            if (rawImage && (rawImage.startsWith('/') || rawImage.startsWith('//'))) {
+                const prefix = rawImage.startsWith('//') ? 'https:' : 'https://truyenvn.onl';
+                rawImage = `${prefix}${rawImage}`;
+            }
             if (rawImage && rawImage.includes('khotruyen.ac')) {
                 rawImage = rawImage.replace('khotruyen.ac/wp-content', 'truyenvn.shop/wp-content');
             }
