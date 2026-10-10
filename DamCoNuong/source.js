@@ -466,7 +466,7 @@ const DamCoNuongParser_1 = require("./DamCoNuongParser");
 const DamCoNuongDecoder_1 = require("./DamCoNuongDecoder");
 const BASE_URL = 'https://damconuong.pet';
 exports.DamCoNuongInfo = {
-    version: '1.1.9',
+    version: '1.1.10',
     name: 'DamCoNuong',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -502,6 +502,11 @@ class DamCoNuong extends types_1.Source {
             }
         });
     }
+    CloudFlareError(status) {
+        if (status === 503 || status === 403) {
+            throw new Error(`CLOUDFLARE BYPASS ERROR:\nPlease go to home page ${exports.DamCoNuongInfo.name} source and press the cloud icon.`);
+        }
+    }
     async getCloudflareBypassRequestAsync() {
         return App.createRequest({
             url: BASE_URL,
@@ -514,35 +519,37 @@ class DamCoNuong extends types_1.Source {
     }
     async getHomePageSections(sectionCallback) {
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${BASE_URL}/tim-kiem?sort=-updated_at` },
-            { id: 'day', title: 'Top Ngày', url: `${BASE_URL}/tim-kiem?sort=-views_day` },
-            { id: 'week', title: 'Top Tuần', url: `${BASE_URL}/tim-kiem?sort=-views_week` },
-            { id: 'month', title: 'Top Tháng', url: `${BASE_URL}/tim-kiem?sort=-views` },
+            {
+                section: App.createHomeSection({ id: 'latest', title: 'Mới Cập Nhật', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/tim-kiem?sort=-updated_at`
+            },
+            {
+                section: App.createHomeSection({ id: 'day', title: 'Top Ngày', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/tim-kiem?sort=-views_day`
+            },
+            {
+                section: App.createHomeSection({ id: 'week', title: 'Top Tuần', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/tim-kiem?sort=-views_week`
+            },
+            {
+                section: App.createHomeSection({ id: 'month', title: 'Top Tháng', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+                url: `${BASE_URL}/tim-kiem?sort=-views`
+            },
         ];
-        for (const section of sections) {
-            sectionCallback(App.createHomeSection({
-                id: section.id,
-                title: section.title,
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal,
-            }));
-        }
-        for (const section of sections) {
+        for (const item of sections) {
+            sectionCallback(item.section);
             try {
-                const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 0);
-                if (response.status === 403 || response.status === 503)
-                    continue;
+                const response = await this.requestManager.schedule(App.createRequest({ url: item.url, method: 'GET' }), 1);
+                this.CloudFlareError(response.status);
                 const $ = this.cheerio.load(response.data);
-                const manga = this.parser.parseHomePage($);
-                sectionCallback(App.createHomeSection({
-                    id: section.id,
-                    title: section.title,
-                    containsMoreItems: true,
-                    type: types_1.HomeSectionType.singleRowNormal,
-                    items: manga,
-                }));
+                item.section.items = this.parser.parseHomePage($);
+                sectionCallback(item.section);
             }
             catch (e) {
+                // If cloudflare error, rethrow so Paperback displays Cloudflare bypass
+                if (e instanceof Error && e.message.includes('CLOUDFLARE BYPASS ERROR')) {
+                    throw e;
+                }
             }
         }
     }
