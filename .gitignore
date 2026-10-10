@@ -10,3 +10,4 @@ AGENTS.md
 .wrangler/
 scratch/
 tmp_truyenviet/
+wrangler.toml
