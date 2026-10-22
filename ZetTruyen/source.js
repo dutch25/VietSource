@@ -470,7 +470,7 @@ const isLastPage = ($, currentPage) => {
 };
 exports.isLastPage = isLastPage;
 exports.ZetTruyenInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'ZetTruyen',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -593,26 +593,65 @@ class ZetTruyen {
     }
     async getHomePageSections(sectionCallback) {
         const sections = [
-            App.createHomeSection({ id: 'new_updated', title: 'Truyện Mới Cập Nhật', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
-            App.createHomeSection({ id: 'hot', title: 'Truyện Hot', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'featured', title: 'Truyện Đề Cử', containsMoreItems: false, type: types_1.HomeSectionType.featured }),
+            App.createHomeSection({ id: 'trending', title: 'Đang Thịnh Hành', containsMoreItems: false, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'new_updated', title: 'Mới Cập Nhật', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'popular', title: 'Truyện Phổ Biến', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'manhwa', title: 'Manhwa Tuyển Chọn', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'chuyen_sinh', title: 'Chuyển Sinh - Xuyên Không', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'action', title: 'Hành Động - Kịch Tính', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'romance', title: 'Ngôn Tình - Lãng Mạn', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
         ];
-        const domain = await this.getBaseUrl();
         for (const section of sections) {
             sectionCallback(section);
-            let url;
-            switch (section.id) {
-                case 'new_updated':
-                    url = `${domain}`;
-                    break;
-                case 'hot':
-                    url = `${domain}/the-loai?status=2&sort=9`;
-                    break;
-                default:
-                    throw new Error('Invalid homepage section ID');
+        }
+        const domain = await this.getBaseUrl();
+        try {
+            // 1. Fetch homepage once for featured, trending, new_updated, popular
+            const $home = await this.DOMHTML(domain);
+            const featuredSec = sections.find(s => s.id === 'featured');
+            if (featuredSec) {
+                featuredSec.items = this.parser.parseFeaturedSection($home, domain);
+                sectionCallback(featuredSec);
             }
-            const $ = await this.DOMHTML(url);
-            section.items = this.parser.parseMangaList($, domain);
-            sectionCallback(section);
+            const trendingSec = sections.find(s => s.id === 'trending');
+            if (trendingSec) {
+                trendingSec.items = this.parser.parseSectionByHeading($home, 'THỊNH HÀNH', domain);
+                sectionCallback(trendingSec);
+            }
+            const newUpdatedSec = sections.find(s => s.id === 'new_updated');
+            if (newUpdatedSec) {
+                newUpdatedSec.items = this.parser.parseSectionByHeading($home, 'MỚI CẬP NHẬT', domain);
+                sectionCallback(newUpdatedSec);
+            }
+            const popularSec = sections.find(s => s.id === 'popular');
+            if (popularSec) {
+                popularSec.items = this.parser.parseSectionByHeading($home, 'PHỔ BIẾN', domain);
+                sectionCallback(popularSec);
+            }
+        }
+        catch (e) {
+            console.error('Error fetching ZetTruyen homepage:', e);
+        }
+        // 2. Fetch category sections
+        const categoryMap = {
+            'manhwa': `${domain}/the-loai/manhwa`,
+            'chuyen_sinh': `${domain}/the-loai/chuyen-sinh`,
+            'action': `${domain}/the-loai/action`,
+            'romance': `${domain}/the-loai/ngon-tinh`,
+        };
+        for (const [id, url] of Object.entries(categoryMap)) {
+            const sec = sections.find(s => s.id === id);
+            if (sec) {
+                try {
+                    const $cat = await this.DOMHTML(url);
+                    sec.items = this.parser.parseMangaList($cat, domain);
+                    sectionCallback(sec);
+                }
+                catch (e) {
+                    console.error(`Error loading section ${id}:`, e);
+                }
+            }
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
@@ -621,10 +660,20 @@ class ZetTruyen {
         let url = '';
         switch (homepageSectionId) {
             case 'new_updated':
+            case 'popular':
                 url = `${domain}/tim-kiem-nang-cao?page=${page}`;
                 break;
-            case 'hot':
-                url = `${domain}/the-loai?status=2&sort=9&page=${page}`;
+            case 'manhwa':
+                url = `${domain}/the-loai/manhwa?page=${page}`;
+                break;
+            case 'chuyen_sinh':
+                url = `${domain}/the-loai/chuyen-sinh?page=${page}`;
+                break;
+            case 'action':
+                url = `${domain}/the-loai/action?page=${page}`;
+                break;
+            case 'romance':
+                url = `${domain}/the-loai/ngon-tinh?page=${page}`;
                 break;
             default:
                 throw new Error('Requested to getViewMoreItems for a section ID which doesn\'t exist');
@@ -650,10 +699,10 @@ exports.ZetTruyen = ZetTruyen;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
 class Parser {
-    parseMangaList($, baseUrl) {
+    extractMangaFromElements(elements, $, baseUrl) {
         const results = [];
         const seen = new Set();
-        $('a[href*="/truyen-tranh/"]').each((_, el) => {
+        elements.each((_, el) => {
             const href = $(el).attr('href') || '';
             if (href.includes('/chuong-') || href.includes('/chapter-'))
                 return;
@@ -672,9 +721,8 @@ class Parser {
             if (image.startsWith('/')) {
                 image = `${baseUrl.replace(/\/+$/, '')}${image}`;
             }
-            let title = $(el).find('span.line-clamp-2').text().trim()
+            let title = $(el).find('span.line-clamp-2, h3, .text-xl, .line-clamp-1').text().trim()
                 || img.attr('title')
-                || $(el).find('a.text-xl, .text-xl').text().trim()
                 || img.attr('alt')
                 || '';
             title = title.replace(/\s+/g, ' ').trim();
@@ -689,6 +737,43 @@ class Parser {
         });
         return results;
     }
+    parseMangaList($, baseUrl) {
+        return this.extractMangaFromElements($('a[href*="/truyen-tranh/"]'), $, baseUrl);
+    }
+    parseFeaturedSection($, baseUrl) {
+        const results = [];
+        const seen = new Set();
+        $('a.text-xl').each((_, el) => {
+            const title = $(el).text().trim().replace(/\s+/g, ' ');
+            const href = $(el).attr('href') || '';
+            const match = href.match(/\/truyen-tranh\/([^/?#]+)$/);
+            if (!match)
+                return;
+            const mangaId = match[1];
+            if (seen.has(mangaId))
+                return;
+            const container = $(el).closest('div.grid, div.relative');
+            const img = container.find('img[src*="zetimage.com"], img[data-src*="zetimage.com"]').first();
+            let image = img.attr('src') || img.attr('data-src') || `https://cdn1.zetimage.com/thumb/${mangaId}.jpg`;
+            if (image.startsWith('/')) {
+                image = `${baseUrl.replace(/\/+$/, '')}${image}`;
+            }
+            seen.add(mangaId);
+            results.push(App.createPartialSourceManga({
+                mangaId,
+                title,
+                image,
+            }));
+        });
+        return results;
+    }
+    parseSectionByHeading($, headingKeyword, baseUrl) {
+        const h2 = $('h2').filter((_, el) => $(el).text().toUpperCase().includes(headingKeyword.toUpperCase())).first();
+        if (h2.length === 0)
+            return [];
+        const container = h2.closest('.bg-card-section-color').parent();
+        return this.extractMangaFromElements(container.find('a[href*="/truyen-tranh/"]'), $, baseUrl);
+    }
     parseMangaDetails($, mangaId) {
         const title = $('h1').first().text().trim()
             || $('meta[property="og:title"]').attr('content')?.trim()
@@ -699,13 +784,25 @@ class Parser {
         const desc = $('meta[property="og:description"]').attr('content')?.trim()
             || $('.description, .summary').text().trim()
             || '';
+        // Extract strictly from the current manga's genre container and deduplicate by tag ID
         const tags = [];
-        $('a[href*="/the-loai/"]').each((_, el) => {
+        const seenTagIds = new Set();
+        const genreContainer = $('.space-y-1, .space-y-2')
+            .filter((_, el) => $(el).text().includes('Thể loại'))
+            .first();
+        const tagElements = genreContainer.length > 0
+            ? genreContainer.find('a[href*="/the-loai/"]')
+            : $('a[href*="/the-loai/"]').slice(0, 10);
+        tagElements.each((_, el) => {
             const label = $(el).text().trim();
             const href = $(el).attr('href') || '';
             const match = href.match(/\/the-loai\/([^/?#]+)/);
             if (label && match) {
-                tags.push(App.createTag({ id: match[1], label }));
+                const id = match[1];
+                if (!seenTagIds.has(id)) {
+                    seenTagIds.add(id);
+                    tags.push(App.createTag({ id, label }));
+                }
             }
         });
         const tagSections = [];
