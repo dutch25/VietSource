@@ -196,7 +196,7 @@ dutch-extension/
 **Website**: https://www.zettruyen4.com
 
 ### SourceInfo
-- **Version**: 1.0.0
+- **Version**: 1.0.1
 - **Author**: Dutch25
 - **Content Rating**: EVERYONE
 - **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI | CLOUDFLARE_BYPASS_REQUIRED

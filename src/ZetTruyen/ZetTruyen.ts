@@ -36,7 +36,7 @@ export const isLastPage = ($: CheerioAPI, currentPage: number): boolean => {
 };
 
 export const ZetTruyenInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'ZetTruyen',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -174,29 +174,72 @@ export class ZetTruyen implements SearchResultsProviding, MangaProviding, Chapte
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const sections: HomeSection[] = [
-            App.createHomeSection({ id: 'new_updated', title: 'Truyện Mới Cập Nhật', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
-            App.createHomeSection({ id: 'hot', title: 'Truyện Hot', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'featured', title: 'Truyện Đề Cử', containsMoreItems: false, type: HomeSectionType.featured }),
+            App.createHomeSection({ id: 'trending', title: 'Đang Thịnh Hành', containsMoreItems: false, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'new_updated', title: 'Mới Cập Nhật', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'popular', title: 'Truyện Phổ Biến', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'manhwa', title: 'Manhwa Tuyển Chọn', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'chuyen_sinh', title: 'Chuyển Sinh - Xuyên Không', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'action', title: 'Hành Động - Kịch Tính', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'romance', title: 'Ngôn Tình - Lãng Mạn', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
         ];
-
-        const domain = await this.getBaseUrl();
 
         for (const section of sections) {
             sectionCallback(section);
-            let url: string;
-            switch (section.id) {
-                case 'new_updated':
-                    url = `${domain}`;
-                    break;
-                case 'hot':
-                    url = `${domain}/the-loai?status=2&sort=9`;
-                    break;
-                default:
-                    throw new Error('Invalid homepage section ID');
+        }
+
+        const domain = await this.getBaseUrl();
+
+        try {
+            // 1. Fetch homepage once for featured, trending, new_updated, popular
+            const $home = await this.DOMHTML(domain);
+
+            const featuredSec = sections.find(s => s.id === 'featured');
+            if (featuredSec) {
+                featuredSec.items = this.parser.parseFeaturedSection($home, domain);
+                sectionCallback(featuredSec);
             }
 
-            const $ = await this.DOMHTML(url);
-            section.items = this.parser.parseMangaList($, domain);
-            sectionCallback(section);
+            const trendingSec = sections.find(s => s.id === 'trending');
+            if (trendingSec) {
+                trendingSec.items = this.parser.parseSectionByHeading($home, 'THỊNH HÀNH', domain);
+                sectionCallback(trendingSec);
+            }
+
+            const newUpdatedSec = sections.find(s => s.id === 'new_updated');
+            if (newUpdatedSec) {
+                newUpdatedSec.items = this.parser.parseSectionByHeading($home, 'MỚI CẬP NHẬT', domain);
+                sectionCallback(newUpdatedSec);
+            }
+
+            const popularSec = sections.find(s => s.id === 'popular');
+            if (popularSec) {
+                popularSec.items = this.parser.parseSectionByHeading($home, 'PHỔ BIẾN', domain);
+                sectionCallback(popularSec);
+            }
+        } catch (e) {
+            console.error('Error fetching ZetTruyen homepage:', e);
+        }
+
+        // 2. Fetch category sections
+        const categoryMap: { [id: string]: string } = {
+            'manhwa': `${domain}/the-loai/manhwa`,
+            'chuyen_sinh': `${domain}/the-loai/chuyen-sinh`,
+            'action': `${domain}/the-loai/action`,
+            'romance': `${domain}/the-loai/ngon-tinh`,
+        };
+
+        for (const [id, url] of Object.entries(categoryMap)) {
+            const sec = sections.find(s => s.id === id);
+            if (sec) {
+                try {
+                    const $cat = await this.DOMHTML(url);
+                    sec.items = this.parser.parseMangaList($cat, domain);
+                    sectionCallback(sec);
+                } catch (e) {
+                    console.error(`Error loading section ${id}:`, e);
+                }
+            }
         }
     }
 
@@ -207,10 +250,20 @@ export class ZetTruyen implements SearchResultsProviding, MangaProviding, Chapte
 
         switch (homepageSectionId) {
             case 'new_updated':
+            case 'popular':
                 url = `${domain}/tim-kiem-nang-cao?page=${page}`;
                 break;
-            case 'hot':
-                url = `${domain}/the-loai?status=2&sort=9&page=${page}`;
+            case 'manhwa':
+                url = `${domain}/the-loai/manhwa?page=${page}`;
+                break;
+            case 'chuyen_sinh':
+                url = `${domain}/the-loai/chuyen-sinh?page=${page}`;
+                break;
+            case 'action':
+                url = `${domain}/the-loai/action?page=${page}`;
+                break;
+            case 'romance':
+                url = `${domain}/the-loai/ngon-tinh?page=${page}`;
                 break;
             default:
                 throw new Error('Requested to getViewMoreItems for a section ID which doesn\'t exist');

@@ -6,15 +6,15 @@ import {
     TagSection,
 } from '@paperback/types';
 
-import type { CheerioAPI } from 'cheerio';
+import type { Cheerio, CheerioAPI } from 'cheerio';
 
 export class Parser {
 
-    parseMangaList($: CheerioAPI, baseUrl: string): PartialSourceManga[] {
+    private extractMangaFromElements(elements: Cheerio<any>, $: CheerioAPI, baseUrl: string): PartialSourceManga[] {
         const results: PartialSourceManga[] = [];
         const seen = new Set<string>();
 
-        $('a[href*="/truyen-tranh/"]').each((_, el) => {
+        elements.each((_, el) => {
             const href = $(el).attr('href') || '';
             if (href.includes('/chuong-') || href.includes('/chapter-')) return;
             const match = href.match(/\/truyen-tranh\/([^/?#]+)$/);
@@ -31,9 +31,8 @@ export class Parser {
                 image = `${baseUrl.replace(/\/+$/, '')}${image}`;
             }
 
-            let title = $(el).find('span.line-clamp-2').text().trim()
+            let title = $(el).find('span.line-clamp-2, h3, .text-xl, .line-clamp-1').text().trim()
                 || img.attr('title')
-                || $(el).find('a.text-xl, .text-xl').text().trim()
                 || img.attr('alt')
                 || '';
 
@@ -51,6 +50,47 @@ export class Parser {
         return results;
     }
 
+    parseMangaList($: CheerioAPI, baseUrl: string): PartialSourceManga[] {
+        return this.extractMangaFromElements($('a[href*="/truyen-tranh/"]'), $, baseUrl);
+    }
+
+    parseFeaturedSection($: CheerioAPI, baseUrl: string): PartialSourceManga[] {
+        const results: PartialSourceManga[] = [];
+        const seen = new Set<string>();
+
+        $('a.text-xl').each((_, el) => {
+            const title = $(el).text().trim().replace(/\s+/g, ' ');
+            const href = $(el).attr('href') || '';
+            const match = href.match(/\/truyen-tranh\/([^/?#]+)$/);
+            if (!match) return;
+            const mangaId = match[1];
+            if (seen.has(mangaId)) return;
+
+            const container = $(el).closest('div.grid, div.relative');
+            const img = container.find('img[src*="zetimage.com"], img[data-src*="zetimage.com"]').first();
+            let image = img.attr('src') || img.attr('data-src') || `https://cdn1.zetimage.com/thumb/${mangaId}.jpg`;
+            if (image.startsWith('/')) {
+                image = `${baseUrl.replace(/\/+$/, '')}${image}`;
+            }
+
+            seen.add(mangaId);
+            results.push(App.createPartialSourceManga({
+                mangaId,
+                title,
+                image,
+            }));
+        });
+
+        return results;
+    }
+
+    parseSectionByHeading($: CheerioAPI, headingKeyword: string, baseUrl: string): PartialSourceManga[] {
+        const h2 = $('h2').filter((_, el) => $(el).text().toUpperCase().includes(headingKeyword.toUpperCase())).first();
+        if (h2.length === 0) return [];
+        const container = h2.closest('.bg-card-section-color').parent();
+        return this.extractMangaFromElements(container.find('a[href*="/truyen-tranh/"]'), $, baseUrl);
+    }
+
     parseMangaDetails($: CheerioAPI, mangaId: string): SourceManga {
         const title = $('h1').first().text().trim()
             || $('meta[property="og:title"]').attr('content')?.trim()
@@ -64,13 +104,28 @@ export class Parser {
             || $('.description, .summary').text().trim()
             || '';
 
+        // Extract strictly from the current manga's genre container and deduplicate by tag ID
         const tags: Tag[] = [];
-        $('a[href*="/the-loai/"]').each((_, el) => {
+        const seenTagIds = new Set<string>();
+
+        const genreContainer = $('.space-y-1, .space-y-2')
+            .filter((_, el) => $(el).text().includes('Thể loại'))
+            .first();
+
+        const tagElements = genreContainer.length > 0
+            ? genreContainer.find('a[href*="/the-loai/"]')
+            : $('a[href*="/the-loai/"]').slice(0, 10);
+
+        tagElements.each((_, el) => {
             const label = $(el).text().trim();
             const href = $(el).attr('href') || '';
             const match = href.match(/\/the-loai\/([^/?#]+)/);
             if (label && match) {
-                tags.push(App.createTag({ id: match[1], label }));
+                const id = match[1];
+                if (!seenTagIds.has(id)) {
+                    seenTagIds.add(id);
+                    tags.push(App.createTag({ id, label }));
+                }
             }
         });
 
