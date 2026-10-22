@@ -533,8 +533,64 @@ const DRAGON_BALL_CHAPTERS = [
     { id: '2021_04_dragon-ball-hoi-mabu-tap-7', num: 40, name: 'Dragon Ball hồi Mabu - Tập 7 (Preview)' },
     { id: '2021_04_dragon-ball-hoi-mabu-tap-cuoi', num: 41, name: 'Dragon Ball hồi Mabu - Tập cuối' }
 ];
+const DONALD_CHAPTERS = [
+    { id: '2018_05_donald-va-ban-huu-tap-1-chuyen-du-hanh', num: 1, name: 'DONALD VÀ BẠN HỮU TẬP 1 - CHUYẾN DU HÀNH VƯỢT THỜI GIAN' },
+    { id: '2018_05_donald-va-ban-huu-tap-2-lam-vua-trong', num: 2, name: 'DONALD VÀ BẠN HỮU TẬP 2 - LÀM VUA TRONG NGÀY SINH NHẬT' },
+    { id: '2018_05_donald-va-ban-huu-tap-3-thay-oi-donald', num: 3, name: 'DONALD VÀ BẠN HỮU TẬP 3 - THẦY ĐỘI DONALD' },
+    { id: '2018_06_donald-va-ban-huu-tap-4-cai-ruong-ky-la', num: 4, name: 'DONALD VÀ BẠN HỮU TẬP 4 - CÁI RƯƠNG KỲ LẠ' },
+    { id: '2018_08_ddonald-va-ban-huu-tap-5-toa-thanh-co', num: 5, name: 'DONALD VÀ BẠN HỮU TẬP 5 : TÒA THÀNH CỔ BẰNG MUỐI' },
+    { id: '2018_11_donald-va-ban-huu-tap-6-bong-chay-hap', num: 6, name: 'DONALD VÀ BẠN HỮU TẬP 6: BÓNG CHÀY HẤP DẪN HƠN THI CA' },
+    { id: '2018_09_donald-va-ban-huu-tap-7-nguoi-mang-uoc', num: 7, name: 'DONALD VÀ BẠN HỮU TẬP 7 : NGƯỜI MANG ĐUỐC THẾ VẬN HỘI' },
+    { id: '2018_11_donald-va-ban-huu-tap-8-bi-mat-chiec-tu', num: 8, name: 'DONALD VÀ BẠN HỮU TẬP 8 : BÍ MẬT CHIẾC TỦ SẮT KHÔNG AN TOÀN' },
+    { id: '2018_11_donald-va-ban-huu-tap-9-mon-qua-giang', num: 9, name: 'DONALD VÀ BẠN HỮU TẬP 9 - MÓN QUÀ GIÁNG SINH TỪ BẮC CỰC' },
+    { id: '2018_12_donald-va-ban-huu-tap-10-dau-hieu-bo-cap', num: 10, name: 'DONALD VÀ BẠN HỮU TẬP 10 - DẤU HIỆU BÒ CẠP' },
+    { id: '2019_01_donald-va-ban-huu-tap-11-bich-ho-du', num: 11, name: 'DONALD VÀ BẠN HỮU TẬP 11 - BÍCH HỔ DU TƯỜNG' },
+    { id: '2019_01_donald-va-ban-huu-tap-12-mao-hiem-i-tim', num: 12, name: 'DONALD VÀ BẠN HỮU TẬP 12 - MẠO HIỂM ĐI TÌM HỔ PHÁCH' },
+    { id: '2019_02_donald-va-ban-huu-tap-13-donald-hoa', num: 13, name: 'DONALD VÀ BẠN HỮU TẬP 13 - DONALD HÓA THÀNH KHỈ ĐỘT' },
+    { id: '2019_06_donald-va-ban-huu-tap-14-khi-uc-vua-vi', num: 14, name: 'DONALD VÀ BẠN HỮU TẬP 14 - KHI ĐỨC VUA VI HÀNH' },
+    { id: '2019_07_donald-va-ban-huu-tap-15-phan-thuong', num: 15, name: 'DONALD VÀ BẠN HỮU TẬP 15 - PHẦN THƯỞNG CHO VỊ CỨU TINH' },
+    { id: '2019_08_donald-va-ban-huu-tap-16-dich-vu-chuyen', num: 16, name: 'DONALD VÀ BẠN HỮU TẬP 16 - DỊCH VỤ CHUYỂN PHÁT NHANH' },
+    { id: '2019_09_ddonald-va-ban-huu-tap-17-cuoc-thi', num: 17, name: 'DONALD VÀ BẠN HỮU TẬP 17 - CUỘC THI KHIÊU VŨ HUYỀN THOẠI' },
+    { id: '2019_12_donald-va-ban-huu-tap-18-mua-thu-hoach', num: 18, name: 'DONALD VÀ BẠN HỮU TẬP 18 - MÙA THU HOẠCH ĐƯỜNG' },
+    { id: '2020_04_donald-va-ban-huu-tap-19-kho-bau-tren', num: 19, name: 'DONALD VÀ BẠN HỮU TẬP 19 - KHO BÁU TRÊN ĐẤT QUỈ' },
+    { id: '2019_03_donald-va-ban-huu-tap-21-ba-chu-yeu', num: 20, name: 'DONALD VÀ BẠN HỮU TẬP 21 - BA CHÚ YÊU TINH TRONG DỊP LỄ PHỤC SINH' },
+    { id: '2021_11_donald-va-ban-huu-tap-26-oi-bao-ve-bach', num: 21, name: 'Donald và bạn hữu Tập 26 - Đội bảo vệ bạch tuột' },
+    { id: '2019_04_donald-va-ban-huu-tap-27-ap-xuong-mat', num: 22, name: 'DONALD VÀ BẠN HỮU TẬP 27 - ĐÁP XUỐNG MẶT TRĂNG' },
+    { id: '2019_04_donald-va-ban-huu-tap-28-ac-mong-tren', num: 23, name: 'DONALD VÀ BẠN HỮU TẬP 28 - ÁC MỘNG TRÊN PHỐ DUCK' },
+    { id: '2019_05_donald-va-ban-huu-tap-30-thoi-mong-mo', num: 24, name: 'DONALD VÀ BẠN HỮU TẬP 30 - THỜI MỘNG MƠ' },
+    { id: '2019_06_donald-va-ban-huu-tap-31-hiep-si-thoi', num: 25, name: 'DONALD VÀ BẠN HỮU TẬP 31 - HIỆP SĨ THỜI HIỆN ĐẠI' },
+    { id: '2020_05_donald-va-ban-huu-tap-32-vit-uop-lanh', num: 26, name: 'DONALD VÀ BẠN HỮU TẬP 32 - VỊT ƯỚP LẠNH' },
+    { id: '2021_10_donald-va-ban-huu-tap-34-co-gai-lao-ong', num: 27, name: 'Donald và bạn hữu Tập 34 - Cô gái lao động giỏi' },
+    { id: '2020_07_donald-va-ban-huu-tap-36-anh-hung-khong', num: 28, name: 'DONALD VÀ BẠN HỮU TẬP 36 - ANH HÙNG KHÔNG CHIẾN' },
+    { id: '2020_08_donald-va-ban-huu-tap-38-cot-totem-biet', num: 29, name: 'DONALD VÀ BẠN HỮU TẬP 38 - CỘT TOTEM BIẾT NÓI' },
+    { id: '2021_07_donald-va-ban-huu-tap-39-trung-so-oc-ac', num: 30, name: 'Donald và bạn hữu Tập 39 - Trúng số độc đắc' },
+    { id: '2021_12_donald-va-ban-huu-tap-47-chien-au-voi', num: 31, name: 'Donald và bạn hữu Tập 47 - Chiến đấu với quái vật vũ trụ' },
+    { id: '2022_03_donald-va-ban-huu-tap-52-kho-khan', num: 32, name: 'Donald và bạn hữu Tập 52 -  Khó khăn nghiêm trọng' },
+    { id: '2022_05_donald-va-ban-huu-tap-56-nhung-chu-vi', num: 33, name: 'Donald và bạn hữu Tập 57 - Những chú vịt tự do' },
+    { id: '2022_08_donald-va-ban-huu-tap-62-hiep-si-goofus', num: 34, name: 'Donald và bạn hữu Tập 62 - Hiệp sĩ Goofus' },
+    { id: '2022_10_donald-va-ban-huu-tap-66-vien-ao-tao', num: 35, name: 'Donald và bạn hữu Tập 66 - Viện đào tạo nhà thám hiểm' },
+    { id: '2023_01_donald-va-ban-huu-tap-70-gia-tai-trong', num: 36, name: 'Donald và bạn hữu Tập 70 - Gia tài trong rừng thẳm' },
+    { id: '2023_05_donald-va-ban-huu-tap-73-cau-be-quy-toc', num: 37, name: 'Donald và bạn hữu - Tập 73 - Cậu bé quý tộc' },
+    { id: '2023_08_donald-va-ban-huu-tap-76-ho-hai-tac', num: 38, name: 'Donald và bạn hữu Tập 76 - Hồ hải tặc' },
+    { id: '2023_12_donald-va-ban-huu-tap-77-bao-cat-sa-mac', num: 39, name: 'Donald và bạn hữu Tập 77 - Bão cát sa mạc' },
+    { id: '2024_05_donald-va-ban-huu-tap-78-en-mien-at', num: 40, name: 'Donald và bạn hữu Tập 78 - Đến miền đất Trala La' },
+    { id: '2024_06_donald-va-ban-huu-tap-82-ke-cuop-thoi', num: 41, name: 'Donald và bạn hữu Tập 82 - Kẻ cướp thời gian' },
+    { id: '2024_08_donald-va-ban-huu-tap-87-con-ma-trong', num: 42, name: 'Donald và bạn hữu Tập 87 - Con ma nhà thờ Vịt' },
+    { id: '2024_10_donald-va-ban-huu-tap-88-giay-thong', num: 43, name: 'Donald và bạn hữu Tập 88 - Giấy thông hành lên thiên đường' },
+    { id: '2024_11_donald-va-ban-huu-tap-92-san-nghiep', num: 44, name: 'Donald và bạn hữu Tập 92 - Sản nghiệp suýt tiêu tan' },
+    { id: '2025_01_donald-va-ban-huu-tap-96-heo-e-ra-tien', num: 45, name: 'Donald và bạn hữu Tập 96 - Heo đẻ ra tiền' },
+    { id: '2025_03_donald-va-ban-huu-tap-99-nhung-chang', num: 46, name: 'Donald và bạn hữu Tập 99 - Những chàng cao bồi' },
+    { id: '2025_07_donald-va-ban-huu-tap-100-bay-len-sao', num: 47, name: 'Donald và bạn hữu tập 100 - Bay lên sao Chổi' },
+    { id: '2025_10_donald-va-ban-huu-tap-101-vu-mat-tich', num: 48, name: 'Donald và bạn hữu tập 101 - Vụ mất tích ông già Nô-en' },
+    { id: '2025_11_donald-va-ban-huu-tap-105-gian-iep-tu', num: 49, name: 'Donald và bạn hữu tập 105 - Gián điệp từ Gooseville' },
+    { id: '2025_09_donald-va-ban-huu-tap-108-quyen-sach', num: 50, name: 'Donald và bạn hữu tập 108 - Quyển sách phù thủy' },
+    { id: '2026_02_donald-va-ban-huu-tap-110-ma-bob-tai', num: 51, name: 'Donald và bạn hữu Tập 110 - Ma Bob tái xuất giang hồ' },
+    { id: '2026_06_donald-va-ban-huu-tap-112-hoi-nghi-cac', num: 52, name: 'Donald và bạn hữu Tập 112 - Hội nghị các nhà phát minh' },
+    { id: '2026_09_donald-va-ban-huu-tap-115-donald-bao-ve', num: 53, name: 'Donald và bạn hữu Tập 115 - Donald bảo vệ luật pháp' },
+    { id: '2020_12_mickey-en-tam-giac-quy-bermuda-truyen', num: 54, name: 'Mickey đến Tam giác quỷ Bermuda (Truyện dài)' }
+];
 exports.TruyenTranhPhapBiInfo = {
-    version: '1.1.1',
+    version: '1.1.2',
     name: 'TruyenTranhPhapBi',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -579,6 +635,19 @@ class TruyenTranhPhapBi extends types_1.Source {
     }
     async getHomePageSections(sectionCallback) {
         sectionCallback(App.createHomeSection({
+            id: 'Donald',
+            title: 'Donald và Bạn Hữu',
+            containsMoreItems: false,
+            type: types_1.HomeSectionType.singleRowNormal,
+            items: [
+                App.createPartialSourceManga({
+                    mangaId: 'donald-aggregated',
+                    title: 'Donald và bạn hữu (Trọn Bộ 54 Tập)',
+                    image: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiIpelJFplGqWreq2DnZ5D2j9AKCfdNBFsxhoUA4HT_Je3GKdMLMBtBdxAZWcnRel1HfLBIISm5wZvevEsoCQgunkYnD9jInTpZGa-riMm33LnaGZrVsI1hls-6vnM3wd49XtMn6fedaeM/s400/Vol-1-001.jpg'
+                })
+            ]
+        }));
+        sectionCallback(App.createHomeSection({
             id: 'Dragon Ball',
             title: 'Dragon Ball',
             containsMoreItems: false,
@@ -617,8 +686,11 @@ class TruyenTranhPhapBi extends types_1.Source {
                 const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 0);
                 const $ = this.cheerio.load(response.data);
                 let items = this.parser.parseHomePage($);
-                // Filter out individual Dragon Ball posts
-                items = items.filter(item => !item.title.toLowerCase().includes('dragon ball'));
+                // Filter out individual Dragon Ball and Donald posts
+                items = items.filter(item => {
+                    const t = item.title.toLowerCase();
+                    return !t.includes('dragon ball') && !t.includes('donald') && !t.includes('mickey đến tam giác');
+                });
                 sectionCallback(App.createHomeSection({
                     id: section.id,
                     title: section.title,
@@ -642,7 +714,17 @@ class TruyenTranhPhapBi extends types_1.Source {
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         let items = this.parser.parseHomePage($);
-        items = items.filter(item => !item.title.toLowerCase().includes('dragon ball'));
+        items = items.filter(item => {
+            const t = item.title.toLowerCase();
+            return !t.includes('dragon ball') && !t.includes('donald') && !t.includes('mickey đến tam giác');
+        });
+        if (query.title && query.title.toLowerCase().includes('donald')) {
+            items.unshift(App.createPartialSourceManga({
+                mangaId: 'donald-aggregated',
+                title: 'Donald và bạn hữu (Trọn Bộ 54 Tập)',
+                image: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiIpelJFplGqWreq2DnZ5D2j9AKCfdNBFsxhoUA4HT_Je3GKdMLMBtBdxAZWcnRel1HfLBIISm5wZvevEsoCQgunkYnD9jInTpZGa-riMm33LnaGZrVsI1hls-6vnM3wd49XtMn6fedaeM/s400/Vol-1-001.jpg'
+            }));
+        }
         if (query.title && query.title.toLowerCase().includes('dragon ball')) {
             items.unshift(App.createPartialSourceManga({
                 mangaId: 'dragon-ball-aggregated',
@@ -658,6 +740,17 @@ class TruyenTranhPhapBi extends types_1.Source {
         return App.createPagedResults({ results: items, metadata: undefined });
     }
     async getMangaDetails(mangaId) {
+        if (mangaId === 'donald-aggregated') {
+            return App.createSourceManga({
+                id: mangaId,
+                mangaInfo: App.createMangaInfo({
+                    titles: ['Donald và bạn hữu (Trọn Bộ 54 Tập)'],
+                    image: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiIpelJFplGqWreq2DnZ5D2j9AKCfdNBFsxhoUA4HT_Je3GKdMLMBtBdxAZWcnRel1HfLBIISm5wZvevEsoCQgunkYnD9jInTpZGa-riMm33LnaGZrVsI1hls-6vnM3wd49XtMn6fedaeM/s400/Vol-1-001.jpg',
+                    status: 'COMPLETED',
+                    desc: 'Tuyển tập trọn bộ 54 tập truyện màu sắc nét Donald và bạn hữu cùng chú chuột Mickey, 100% bản đầy đủ không có chapter preview.',
+                })
+            });
+        }
         if (mangaId === 'dragon-ball-super-aggregated') {
             return App.createSourceManga({
                 id: mangaId,
@@ -687,6 +780,14 @@ class TruyenTranhPhapBi extends types_1.Source {
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
+        if (mangaId === 'donald-aggregated') {
+            return DONALD_CHAPTERS.map(ch => App.createChapter({
+                id: ch.id,
+                name: ch.name,
+                chapNum: ch.num,
+                langCode: 'vi'
+            }));
+        }
         if (mangaId === 'dragon-ball-super-aggregated') {
             return DRAGON_BALL_SUPER_CHAPTERS.map(ch => App.createChapter({
                 id: ch.id,
@@ -721,6 +822,12 @@ class TruyenTranhPhapBi extends types_1.Source {
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     getMangaShareUrl(mangaId) {
+        if (mangaId === 'donald-aggregated')
+            return `${BASE_URL}/search/label/Donald`;
+        if (mangaId === 'dragon-ball-super-aggregated')
+            return `${BASE_URL}/search/label/Dragon%20Ball%20Super`;
+        if (mangaId === 'dragon-ball-aggregated')
+            return `${BASE_URL}/search/label/Dragon%20Ball`;
         const realId = mangaId.replace(/_/g, '/');
         return `${BASE_URL}/${realId}.html`;
     }

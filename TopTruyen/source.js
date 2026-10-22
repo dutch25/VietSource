@@ -463,7 +463,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TopTruyen = exports.TopTruyenInfo = exports.isLastPage = void 0;
 const types_1 = require("@paperback/types");
 const TopTruyenParser_1 = require("./TopTruyenParser");
-const DOMAIN = 'https://www.toptruyenzone12.com/';
+const TopTruyenSetting_1 = require("./TopTruyenSetting");
 const isLastPage = ($) => {
     // try with span else a tag
     let current = $('ul.pagination li.page-item.active span').text();
@@ -481,14 +481,14 @@ const isLastPage = ($) => {
 };
 exports.isLastPage = isLastPage;
 exports.TopTruyenInfo = {
-    version: '1.1.14',
+    version: '1.1.15',
     name: 'TopTruyen',
     icon: 'icon.png',
     author: 'AlanNois',
     authorWebsite: 'https://github.com/AlanNois/',
     description: 'Extension that pulls manga from TopTruyen.',
     contentRating: types_1.ContentRating.EVERYONE,
-    websiteBaseURL: DOMAIN,
+    websiteBaseURL: TopTruyenSetting_1.DEFAULT_BASE_URL,
     sourceTags: [
         {
             text: 'Recommended',
@@ -499,20 +499,23 @@ exports.TopTruyenInfo = {
             type: types_1.BadgeColor.GREEN
         },
     ],
-    intents: types_1.SourceIntents.MANGA_CHAPTERS | types_1.SourceIntents.HOMEPAGE_SECTIONS
+    intents: types_1.SourceIntents.MANGA_CHAPTERS | types_1.SourceIntents.HOMEPAGE_SECTIONS | types_1.SourceIntents.SETTINGS_UI
 };
 class TopTruyen {
     constructor(cheerio) {
         this.cheerio = cheerio;
+        this.stateManager = App.createSourceStateManager();
+        this.currentBaseUrl = TopTruyenSetting_1.DEFAULT_BASE_URL;
         this.requestManager = App.createRequestManager({
             requestsPerSecond: 4,
             requestTimeout: 50000,
             interceptor: {
                 interceptRequest: async (request) => {
+                    const domain = await this.getBaseUrl();
                     request.headers = {
                         ...(request.headers ?? {}),
                         ...{
-                            'referer': DOMAIN,
+                            'referer': domain,
                             'user-agent': await this.requestManager.getDefaultUserAgent(),
                         }
                     };
@@ -525,8 +528,23 @@ class TopTruyen {
         });
         this.parser = new TopTruyenParser_1.Parser();
     }
+    async getBaseUrl() {
+        this.currentBaseUrl = await (0, TopTruyenSetting_1.getDomain)(this.stateManager);
+        return this.currentBaseUrl.replace(/\/+$/, '') + '/';
+    }
+    async getSourceMenu() {
+        return App.createDUISection({
+            id: 'main',
+            header: 'Source Settings',
+            rows: async () => [
+                (0, TopTruyenSetting_1.domainSettings)(this.stateManager),
+                (0, TopTruyenSetting_1.resetSettings)(this.stateManager),
+            ],
+            isHidden: false,
+        });
+    }
     getMangaShareUrl(mangaId) {
-        return `${DOMAIN}truyen-tranh/${mangaId}`;
+        return `${this.currentBaseUrl.replace(/\/+$/, '')}/truyen-tranh/${mangaId}`;
     }
     async DOMHTML(url) {
         const request = App.createRequest({
@@ -537,15 +555,18 @@ class TopTruyen {
         return this.cheerio.load(response.data);
     }
     async getMangaDetails(mangaId) {
-        const $ = await this.DOMHTML(`${DOMAIN}truyen-tranh/${mangaId}`);
+        const domain = await this.getBaseUrl();
+        const $ = await this.DOMHTML(`${domain}truyen-tranh/${mangaId}`);
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
-        const $ = await this.DOMHTML(`${DOMAIN}truyen-tranh/${mangaId}`);
+        const domain = await this.getBaseUrl();
+        const $ = await this.DOMHTML(`${domain}truyen-tranh/${mangaId}`);
         return this.parser.parseChapterList($);
     }
     async getChapterDetails(mangaId, chapterId) {
-        const $ = await this.DOMHTML(`${DOMAIN}truyen-tranh/${chapterId}`);
+        const domain = await this.getBaseUrl();
+        const $ = await this.DOMHTML(`${domain}truyen-tranh/${chapterId}`);
         const pages = this.parser.parseChapterDetails($);
         return App.createChapterDetails({
             id: chapterId,
@@ -553,58 +574,21 @@ class TopTruyen {
             pages: pages,
         });
     }
-    // async supportsTagExclusion(): Promise<boolean> {
-    //     return true;
-    // }
     async getSearchResults(query, metadata) {
         const page = metadata?.page ?? 1;
         const search = {
             genres: '',
-            // exgenres: '',
-            // gender: '-1',
-            // status: '-1',
-            // minchapter: '1',
-            // sort: '0'
         };
-        // const extags = query.excludedTags?.map(tag => tag.id) ?? [];
-        // const exgenres: string[] = [];
-        // for (const value of extags) {
-        //     if (value.indexOf('.') === -1) {
-        //         exgenres.push(value);
-        //     }
-        // }
         const tags = query.includedTags?.map(tag => tag.id) ?? [];
         const genres = [];
         for (const value of tags) {
-            // if (value.indexOf('.') === -1) {
             genres.push(value);
-            // } else {
-            //     const [key, val] = value.split('.');
-            //     switch (key) {
-            //         case 'minchapter':
-            //             search.minchapter = String(val);
-            //             break;
-            //         case 'gender':
-            //             search.gender = String(val);
-            //             break;
-            //         case 'sort':
-            //             search.sort = String(val);
-            //             break;
-            //         case 'status':
-            //             search.status = String(val);
-            //             break;
-            //     }
-            // }
         }
         search.genres = genres.join(',');
-        // search.exgenres = exgenres.join(',');
-        // const paramExgenres = search.exgenres ? `&notgenres=${search.exgenres}` : '';
-        // const url = `${DOMAIN}${query.title ? '/tim-truyen' : '/tim-truyen-nang-cao'}`;
-        // const param = encodeURI(`?keyword=${query.title ?? ''}&genres=${search.genres}${paramExgenres}&gender=${search.gender}&status=${search.status}&minchapter=${search.minchapter}&sort=${search.sort}&page=${page}`);
-        const url = `${DOMAIN}tim-truyen`;
+        const domain = await this.getBaseUrl();
+        const url = `${domain}tim-truyen`;
         const param = encodeURI(`?keyword=${query.title ?? ''}&genres=${search.genres}&page=${page}`);
         const $ = await this.DOMHTML(url + param);
-        // const tiles = this.parser.parseSearchResults($);
         const tiles = this.parser.parseSection($);
         metadata = !(0, exports.isLastPage)($) ? { page: page + 1 } : undefined;
         return App.createPagedResults({
@@ -622,27 +606,28 @@ class TopTruyen {
             App.createHomeSection({ id: 'new_added', title: 'Truyện Mới Thêm Gần Đây', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'full', title: 'Truyện Đã Hoàn Thành', containsMoreItems: true, type: types_1.HomeSectionType.singleRowNormal }),
         ];
+        const domain = await this.getBaseUrl();
         for (const section of sections) {
             sectionCallback(section);
             let url;
             switch (section.id) {
                 case 'featured':
-                    url = `${DOMAIN}`;
+                    url = `${domain}`;
                     break;
                 case 'viewest':
-                    url = `${DOMAIN}tim-truyen?status=2&sort=9`;
+                    url = `${domain}tim-truyen?status=2&sort=9`;
                     break;
                 case 'hot':
-                    url = `${DOMAIN}hot`;
+                    url = `${domain}hot`;
                     break;
                 case 'new_updated':
-                    url = `${DOMAIN}`;
+                    url = `${domain}`;
                     break;
                 case 'new_added':
-                    url = `${DOMAIN}tim-truyen?status=2&sort=1`;
+                    url = `${domain}tim-truyen?status=2&sort=1`;
                     break;
                 case 'full':
-                    url = `${DOMAIN}tim-truyen?status=1&sort=2`;
+                    url = `${domain}tim-truyen?status=1&sort=2`;
                     break;
                 default:
                     throw new Error('Invalid homepage section ID');
@@ -653,23 +638,18 @@ class TopTruyen {
                     section.items = this.parser.parseFeaturedSection($);
                     break;
                 case 'viewest':
-                    // section.items = this.parser.parsePopularSection($);
                     section.items = this.parser.parseSection($);
                     break;
                 case 'hot':
-                    // section.items = this.parser.parseHotSection($);
                     section.items = this.parser.parseSection($);
                     break;
                 case 'new_updated':
-                    // section.items = this.parser.parseNewUpdatedSection($);
                     section.items = this.parser.parseSection($);
                     break;
                 case 'new_added':
-                    // section.items = this.parser.parseNewAddedSection($);
                     section.items = this.parser.parseSection($);
                     break;
                 case 'full':
-                    // section.items = this.parser.parseFullSection($);
                     section.items = this.parser.parseSection($);
                     break;
             }
@@ -680,26 +660,27 @@ class TopTruyen {
         const page = metadata?.page ?? 1;
         let param = '';
         let url = '';
+        const domain = await this.getBaseUrl();
         switch (homepageSectionId) {
             case 'viewest':
                 param = `?status=2&sort=9&page=${page}`;
-                url = `${DOMAIN}tim-truyen`;
+                url = `${domain}tim-truyen`;
                 break;
             case 'hot':
                 param = '';
-                url = `${DOMAIN}hot?page=${page}`;
+                url = `${domain}hot?page=${page}`;
                 break;
             case 'new_updated':
                 param = '';
-                url = `${DOMAIN}?page=${page}`;
+                url = `${domain}?page=${page}`;
                 break;
             case 'new_added':
                 param = `?status=2&sort=1&page=${page}`;
-                url = `${DOMAIN}tim-truyen`;
+                url = `${domain}tim-truyen`;
                 break;
             case 'full':
                 param = `?status=1&sort=2&page=${page}`;
-                url = `${DOMAIN}tim-truyen`;
+                url = `${domain}tim-truyen`;
                 break;
             default:
                 throw new Error('Requested to getViewMoreItems for a section ID which doesn\'t exist');
@@ -719,14 +700,15 @@ class TopTruyen {
         });
     }
     async getSearchTags() {
-        const url = `${DOMAIN}tim-truyen`;
+        const domain = await this.getBaseUrl();
+        const url = `${domain}tim-truyen`;
         const $ = await this.DOMHTML(url);
         return this.parser.parseTags($);
     }
 }
 exports.TopTruyen = TopTruyen;
 
-},{"./TopTruyenParser":63,"@paperback/types":61}],63:[function(require,module,exports){
+},{"./TopTruyenParser":63,"./TopTruyenSetting":64,"@paperback/types":61}],63:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
@@ -925,6 +907,54 @@ class Parser {
     }
 }
 exports.Parser = Parser;
+
+},{}],64:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.resetSettings = exports.domainSettings = exports.getDomain = exports.DEFAULT_BASE_URL = void 0;
+exports.DEFAULT_BASE_URL = 'https://www.toptruyenzone13.com';
+const getDomain = async (stateManager) => {
+    return await stateManager.retrieve('baseUrl') ?? exports.DEFAULT_BASE_URL;
+};
+exports.getDomain = getDomain;
+const domainSettings = (stateManager) => {
+    return App.createDUINavigationButton({
+        id: 'domain_settings',
+        label: 'Cài đặt nguồn',
+        form: App.createDUIForm({
+            sections: async () => [
+                App.createDUISection({
+                    isHidden: false,
+                    id: 'content',
+                    rows: async () => [
+                        App.createDUIInputField({
+                            id: 'baseUrl',
+                            label: 'URL cơ sở (Domain)',
+                            value: App.createDUIBinding({
+                                get: async () => await (0, exports.getDomain)(stateManager),
+                                set: async (value) => {
+                                    const trimmed = value.trim().replace(/\/+$/, '');
+                                    await stateManager.store('baseUrl', trimmed || exports.DEFAULT_BASE_URL);
+                                },
+                            }),
+                        }),
+                    ],
+                }),
+            ],
+        }),
+    });
+};
+exports.domainSettings = domainSettings;
+function resetSettings(stateManager) {
+    return App.createDUIButton({
+        id: 'reset',
+        label: 'Đặt lại mặc định',
+        onTap: async () => {
+            await stateManager.store('baseUrl', exports.DEFAULT_BASE_URL);
+        },
+    });
+}
+exports.resetSettings = resetSettings;
 
 },{}]},{},[62])(62)
 });
