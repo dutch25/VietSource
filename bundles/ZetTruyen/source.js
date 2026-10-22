@@ -470,7 +470,7 @@ const isLastPage = ($, currentPage) => {
 };
 exports.isLastPage = isLastPage;
 exports.ZetTruyenInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'ZetTruyen',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -555,13 +555,35 @@ class ZetTruyen {
     }
     async getChapters(mangaId) {
         const domain = await this.getBaseUrl();
-        const request = App.createRequest({
-            url: `${domain}/api/comics/${mangaId}/chapters`,
+        const firstRequest = App.createRequest({
+            url: `${domain}/api/comics/${mangaId}/chapters?page=1&per_page=100`,
             method: 'GET',
         });
-        const response = await this.requestManager.schedule(request, 1);
-        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
-        return this.parser.parseChapterList(data, mangaId);
+        const firstResponse = await this.requestManager.schedule(firstRequest, 1);
+        const firstData = typeof firstResponse.data === 'string' ? JSON.parse(firstResponse.data) : firstResponse.data;
+        const allRawChapters = [...(firstData?.data?.chapters || [])];
+        const lastPage = firstData?.data?.last_page || 1;
+        if (lastPage > 1) {
+            const pageRequests = [];
+            for (let p = 2; p <= lastPage; p++) {
+                const req = App.createRequest({
+                    url: `${domain}/api/comics/${mangaId}/chapters?page=${p}&per_page=100`,
+                    method: 'GET',
+                });
+                pageRequests.push(this.requestManager.schedule(req, 1).then(res => {
+                    const d = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+                    return d?.data?.chapters || [];
+                }).catch(err => {
+                    console.error(`Error fetching chapters page ${p} for ${mangaId}:`, err);
+                    return [];
+                }));
+            }
+            const remainingResults = await Promise.all(pageRequests);
+            for (const chList of remainingResults) {
+                allRawChapters.push(...chList);
+            }
+        }
+        return this.parser.parseChapterList(allRawChapters, mangaId);
     }
     async getChapterDetails(mangaId, chapterId) {
         const domain = await this.getBaseUrl();
@@ -829,12 +851,16 @@ class Parser {
             }),
         });
     }
-    parseChapterList(jsonData, mangaId) {
+    parseChapterList(data, mangaId) {
         const chapters = [];
-        const list = jsonData?.data?.chapters || [];
+        const seen = new Set();
+        const list = Array.isArray(data) ? data : (data?.data?.chapters || []);
         for (const ch of list) {
             const num = typeof ch.chapter_num === 'number' ? ch.chapter_num : parseFloat(ch.chapter_num) || 0;
             const id = `chuong-${num}`;
+            if (seen.has(id))
+                continue;
+            seen.add(id);
             const name = ch.chapter_name || `Chương ${num}`;
             let time = new Date();
             if (ch.updated_at) {

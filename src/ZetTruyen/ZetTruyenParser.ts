@@ -156,13 +156,17 @@ export class Parser {
         });
     }
 
-    parseChapterList(jsonData: any, mangaId: string): Chapter[] {
+    parseChapterList(data: any, mangaId: string): Chapter[] {
         const chapters: Chapter[] = [];
-        const list = jsonData?.data?.chapters || [];
+        const seen = new Set<string>();
+        const list = Array.isArray(data) ? data : (data?.data?.chapters || []);
 
         for (const ch of list) {
             const num = typeof ch.chapter_num === 'number' ? ch.chapter_num : parseFloat(ch.chapter_num) || 0;
             const id = `chuong-${num}`;
+            if (seen.has(id)) continue;
+            seen.add(id);
+
             const name = ch.chapter_name || `Chương ${num}`;
             let time = new Date();
             if (ch.updated_at) {
