@@ -15,6 +15,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **nhentaiclub.space** - `NHentaiClub`
 - **vinahentai.vip** - `VinaHentai`
 - **mimimoe.moe** - `MiMi`
+- **zettruyen4.com** - `ZetTruyen`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -40,7 +41,8 @@ dutch-extension/
 │   ├── TruyenVN/
 │   ├── NHentaiClub/
 │   ├── VinaHentai/
-│   └── MiMi/
+│   ├── MiMi/
+│   └── ZetTruyen/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -171,17 +173,43 @@ dutch-extension/
 
 # Source: TopTruyen
 
-**Website**: https://www.toptruyenzone2.com
+**Website**: https://www.toptruyenzone13.com
 
 ### SourceInfo
-- **Version**: 1.1.6
+- **Version**: 1.1.15
 - **Author**: AlanNois
-- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | CLOUDFLARE_BYPASS_REQUIRED
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI
 
 ### URL Patterns
-- Homepage: `https://www.toptruyenzone2.com/`
-- Manga: `https://www.toptruyenzone2.com/truyen-tranh/{mangaId}`
-- Chapter: `https://www.toptruyenzone2.com/truyen-tranh/{mangaId}/{chapterId}`
+- Homepage: `https://www.toptruyenzone13.com/`
+- Manga: `https://www.toptruyenzone13.com/truyen-tranh/{mangaId}`
+- Chapter: `https://www.toptruyenzone13.com/truyen-tranh/{mangaId}/{chapterId}`
+- Search: `https://www.toptruyenzone13.com/tim-truyen?keyword={search}&genres={genres}&page={page}`
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> TopTruyen -> Cài đặt nguồn -> URL cơ sở**.
+
+---
+
+# Source: ZetTruyen
+
+**Website**: https://www.zettruyen4.com
+
+### SourceInfo
+- **Version**: 1.0.0
+- **Author**: Dutch25
+- **Content Rating**: EVERYONE
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI | CLOUDFLARE_BYPASS_REQUIRED
+
+### URL Patterns
+- Homepage: `https://www.zettruyen4.com/`
+- Manga: `https://www.zettruyen4.com/truyen-tranh/{mangaId}`
+- Chapters API: `https://www.zettruyen4.com/api/comics/{mangaId}/chapters`
+- Reader: `https://www.zettruyen4.com/truyen-tranh/{mangaId}/chuong-{num}`
+- Search: `https://www.zettruyen4.com/tim-kiem-nang-cao?q={search}&page={page}`
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> ZetTruyen -> Cài đặt nguồn -> URL cơ sở**.
 
 ---
 
@@ -219,6 +247,8 @@ dutch-extension/
 **If working on TruyenQQ:** Update `src/TruyenQQ/TruyenQQ.ts` - `version: 'x.x.x'`
 
 **If working on TopTruyen:** Update `src/TopTruyen/TopTruyen.ts` - `version: 'x.x.x'`
+
+**If working on ZetTruyen:** Update `src/ZetTruyen/ZetTruyen.ts` - `version: 'x.x.x'`
 
 **If working on TruyenTuoiTho:** Update `src/TruyenTuoiTho/TruyenTuoiTho.ts` - `version: 'x.x.x'`
 

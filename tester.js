@@ -13,6 +13,19 @@ global.App = {
     createTag: (opts) => opts,
     createTagSection: (opts) => opts,
     createRequest: (opts) => opts,
+    createSourceStateManager: () => {
+        const store = new Map();
+        return {
+            retrieve: async (key) => store.get(key),
+            store: async (key, val) => store.set(key, val),
+        };
+    },
+    createDUISection: (opts) => opts,
+    createDUINavigationButton: (opts) => opts,
+    createDUIForm: (opts) => opts,
+    createDUIInputField: (opts) => opts,
+    createDUIBinding: (opts) => opts,
+    createDUIButton: (opts) => opts,
     createRequestManager: (opts) => {
         return {
             schedule: async (req, retry) => {
