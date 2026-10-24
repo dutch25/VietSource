@@ -2,15 +2,19 @@ import {
     BadgeColor,
     Chapter,
     ChapterDetails,
+    ChapterProviding,
+    CloudflareBypassRequestProviding,
     ContentRating,
     DUISection,
+    HomePageSectionsProviding,
     HomeSection,
     HomeSectionType,
+    MangaProviding,
     PagedResults,
     Request,
     Response,
     SearchRequest,
-    Source,
+    SearchResultsProviding,
     SourceInfo,
     SourceIntents,
     SourceManga,
@@ -27,7 +31,7 @@ import {
 } from './HentaiVNSetting';
 
 export const HentaiVNInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -52,7 +56,9 @@ export const HentaiVNInfo: SourceInfo = {
         SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
 
-export class HentaiVN extends Source {
+export class HentaiVN implements SearchResultsProviding, MangaProviding, ChapterProviding, HomePageSectionsProviding, CloudflareBypassRequestProviding {
+    constructor(private cheerio: CheerioAPI) { }
+
     stateManager = App.createSourceStateManager();
     parser = new HentaiVNParser();
 
@@ -62,14 +68,13 @@ export class HentaiVN extends Source {
 
     readonly requestManager = App.createRequestManager({
         requestsPerSecond: 3,
-        requestTimeout: 25000,
+        requestTimeout: 30000,
         interceptor: {
             interceptRequest: async (request: Request): Promise<Request> => {
                 const baseUrl = await this.getBaseUrl();
                 request.headers = {
                     ...(request.headers ?? {}),
                     'referer': `${baseUrl}/`,
-                    'origin': baseUrl,
                     'user-agent': await this.requestManager.getDefaultUserAgent(),
                 };
                 return request;
@@ -96,9 +101,9 @@ export class HentaiVN extends Source {
         return `${DEFAULT_BASE_URL}/truyen-hentai/${mangaId}`;
     }
 
-    private CloudFlareError(status: number): void {
+    CloudFlareError(status: number): void {
         if (status === 503 || status === 403) {
-            throw new Error(`CLOUDFLARE BYPASS ERROR:\nVui lòng mở trang chủ nguồn ${HentaiVNInfo.name} trên Paperback và bấm biểu tượng đám mây để vượt kiểm tra.`);
+            throw new Error(`CLOUDFLARE BYPASS ERROR:\nPlease go to home page ${HentaiVNInfo.name} source and press the cloud icon.`);
         }
     }
 
@@ -109,7 +114,6 @@ export class HentaiVN extends Source {
             method: 'GET',
             headers: {
                 'referer': `${baseUrl}/`,
-                'origin': `${baseUrl}/`,
                 'user-agent': await this.requestManager.getDefaultUserAgent(),
             },
         });
@@ -142,29 +146,15 @@ export class HentaiVN extends Source {
         }
 
         for (const item of sections) {
-            try {
-                const $ = await this.DOMHTML(item.url);
-                let manga = this.parser.parseCards($, baseUrl);
-                if (item.id === 'de_cu') {
-                    // Filter or take first 15 slider items
-                    manga = manga.slice(0, 15);
-                }
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: HomeSectionType.singleRowNormal,
-                    items: manga,
-                }));
-            } catch (e) {
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: HomeSectionType.singleRowNormal,
-                    items: [],
-                }));
-            }
+            const $ = await this.DOMHTML(item.url);
+            const manga = this.parser.parseCards($, baseUrl);
+            sectionCallback(App.createHomeSection({
+                id: item.id,
+                title: item.title,
+                containsMoreItems: true,
+                type: HomeSectionType.singleRowNormal,
+                items: manga,
+            }));
         }
     }
 
@@ -173,8 +163,10 @@ export class HentaiVN extends Source {
         const baseUrl = await this.getBaseUrl();
         let url = '';
 
-        if (homepageSectionId === 'de_cu' || homepageSectionId === 'latest') {
-            url = page === 1 ? `${baseUrl}/` : `${baseUrl}?page=${page}`;
+        if (homepageSectionId === 'de_cu') {
+            url = `${baseUrl}/?page=${page}`;
+        } else if (homepageSectionId === 'latest') {
+            url = `${baseUrl}/?page=${page}`;
         } else if (homepageSectionId === 'manhwa') {
             url = `${baseUrl}/tim-truyen/manhwa?page=${page}`;
         } else if (homepageSectionId === 'doujinshi') {
@@ -200,14 +192,14 @@ export class HentaiVN extends Source {
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page: number = metadata?.page ?? 1;
         const baseUrl = await this.getBaseUrl();
-
         let url = '';
+
         if (query.title && query.title.trim()) {
             url = `${baseUrl}/tim-truyen?keyword=${encodeURIComponent(query.title.trim())}&page=${page}`;
         } else if (query.includedTags && query.includedTags.length > 0) {
             url = `${baseUrl}/tim-truyen/${query.includedTags[0].id}?page=${page}`;
         } else {
-            url = `${baseUrl}?page=${page}`;
+            url = `${baseUrl}/?page=${page}`;
         }
 
         const $ = await this.DOMHTML(url);

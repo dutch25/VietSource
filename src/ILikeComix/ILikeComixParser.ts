@@ -11,6 +11,7 @@ export class ILikeComixParser {
         const mangaList: PartialSourceManga[] = [];
         const seenIds = new Set<string>();
 
+        // 1. Try Madara style items (.page-item-detail, .c-tabs-item__content, .manga-item)
         $('.page-item-detail, .c-tabs-item__content, .manga-item').each((_: any, el: any) => {
             const linkEl = $(el).find('a[href*="/c/"]').first();
             const href = linkEl.attr('href') || '';
@@ -45,6 +46,35 @@ export class ILikeComixParser {
             );
         });
 
+        // 2. Try C-book / post style items (.loops-wrapper .post, article.post, .post)
+        $('.loops-wrapper .post, article.post, .post').each((_: any, el: any) => {
+            const linkEl = $(el).find('.post-image a, a[href*="ilikecomix.com/"]').first();
+            const href = linkEl.attr('href') || '';
+            if (!href || href.includes('/c-book/') || href.includes('/author/') || href.includes('/tag/')) return;
+
+            const match = href.match(/ilikecomix\.com\/(?:manga\/c\/)?([^\/]+(?:\/[^\/]+)?)\/?$/);
+            const mangaId = match ? match[1].replace(/\/+$/, '') : '';
+            if (!mangaId || seenIds.has(mangaId)) return;
+            seenIds.add(mangaId);
+
+            const imgEl = $(el).find('img').first();
+            let title = imgEl.attr('title') || imgEl.attr('alt') || $(el).find('.post-title a, h2 a, h3 a').first().text().trim();
+            if (!title) return;
+
+            let image = imgEl.attr('src') || imgEl.attr('data-src') || '';
+            if (image && !image.startsWith('http')) {
+                image = `https://ilikecomix.com${image.startsWith('/') ? '' : '/'}${image}`;
+            }
+
+            mangaList.push(
+                App.createPartialSourceManga({
+                    mangaId,
+                    image: image || `${baseUrl}/wp-content/uploads/2024/08/cropped-Ilikemanga-Favicon-192x192.png`,
+                    title,
+                })
+            );
+        });
+
         return mangaList;
     }
 
@@ -56,6 +86,7 @@ export class ILikeComixParser {
         let image = $('.summary_image img').attr('data-src') ||
             $('.summary_image img').attr('src') ||
             $('meta[property="og:image"]').attr('content') ||
+            $('.post-image img').first().attr('src') ||
             '';
         if (image.includes('dflazy')) {
             image = $('.summary_image img').attr('data-src') || '';
@@ -64,14 +95,14 @@ export class ILikeComixParser {
             image = `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
         }
 
-        const desc = $('.description-summary, .manga-excerpt, .summary__content').first().text().trim() || 'No description available';
-        const author = $('.author-content a').first().text().trim() || 'Unknown';
+        const desc = $('.description-summary, .manga-excerpt, .summary__content, .post-content p').first().text().trim() || 'No description available';
+        const author = $('.author-content a, a[rel="author"]').first().text().trim() || 'Unknown';
         const status = $('.post-status .summary-content').first().text().trim() || 'Hoàn thành';
 
         const tags: { id: string; label: string }[] = [];
-        $('.genres-content a, a[href*="/manga-genre/"]').each((_: any, el: any) => {
+        $('.genres-content a, a[href*="/manga-genre/"], .post-category a, a[rel="category tag"]').each((_: any, el: any) => {
             const href = $(el).attr('href') || '';
-            const tagId = href.replace(/.*?\/manga-genre\//, '').replace(/\/+$/, '').trim();
+            const tagId = href.replace(/.*?\/manga-genre\//, '').replace(/.*?\/category\//, '').replace(/\/+$/, '').trim();
             const label = $(el).text().trim();
             if (tagId && label && !tags.some(t => t.id === tagId)) {
                 tags.push({ id: tagId, label });
@@ -124,21 +155,34 @@ export class ILikeComixParser {
             );
         });
 
+        // Standalone comic without chapter list
+        if (chapters.length === 0) {
+            chapters.push(
+                App.createChapter({
+                    id: mangaId,
+                    name: 'Full Comic',
+                    chapNum: 1,
+                    langCode: 'en',
+                    time: new Date(),
+                })
+            );
+        }
+
         return chapters;
     }
 
     parseChapterDetails($: any, mangaId: string, chapterId: string, baseUrl: string): ChapterDetails {
         const pages: string[] = [];
 
-        $('.page-break img, .reading-content img').each((_: any, el: any) => {
+        $('.page-break img, .reading-content img, .post-content img, #post-content img, .entry-content img').each((_: any, el: any) => {
             let src = $(el).attr('data-src') || $(el).attr('src') || '';
             src = src.trim();
-            if (!src || src.includes('dflazy') || src.includes('logo')) return;
+            if (!src || src.includes('dflazy') || src.includes('logo') || src.includes('banner')) return;
 
             if (src.startsWith('//')) {
                 src = 'https:' + src;
             } else if (src.startsWith('/')) {
-                src = `${baseUrl}${src}`;
+                src = `https://ilikecomix.com${src}`;
             }
 
             if (!pages.includes(src)) {
@@ -154,31 +198,33 @@ export class ILikeComixParser {
     }
 
     isLastPage($: any): boolean {
-        const hasNext = $('a.next, .nav-previous a, a[rel="next"]').length > 0;
-        const itemCount = $('.page-item-detail, .c-tabs-item__content').length;
-        if (!hasNext && itemCount < 10) {
+        const hasNext = $('a.next, .nav-previous a, a[rel="next"], .pagination-next').length > 0;
+        const itemCount = $('.page-item-detail, .c-tabs-item__content, .loops-wrapper .post, article.post').length;
+        if (!hasNext && itemCount < 18) {
             return true;
         }
         return false;
     }
 
     getSearchTags(): TagSection[] {
+        const tags = [
+            { id: '3d-cgi-comics', label: '3D Comics' },
+            { id: 'simply-nhentai', label: 'Hentai Comics' },
+            { id: 'fakku-interracial', label: 'Interracial' },
+            { id: 'milf', label: 'MILF' },
+            { id: 'incest', label: 'Incest' },
+            { id: 'cheating', label: 'Cheating' },
+            { id: 'parody', label: 'Parody' },
+            { id: 'superhero', label: 'Superhero' },
+            { id: 'big-boobs', label: 'Big Boobs' },
+            { id: 'anal', label: 'Anal' },
+        ];
+
         return [
             App.createTagSection({
-                id: 'genres',
-                label: 'Genres',
-                tags: [
-                    App.createTag({ id: '3d-comics', label: '3D Comics' }),
-                    App.createTag({ id: 'simply-nhentai', label: 'Hentai' }),
-                    App.createTag({ id: 'western-eroticism', label: 'Western' }),
-                    App.createTag({ id: 'parody', label: 'Parody' }),
-                    App.createTag({ id: 'milf', label: 'Milf' }),
-                    App.createTag({ id: 'incest', label: 'Incest' }),
-                    App.createTag({ id: 'anal', label: 'Anal' }),
-                    App.createTag({ id: 'cheating', label: 'Cheating' }),
-                    App.createTag({ id: 'big-tits', label: 'Big Tits' }),
-                    App.createTag({ id: 'humiliation', label: 'Humiliation' }),
-                ],
+                id: 'categories',
+                label: 'Thể loại',
+                tags: tags.map(t => App.createTag({ id: t.id, label: t.label })),
             }),
         ];
     }

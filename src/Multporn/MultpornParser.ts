@@ -11,16 +11,19 @@ export class MultpornParser {
         const mangaList: PartialSourceManga[] = [];
         const seenIds = new Set<string>();
 
-        $('.views-row').each((_: any, el: any) => {
-            const linkEl = $(el).find('a').first();
-            const href = linkEl.attr('href') || '';
-            const mangaId = href.replace(/^\//, '').trim();
+        $('.views-row, .views-view-grid td, .views-view-grid [class*="col-"]').each((_: any, el: any) => {
+            // Skip video nodes on /new
+            const isVideo = $(el).find('.views-field-field-vd-preciew img, .views-field-field-vote-video').length > 0;
+            if (isVideo) return;
 
+            const titleEl = $(el).find('.views-field-title a, h2 a, h3 a').first();
+            let href = titleEl.attr('href') || $(el).find('a').attr('href') || '';
+            let title = titleEl.text().replace(/\s+/g, ' ').trim() || $(el).find('.views-field-title').text().replace(/\s+/g, ' ').trim();
+
+            if (!href || !title) return;
+            const mangaId = href.replace(/^\//, '').replace(/\/+$/, '').trim();
             if (!mangaId || seenIds.has(mangaId)) return;
             seenIds.add(mangaId);
-
-            let title = $(el).find('.views-field-title a, .views-field-title, h2 a, h3 a, a').first().text().replace(/\s+/g, ' ').trim();
-            if (!title) return;
 
             let image = $(el).find('img').attr('src') || $(el).find('img').attr('data-src') || '';
             if (image && !image.startsWith('http')) {
@@ -49,17 +52,17 @@ export class MultpornParser {
         const title = rawTitle.replace(/\s*-\s*Multporn.*$/i, '').trim();
 
         let image = $('meta[property="og:image"]').attr('content') ||
-            $('.field-name-field-com-pages img, .juicebox-container img').first().attr('src') ||
+            $('.field-name-field-com-pages img, .juicebox-container img, .jb-image img').first().attr('src') ||
             '';
         if (image && !image.startsWith('http')) {
             image = `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
         }
 
         const desc = $('.field-name-body, .description, .field-type-text-with-summary').first().text().trim() || 'No description available';
-        const author = $('.username, .field-name-field-author, .author').first().text().trim() || 'Unknown';
+        const author = $('.field-name-field-author a, .field-name-field-authors-pre a, .username, .author').first().text().trim() || 'Unknown';
 
         const tags: { id: string; label: string }[] = [];
-        $('a[href*="/tags/"], a[href*="/comics/"], a[href*="/characters/"], a[href*="/categories/"]').each((_: any, el: any) => {
+        $('.field-name-field-category a, .field-name-field-user-tags a, a[href*="/category/"], a[href*="/user_tags/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') || '';
             const tagId = href.replace(/^\//, '').replace(/\/+$/, '').trim();
             const label = $(el).text().trim();
@@ -90,97 +93,77 @@ export class MultpornParser {
     }
 
     parseChapters($: any, mangaId: string, rawHtml: string): Chapter[] {
-        // Case 1: Standalone comic with embedded Juicebox gallery
-        if (rawHtml.includes('juicebox/xml') || rawHtml.includes('field_com_pages')) {
-            return [
-                App.createChapter({
-                    id: mangaId,
-                    name: 'Full Comic',
-                    chapNum: 1,
-                    langCode: 'en',
-                    time: new Date(),
-                }),
-            ];
-        }
-
-        // Case 2: Series / category page containing child comic links
-        const chapters: Chapter[] = [];
-        const seenIds = new Set<string>();
-
-        $('.views-row a, .view-content a, .item-list a').each((i: number, el: any) => {
-            const href = $(el).attr('href') || '';
-            const childId = href.replace(/^\//, '').replace(/\/+$/, '').trim();
-            const text = $(el).text().trim();
-
-            if (!childId || childId === mangaId || seenIds.has(childId)) return;
-            if (!href.startsWith('/comics/') && !href.startsWith('/hentai_manga/') && !href.startsWith('/mp')) return;
-            seenIds.add(childId);
-
-            const numMatch = text.match(/(?:chapter|part|chap|chương)\s*([0-9.]+)/i);
-            const chapNum = numMatch ? parseFloat(numMatch[1]) : (i + 1);
-
-            chapters.push(
-                App.createChapter({
-                    id: childId,
-                    name: text || `Part ${i + 1}`,
-                    chapNum,
-                    langCode: 'en',
-                    time: new Date(),
-                })
-            );
-        });
-
-        if (chapters.length === 0) {
-            return [
-                App.createChapter({
-                    id: mangaId,
-                    name: 'Full Comic',
-                    chapNum: 1,
-                    langCode: 'en',
-                    time: new Date(),
-                }),
-            ];
-        }
-
-        return chapters;
+        // Every comic on Multporn is a standalone comic
+        return [
+            App.createChapter({
+                id: mangaId,
+                name: 'Full Comic',
+                chapNum: 1,
+                langCode: 'en',
+                time: new Date(),
+            }),
+        ];
     }
 
     parseJuiceboxXml(xmlString: string): string[] {
         const pages: string[] = [];
         const regex = /<(?:image)[^>]*(?:largeImageURL|imageURL|linkURL)="([^"]+)"[^>]*>/gi;
         let match;
-
         while ((match = regex.exec(xmlString)) !== null) {
-            let url = match[1].trim();
-            if (url && !pages.includes(url)) {
-                pages.push(url);
+            const pageUrl = match[1].trim();
+            if (pageUrl && !pages.includes(pageUrl)) {
+                pages.push(pageUrl);
             }
         }
+        return pages;
+    }
 
+    parseFallbackPages($: any): string[] {
+        const pages: string[] = [];
+        $('.jb-image img, .field-name-field-com-pages img').each((_: any, el: any) => {
+            let src = $(el).attr('src') || $(el).attr('data-src') || '';
+            src = src.trim();
+            if (src && !pages.includes(src)) {
+                pages.push(src);
+            }
+        });
         return pages;
     }
 
     isLastPage($: any): boolean {
-        const hasNext = $('a[title="Go to next page"], li.pager-next a, a[rel="next"]').length > 0;
-        const itemCount = $('.views-row').length;
-        if (!hasNext && itemCount < 10) {
+        const hasNext = $('li.pager-next a, .pager__item--next a').length > 0;
+        const itemCount = $('.views-row, .views-view-grid td, .views-view-grid [class*="col-"]').length;
+        if (!hasNext && itemCount < 15) {
             return true;
         }
         return false;
     }
 
     getSearchTags(): TagSection[] {
+        const tags = [
+            { id: 'new?type=1', label: 'Comics' },
+            { id: 'new?type=3&language=1', label: 'Hentai Manga' },
+            { id: 'category/3d', label: '3D' },
+            { id: 'category/milf', label: 'MILF' },
+            { id: 'category/futanari', label: 'Futanari' },
+            { id: 'category/incest', label: 'Incest' },
+            { id: 'category/anal', label: 'Anal' },
+            { id: 'category/creampie', label: 'Creampie' },
+            { id: 'category/oral', label: 'Oral' },
+            { id: 'category/big_tits', label: 'Big Tits' },
+            { id: 'category/big_ass', label: 'Big Ass' },
+            { id: 'category/lesbians', label: 'Lesbians / Yuri' },
+            { id: 'category/straight', label: 'Straight' },
+            { id: 'category/group_sex', label: 'Group Sex' },
+            { id: 'category/cheating', label: 'Cheating' },
+            { id: 'category/furry', label: 'Furry' },
+        ];
+
         return [
             App.createTagSection({
                 id: 'categories',
                 label: 'Categories',
-                tags: [
-                    App.createTag({ id: 'comics', label: 'Comics' }),
-                    App.createTag({ id: 'hentai_manga', label: 'Hentai Manga' }),
-                    App.createTag({ id: 'rule_34_comics', label: 'Rule 34 Comics' }),
-                    App.createTag({ id: '3d_porn_comics', label: '3D Porn Comics' }),
-                    App.createTag({ id: 'gay_porn_comics', label: 'Gay Porn Comics' }),
-                ],
+                tags: tags.map(t => App.createTag({ id: t.id, label: t.label })),
             }),
         ];
     }

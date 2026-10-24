@@ -27,12 +27,12 @@ import {
 } from './MultpornSetting';
 
 export const MultpornInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'Multporn',
     icon: 'icon.png',
     author: 'Dutch25',
     authorWebsite: 'https://github.com/Dutch25',
-    description: 'Extension for Multporn (multporn.net) - Porn Comics, Hentai Manga & 3D Comics',
+    description: 'Extension for Multporn (multporn.net) - Porn Comics, Hentai Manga & 3D',
     contentRating: ContentRating.ADULT,
     websiteBaseURL: DEFAULT_BASE_URL,
     sourceTags: [
@@ -91,7 +91,7 @@ export class Multporn extends Source {
     }
 
     getMangaShareUrl(mangaId: string): string {
-        return `${DEFAULT_BASE_URL}/${mangaId}`;
+        return `${DEFAULT_BASE_URL}/${mangaId.replace(/^\//, '')}`;
     }
 
     private async DOMHTML(url: string): Promise<{ $: CheerioAPI; raw: string }> {
@@ -104,9 +104,9 @@ export class Multporn extends Source {
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const baseUrl = await this.getBaseUrl();
         const sections = [
-            { id: 'new', title: 'Mới Nhất (New Uploads)', url: `${baseUrl}/new` },
+            { id: 'new_comics', title: 'Comics Mới Nhất', url: `${baseUrl}/new?type=1` },
+            { id: 'hentai_manga', title: 'Hentai Manga Mới Nhất', url: `${baseUrl}/new?type=3&language=1` },
             { id: 'updated_comics', title: 'Comics Cập Nhật', url: `${baseUrl}/updated_comics` },
-            { id: 'hentai_manga', title: 'Hentai Manga', url: `${baseUrl}/new?type=3&language=1` },
             { id: 'updated_manga', title: 'Manga Cập Nhật', url: `${baseUrl}/updated_manga` },
         ];
 
@@ -147,12 +147,12 @@ export class Multporn extends Source {
         const baseUrl = await this.getBaseUrl();
         let url = '';
 
-        if (homepageSectionId === 'new') {
-            url = page === 0 ? `${baseUrl}/new` : `${baseUrl}/new?page=${page}`;
-        } else if (homepageSectionId === 'updated_comics') {
-            url = page === 0 ? `${baseUrl}/updated_comics` : `${baseUrl}/updated_comics?page=${page}`;
+        if (homepageSectionId === 'new_comics') {
+            url = page === 0 ? `${baseUrl}/new?type=1` : `${baseUrl}/new?type=1&page=${page}`;
         } else if (homepageSectionId === 'hentai_manga') {
             url = page === 0 ? `${baseUrl}/new?type=3&language=1` : `${baseUrl}/new?type=3&language=1&page=${page}`;
+        } else if (homepageSectionId === 'updated_comics') {
+            url = page === 0 ? `${baseUrl}/updated_comics` : `${baseUrl}/updated_comics?page=${page}`;
         } else if (homepageSectionId === 'updated_manga') {
             url = page === 0 ? `${baseUrl}/updated_manga` : `${baseUrl}/updated_manga?page=${page}`;
         }
@@ -183,9 +183,9 @@ export class Multporn extends Source {
                 : `${baseUrl}/search?search_api_views_fulltext=${keyword}&page=${page}`;
         } else if (query.includedTags && query.includedTags.length > 0) {
             const cat = query.includedTags[0].id;
-            url = page === 0 ? `${baseUrl}/${cat}` : `${baseUrl}/${cat}?page=${page}`;
+            url = page === 0 ? `${baseUrl}/${cat}` : `${baseUrl}/${cat}${cat.includes('?') ? '&' : '?'}page=${page}`;
         } else {
-            url = page === 0 ? `${baseUrl}/new` : `${baseUrl}/new?page=${page}`;
+            url = page === 0 ? `${baseUrl}/new?type=1` : `${baseUrl}/new?type=1&page=${page}`;
         }
 
         const { $ } = await this.DOMHTML(url);
@@ -215,18 +215,26 @@ export class Multporn extends Source {
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const baseUrl = await this.getBaseUrl();
         const cleanId = chapterId.replace(/^\//, '');
-        const { raw } = await this.DOMHTML(`${baseUrl}/${cleanId}`);
+        const { $, raw } = await this.DOMHTML(`${baseUrl}/${cleanId}`);
 
         let pages: string[] = [];
         const match = raw.match(/"configUrl":\s*"([^"]+)"/);
         if (match) {
-            const configUrl = match[1].replace(/\\/g, '');
-            const request = App.createRequest({
-                url: configUrl.startsWith('http') ? configUrl : `${baseUrl}${configUrl}`,
-                method: 'GET',
-            });
-            const response = await this.requestManager.schedule(request, 1);
-            pages = this.parser.parseJuiceboxXml(response.data as string);
+            try {
+                const configUrl = match[1].replace(/\\/g, '');
+                const request = App.createRequest({
+                    url: configUrl.startsWith('http') ? configUrl : `${baseUrl}${configUrl}`,
+                    method: 'GET',
+                });
+                const response = await this.requestManager.schedule(request, 1);
+                pages = this.parser.parseJuiceboxXml(response.data as string);
+            } catch (e) {
+                // fallback
+            }
+        }
+
+        if (pages.length === 0) {
+            pages = this.parser.parseFallbackPages($);
         }
 
         return App.createChapterDetails({

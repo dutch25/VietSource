@@ -2,15 +2,19 @@ import {
     BadgeColor,
     Chapter,
     ChapterDetails,
+    ChapterProviding,
+    CloudflareBypassRequestProviding,
     ContentRating,
     DUISection,
+    HomePageSectionsProviding,
     HomeSection,
     HomeSectionType,
+    MangaProviding,
     PagedResults,
     Request,
     Response,
     SearchRequest,
-    Source,
+    SearchResultsProviding,
     SourceInfo,
     SourceIntents,
     SourceManga,
@@ -27,7 +31,7 @@ import {
 } from './Tranh18Setting';
 
 export const Tranh18Info: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'Tranh18',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -52,7 +56,9 @@ export const Tranh18Info: SourceInfo = {
         SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
 
-export class Tranh18 extends Source {
+export class Tranh18 implements SearchResultsProviding, MangaProviding, ChapterProviding, HomePageSectionsProviding, CloudflareBypassRequestProviding {
+    constructor(private cheerio: CheerioAPI) { }
+
     stateManager = App.createSourceStateManager();
     parser = new Tranh18Parser();
 
@@ -62,14 +68,13 @@ export class Tranh18 extends Source {
 
     readonly requestManager = App.createRequestManager({
         requestsPerSecond: 3,
-        requestTimeout: 25000,
+        requestTimeout: 30000,
         interceptor: {
             interceptRequest: async (request: Request): Promise<Request> => {
                 const baseUrl = await this.getBaseUrl();
                 request.headers = {
                     ...(request.headers ?? {}),
                     'referer': `${baseUrl}/`,
-                    'origin': baseUrl,
                     'user-agent': await this.requestManager.getDefaultUserAgent(),
                 };
                 return request;
@@ -96,9 +101,9 @@ export class Tranh18 extends Source {
         return `${DEFAULT_BASE_URL}/comic/${mangaId}`;
     }
 
-    private CloudFlareError(status: number): void {
+    CloudFlareError(status: number): void {
         if (status === 503 || status === 403) {
-            throw new Error(`CLOUDFLARE BYPASS ERROR:\nVui lòng mở trang chủ nguồn ${Tranh18Info.name} trên Paperback và bấm biểu tượng đám mây để vượt kiểm tra.`);
+            throw new Error(`CLOUDFLARE BYPASS ERROR:\nPlease go to home page ${Tranh18Info.name} source and press the cloud icon.`);
         }
     }
 
@@ -109,7 +114,6 @@ export class Tranh18 extends Source {
             method: 'GET',
             headers: {
                 'referer': `${baseUrl}/`,
-                'origin': `${baseUrl}/`,
                 'user-agent': await this.requestManager.getDefaultUserAgent(),
             },
         });
@@ -140,25 +144,15 @@ export class Tranh18 extends Source {
         }
 
         for (const item of sections) {
-            try {
-                const $ = await this.DOMHTML(item.url);
-                const manga = this.parser.parseCards($, baseUrl);
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: HomeSectionType.singleRowNormal,
-                    items: manga,
-                }));
-            } catch (e) {
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: HomeSectionType.singleRowNormal,
-                    items: [],
-                }));
-            }
+            const $ = await this.DOMHTML(item.url);
+            const manga = this.parser.parseCards($, baseUrl);
+            sectionCallback(App.createHomeSection({
+                id: item.id,
+                title: item.title,
+                containsMoreItems: true,
+                type: HomeSectionType.singleRowNormal,
+                items: manga,
+            }));
         }
     }
 
@@ -192,8 +186,8 @@ export class Tranh18 extends Source {
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page: number = metadata?.page ?? 1;
         const baseUrl = await this.getBaseUrl();
-
         let url = '';
+
         if (query.title && query.title.trim()) {
             url = `${baseUrl}/search?keyword=${encodeURIComponent(query.title.trim())}&page=${page}`;
         } else if (query.includedTags && query.includedTags.length > 0) {

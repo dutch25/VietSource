@@ -133,19 +133,31 @@ export class EightMusesParser {
     getSearchTags(): TagSection[] {
         return [
             App.createTagSection({
-                id: 'genres',
-                label: 'Genres',
+                id: 'collections',
+                label: 'Collections',
                 tags: [
-                    App.createTag({ id: 'genres/3d', label: '3D' }),
-                    App.createTag({ id: 'genres/big-tits', label: 'Big Tits' }),
-                    App.createTag({ id: 'genres/milf', label: 'Milf' }),
-                    App.createTag({ id: 'genres/incest', label: 'Incest' }),
-                    App.createTag({ id: 'genres/cheating', label: 'Cheating' }),
-                    App.createTag({ id: 'genres/harem', label: 'Harem' }),
-                    App.createTag({ id: 'genres/parody', label: 'Parody' }),
-                    App.createTag({ id: 'genres/anal', label: 'Anal' }),
-                    App.createTag({ id: 'genres/blowjob', label: 'Blowjob' }),
-                    App.createTag({ id: 'genres/creampie', label: 'Creampie' }),
+                    App.createTag({ id: 'collection/hentai-and-manga-english-42635', label: 'Hentai and Manga English' }),
+                    App.createTag({ id: 'collection/fakku-comics-32996', label: 'Fakku Comics' }),
+                    App.createTag({ id: 'collection/affect3d-comics-146084', label: 'Affect3D Comics' }),
+                    App.createTag({ id: 'collection/renderotica-comics-87107', label: 'Renderotica Comics' }),
+                    App.createTag({ id: 'collection/fansadox-comics-333415', label: 'Fansadox Comics' }),
+                    App.createTag({ id: 'collection/various-authors-1', label: 'Various Authors' }),
+                ],
+            }),
+            App.createTagSection({
+                id: 'genres',
+                label: 'Tags & Genres',
+                tags: [
+                    App.createTag({ id: 'uncensored', label: 'Uncensored' }),
+                    App.createTag({ id: '3d', label: '3D' }),
+                    App.createTag({ id: 'big-tits', label: 'Big Tits' }),
+                    App.createTag({ id: 'milf', label: 'Milf' }),
+                    App.createTag({ id: 'incest', label: 'Incest' }),
+                    App.createTag({ id: 'cheating', label: 'Cheating' }),
+                    App.createTag({ id: 'harem', label: 'Harem' }),
+                    App.createTag({ id: 'anal', label: 'Anal' }),
+                    App.createTag({ id: 'blowjob', label: 'Blowjob' }),
+                    App.createTag({ id: 'creampie', label: 'Creampie' }),
                 ],
             }),
         ];

@@ -27,12 +27,12 @@ import {
 } from './EightMusesSetting';
 
 export const EightMusesInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'EightMuses',
     icon: 'icon.png',
     author: 'Dutch25',
     authorWebsite: 'https://github.com/Dutch25',
-    description: 'Extension for 8muses (8muses.io) - Free Sex Comics, 3D Porn & Adult Cartoons',
+    description: 'Extension for EightMuses (8muses.io) - Free Adult Comics, 3D Cartoons & Manga',
     contentRating: ContentRating.ADULT,
     websiteBaseURL: DEFAULT_BASE_URL,
     sourceTags: [
@@ -94,18 +94,21 @@ export class EightMuses extends Source {
         return `${DEFAULT_BASE_URL}/g/${mangaId}`;
     }
 
-    private async DOMHTML(url: string): Promise<{ $: CheerioAPI; raw: string }> {
+    private async DOMHTML(url: string): Promise<CheerioAPI> {
         const request = App.createRequest({ url, method: 'GET' });
         const response = await this.requestManager.schedule(request, 1);
-        const raw = response.data as string;
-        return { $: this.cheerio.load(raw), raw };
+        return this.cheerio.load(response.data as string);
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const baseUrl = await this.getBaseUrl();
         const sections = [
-            { id: 'new', title: 'Mới Nhất (New)', url: `${baseUrl}/new` },
-            { id: 'browse', title: 'Tất Cả (Browse All)', url: `${baseUrl}/browse` },
+            { id: 'popular', title: 'Xem Nhiều (Popular)', url: `${baseUrl}/popular` },
+            { id: 'new', title: 'Mới Nhất (New Uploads)', url: `${baseUrl}/new` },
+            { id: 'uncensored', title: 'Uncensored Manga', url: `${baseUrl}/tag/uncensored` },
+            { id: 'hentai_en', title: 'Hentai & Manga English', url: `${baseUrl}/collection/hentai-and-manga-english-42635` },
+            { id: 'fakku', title: 'Fakku Comics', url: `${baseUrl}/collection/fakku-comics-32996` },
+            { id: 'anal', title: 'Top Anal', url: `${baseUrl}/search?tag=anal&sort=popular` },
         ];
 
         for (const item of sections) {
@@ -119,7 +122,7 @@ export class EightMuses extends Source {
 
         for (const item of sections) {
             try {
-                const { $ } = await this.DOMHTML(item.url);
+                const $ = await this.DOMHTML(item.url);
                 const manga = this.parser.parseCards($, baseUrl);
                 sectionCallback(App.createHomeSection({
                     id: item.id,
@@ -145,75 +148,94 @@ export class EightMuses extends Source {
         const baseUrl = await this.getBaseUrl();
         let url = '';
 
-        if (homepageSectionId === 'new') {
+        if (homepageSectionId === 'popular') {
+            url = page === 1 ? `${baseUrl}/popular` : `${baseUrl}/popular/page/${page}`;
+        } else if (homepageSectionId === 'new') {
             url = page === 1 ? `${baseUrl}/new` : `${baseUrl}/new/page/${page}`;
-        } else if (homepageSectionId === 'browse') {
-            url = page === 1 ? `${baseUrl}/browse` : `${baseUrl}/browse/page/${page}`;
+        } else if (homepageSectionId === 'uncensored') {
+            url = page === 1 ? `${baseUrl}/tag/uncensored` : `${baseUrl}/tag/uncensored/page/${page}`;
+        } else if (homepageSectionId === 'hentai_en') {
+            url = page === 1 ? `${baseUrl}/collection/hentai-and-manga-english-42635` : `${baseUrl}/collection/hentai-and-manga-english-42635/page/${page}`;
+        } else if (homepageSectionId === 'fakku') {
+            url = page === 1 ? `${baseUrl}/collection/fakku-comics-32996` : `${baseUrl}/collection/fakku-comics-32996/page/${page}`;
+        } else if (homepageSectionId === 'anal') {
+            url = page === 1 ? `${baseUrl}/search?tag=anal&sort=popular` : `${baseUrl}/search/page/${page}?tag=anal&sort=popular`;
         }
 
         if (!url) {
             return App.createPagedResults({ results: [], metadata: undefined });
         }
 
-        const { $ } = await this.DOMHTML(url);
+        const $ = await this.DOMHTML(url);
         const manga = this.parser.parseCards($, baseUrl);
-        const isLast = manga.length === 0 || this.parser.isLastPage($);
+        const isLastPage = this.parser.isLastPage($);
 
         return App.createPagedResults({
             results: manga,
-            metadata: isLast ? undefined : { page: page + 1 },
+            metadata: isLastPage ? undefined : { page: page + 1 },
         });
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page: number = metadata?.page ?? 1;
         const baseUrl = await this.getBaseUrl();
-
         let url = '';
-        if (query.title && query.title.trim()) {
-            const keyword = encodeURIComponent(query.title.trim());
+
+        const searchTag = query.includedTags?.find(tag => tag.id);
+
+        if (query.title) {
+            const cleanTitle = encodeURIComponent(query.title.trim());
             url = page === 1
-                ? `${baseUrl}/search?q=${keyword}`
-                : `${baseUrl}/search/page/${page}?q=${keyword}`;
-        } else if (query.includedTags && query.includedTags.length > 0) {
-            const genre = query.includedTags[0].id;
-            url = page === 1 ? `${baseUrl}/${genre}` : `${baseUrl}/${genre}/page/${page}`;
+                ? `${baseUrl}/search?q=${cleanTitle}`
+                : `${baseUrl}/search/page/${page}?q=${cleanTitle}`;
+        } else if (searchTag) {
+            if (searchTag.id.startsWith('collection/')) {
+                url = page === 1
+                    ? `${baseUrl}/${searchTag.id}`
+                    : `${baseUrl}/${searchTag.id}/page/${page}`;
+            } else {
+                url = page === 1
+                    ? `${baseUrl}/tag/${searchTag.id}`
+                    : `${baseUrl}/tag/${searchTag.id}/page/${page}`;
+            }
         } else {
-            url = page === 1 ? `${baseUrl}/browse` : `${baseUrl}/browse/page/${page}`;
+            url = page === 1 ? `${baseUrl}/popular` : `${baseUrl}/popular/page/${page}`;
         }
 
-        const { $ } = await this.DOMHTML(url);
+        const $ = await this.DOMHTML(url);
         const manga = this.parser.parseCards($, baseUrl);
-        const isLast = manga.length === 0 || this.parser.isLastPage($);
+        const isLastPage = this.parser.isLastPage($);
 
         return App.createPagedResults({
             results: manga,
-            metadata: isLast ? undefined : { page: page + 1 },
+            metadata: isLastPage ? undefined : { page: page + 1 },
         });
+    }
+
+    async getSearchTags(): Promise<TagSection[]> {
+        return this.parser.getSearchTags();
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const baseUrl = await this.getBaseUrl();
-        const cleanId = mangaId.replace(/^\//, '');
-        const { $ } = await this.DOMHTML(`${baseUrl}/g/${cleanId}`);
+        const url = `${baseUrl}/g/${mangaId}`;
+        const $ = await this.DOMHTML(url);
         return this.parser.parseMangaDetails($, mangaId, baseUrl);
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const baseUrl = await this.getBaseUrl();
-        const cleanId = mangaId.replace(/^\//, '');
-        const { $ } = await this.DOMHTML(`${baseUrl}/g/${cleanId}`);
+        const url = `${baseUrl}/g/${mangaId}`;
+        const $ = await this.DOMHTML(url);
         return this.parser.parseChapters($, mangaId);
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const baseUrl = await this.getBaseUrl();
-        const cleanId = chapterId.replace(/^\//, '');
-        const { $, raw } = await this.DOMHTML(`${baseUrl}/g/${cleanId}`);
-        return this.parser.parseChapterDetails(mangaId, chapterId, raw, baseUrl);
-    }
-
-    async getSearchTags(): Promise<TagSection[]> {
-        return this.parser.getSearchTags();
+        const url = `${baseUrl}/g/${mangaId}`;
+        const request = App.createRequest({ url, method: 'GET' });
+        const response = await this.requestManager.schedule(request, 1);
+        const rawHtml = response.data as string;
+        return this.parser.parseChapterDetails(mangaId, chapterId, rawHtml, baseUrl);
     }
 }

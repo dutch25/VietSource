@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const Tranh18Parser_1 = require("./Tranh18Parser");
 const Tranh18Setting_1 = require("./Tranh18Setting");
 exports.Tranh18Info = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'Tranh18',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -488,21 +488,20 @@ exports.Tranh18Info = {
         types_1.SourceIntents.SETTINGS_UI |
         types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
-class Tranh18 extends types_1.Source {
-    constructor() {
-        super(...arguments);
+class Tranh18 {
+    constructor(cheerio) {
+        this.cheerio = cheerio;
         this.stateManager = App.createSourceStateManager();
         this.parser = new Tranh18Parser_1.Tranh18Parser();
         this.requestManager = App.createRequestManager({
             requestsPerSecond: 3,
-            requestTimeout: 25000,
+            requestTimeout: 30000,
             interceptor: {
                 interceptRequest: async (request) => {
                     const baseUrl = await this.getBaseUrl();
                     request.headers = {
                         ...(request.headers ?? {}),
                         'referer': `${baseUrl}/`,
-                        'origin': baseUrl,
                         'user-agent': await this.requestManager.getDefaultUserAgent(),
                     };
                     return request;
@@ -532,7 +531,7 @@ class Tranh18 extends types_1.Source {
     }
     CloudFlareError(status) {
         if (status === 503 || status === 403) {
-            throw new Error(`CLOUDFLARE BYPASS ERROR:\nVui lòng mở trang chủ nguồn ${exports.Tranh18Info.name} trên Paperback và bấm biểu tượng đám mây để vượt kiểm tra.`);
+            throw new Error(`CLOUDFLARE BYPASS ERROR:\nPlease go to home page ${exports.Tranh18Info.name} source and press the cloud icon.`);
         }
     }
     async getCloudflareBypassRequestAsync() {
@@ -542,7 +541,6 @@ class Tranh18 extends types_1.Source {
             method: 'GET',
             headers: {
                 'referer': `${baseUrl}/`,
-                'origin': `${baseUrl}/`,
                 'user-agent': await this.requestManager.getDefaultUserAgent(),
             },
         });
@@ -569,26 +567,15 @@ class Tranh18 extends types_1.Source {
             }));
         }
         for (const item of sections) {
-            try {
-                const $ = await this.DOMHTML(item.url);
-                const manga = this.parser.parseCards($, baseUrl);
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: types_1.HomeSectionType.singleRowNormal,
-                    items: manga,
-                }));
-            }
-            catch (e) {
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: types_1.HomeSectionType.singleRowNormal,
-                    items: [],
-                }));
-            }
+            const $ = await this.DOMHTML(item.url);
+            const manga = this.parser.parseCards($, baseUrl);
+            sectionCallback(App.createHomeSection({
+                id: item.id,
+                title: item.title,
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+                items: manga,
+            }));
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {

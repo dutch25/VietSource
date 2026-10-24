@@ -50,9 +50,6 @@ Hoặc chạm trực tiếp vào nút **[Add to Paperback](paperback://addRepo?d
 
 | Nguồn | Trang Web | Phân Loại | Trạng Thái | Mô Tả |
 | :--- | :--- | :---: | :---: | :--- |
-| **DamCoNuong** | [damconuong.pet](https://damconuong.pet/) | 🔞 Adult | ✅ Hoạt động | Đầy đủ truyện 18+, Manhwa 18+ Việt hoá, cập nhật liên tục, lọc theo ngày/tuần/tháng. |
-| **TruyenVN** | [truyenvn.onl](https://truyenvn.onl/) | 🔞 Adult | ✅ Hoạt động | Kho truyện Manhwa, Manhua và 18+ phong phú. |
-| **NHentaiClub** | [nhentaiclub.space](https://nhentaiclub.space/) | 🔞 Adult | ✅ Hoạt động | Manga/Doujinshi 18+, bảng xếp hạng theo ngày/tuần/tháng/mọi thời đại, lọc hơn 130+ thể loại. |
 | **VinaHentai** | [vinahentai.vip](https://vinahentai.vip) | 🔞 Adult | ✅ Hoạt động | Truyện HOT, Hentai mới, bộ sưu tập riêng, cosplay và lọc chi tiết theo tác giả. |
 | **MiMi** | [mimimoe.moe](https://mimimoe.moe) | 🔞 Adult | ✅ Hoạt động | Tổng hợp truyện dịch gắn thẻ 18+, chất lượng ảnh sắc nét. |
 | **Tranh18** | [tranh18.cc](https://tranh18.cc/) | 🔞 Adult | ✅ Hoạt động | Manhwa 18+ tiếng Việt, cập nhật mới nhất, phân loại tag chi tiết, hỗ trợ tự đổi domain. |

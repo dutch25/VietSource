@@ -27,7 +27,7 @@ import {
 } from './ILikeComixSetting';
 
 export const ILikeComixInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'ILikeComix',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -91,6 +91,9 @@ export class ILikeComix extends Source {
     }
 
     getMangaShareUrl(mangaId: string): string {
+        if (mangaId.includes('/')) {
+            return `https://ilikecomix.com/${mangaId}/`;
+        }
         return `${DEFAULT_BASE_URL}/c/${mangaId}/`;
     }
 
@@ -100,13 +103,20 @@ export class ILikeComix extends Source {
         return this.cheerio.load(response.data as string);
     }
 
+    private getComicUrl(mangaId: string, baseUrl: string): string {
+        if (mangaId.includes('/')) {
+            return `https://ilikecomix.com/${mangaId.replace(/^\//, '')}/`;
+        }
+        return `${baseUrl}/c/${mangaId}/`;
+    }
+
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const baseUrl = await this.getBaseUrl();
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${baseUrl}/?m_orderby=latest` },
-            { id: 'trending', title: 'Xem Nhiều (Trending)', url: `${baseUrl}/?m_orderby=trending` },
-            { id: 'rating', title: 'Đánh Giá Cao', url: `${baseUrl}/?m_orderby=rating` },
-            { id: '3d', title: '3D Comics', url: `${baseUrl}/manga-genre/3d-comics/` },
+            { id: 'latest', title: 'Mới Cập Nhật', url: `${baseUrl}/` },
+            { id: '3d', title: '3D Comics', url: 'https://ilikecomix.com/c-book/3d-cgi-comics/' },
+            { id: 'hentai', title: 'Hentai Comics', url: 'https://ilikecomix.com/c-book/simply-nhentai/' },
+            { id: 'interracial', title: 'Interracial', url: 'https://ilikecomix.com/c-book/fakku-interracial/' },
         ];
 
         for (const item of sections) {
@@ -147,13 +157,13 @@ export class ILikeComix extends Source {
         let url = '';
 
         if (homepageSectionId === 'latest') {
-            url = page === 1 ? `${baseUrl}/?m_orderby=latest` : `${baseUrl}/page/${page}/?m_orderby=latest`;
-        } else if (homepageSectionId === 'trending') {
-            url = page === 1 ? `${baseUrl}/?m_orderby=trending` : `${baseUrl}/page/${page}/?m_orderby=trending`;
-        } else if (homepageSectionId === 'rating') {
-            url = page === 1 ? `${baseUrl}/?m_orderby=rating` : `${baseUrl}/page/${page}/?m_orderby=rating`;
+            url = page === 1 ? `${baseUrl}/` : `${baseUrl}/page/${page}/`;
         } else if (homepageSectionId === '3d') {
-            url = page === 1 ? `${baseUrl}/manga-genre/3d-comics/` : `${baseUrl}/manga-genre/3d-comics/page/${page}/`;
+            url = page === 1 ? 'https://ilikecomix.com/c-book/3d-cgi-comics/' : `https://ilikecomix.com/c-book/3d-cgi-comics/page/${page}/`;
+        } else if (homepageSectionId === 'hentai') {
+            url = page === 1 ? 'https://ilikecomix.com/c-book/simply-nhentai/' : `https://ilikecomix.com/c-book/simply-nhentai/page/${page}/`;
+        } else if (homepageSectionId === 'interracial') {
+            url = page === 1 ? 'https://ilikecomix.com/c-book/fakku-interracial/' : `https://ilikecomix.com/c-book/fakku-interracial/page/${page}/`;
         }
 
         if (!url) {
@@ -162,65 +172,74 @@ export class ILikeComix extends Source {
 
         const $ = await this.DOMHTML(url);
         const manga = this.parser.parseCards($, baseUrl);
-        const isLast = manga.length === 0 || this.parser.isLastPage($);
+        const isLastPage = this.parser.isLastPage($);
 
         return App.createPagedResults({
             results: manga,
-            metadata: isLast ? undefined : { page: page + 1 },
+            metadata: isLastPage ? undefined : { page: page + 1 },
         });
     }
 
     async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
         const page: number = metadata?.page ?? 1;
         const baseUrl = await this.getBaseUrl();
-
         let url = '';
-        if (query.title && query.title.trim()) {
-            const keyword = encodeURIComponent(query.title.trim());
+
+        const searchTag = query.includedTags?.find(tag => tag.id);
+
+        if (query.title) {
+            const cleanTitle = encodeURIComponent(query.title.trim());
             url = page === 1
-                ? `${baseUrl}/?s=${keyword}&post_type=wp-manga`
-                : `${baseUrl}/page/${page}/?s=${keyword}&post_type=wp-manga`;
-        } else if (query.includedTags && query.includedTags.length > 0) {
-            const genre = query.includedTags[0].id;
+                ? `${baseUrl}/?s=${cleanTitle}&post_type=wp-manga`
+                : `${baseUrl}/page/${page}/?s=${cleanTitle}&post_type=wp-manga`;
+        } else if (searchTag) {
             url = page === 1
-                ? `${baseUrl}/manga-genre/${genre}/`
-                : `${baseUrl}/manga-genre/${genre}/page/${page}/`;
+                ? `https://ilikecomix.com/c-book/${searchTag.id}/`
+                : `https://ilikecomix.com/c-book/${searchTag.id}/page/${page}/`;
         } else {
             url = page === 1 ? `${baseUrl}/` : `${baseUrl}/page/${page}/`;
         }
 
         const $ = await this.DOMHTML(url);
         const manga = this.parser.parseCards($, baseUrl);
-        const isLast = manga.length === 0 || this.parser.isLastPage($);
+        const isLastPage = this.parser.isLastPage($);
 
         return App.createPagedResults({
             results: manga,
-            metadata: isLast ? undefined : { page: page + 1 },
+            metadata: isLastPage ? undefined : { page: page + 1 },
         });
+    }
+
+    async getSearchTags(): Promise<TagSection[]> {
+        return this.parser.getSearchTags();
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const baseUrl = await this.getBaseUrl();
-        const cleanId = mangaId.replace(/^\//, '');
-        const $ = await this.DOMHTML(`${baseUrl}/c/${cleanId}/`);
+        const url = this.getComicUrl(mangaId, baseUrl);
+        const $ = await this.DOMHTML(url);
         return this.parser.parseMangaDetails($, mangaId, baseUrl);
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const baseUrl = await this.getBaseUrl();
-        const cleanId = mangaId.replace(/^\//, '');
-        const $ = await this.DOMHTML(`${baseUrl}/c/${cleanId}/`);
+        const url = this.getComicUrl(mangaId, baseUrl);
+        const $ = await this.DOMHTML(url);
         return this.parser.parseChapters($, mangaId);
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const baseUrl = await this.getBaseUrl();
-        const cleanId = chapterId.replace(/^\//, '');
-        const $ = await this.DOMHTML(`${baseUrl}/c/${cleanId}/`);
-        return this.parser.parseChapterDetails($, mangaId, chapterId, baseUrl);
-    }
+        let url: string;
+        if (chapterId.includes('/')) {
+            url = `https://ilikecomix.com/${chapterId.replace(/^\//, '')}/`;
+        } else if (chapterId.startsWith('issue-') || chapterId.startsWith('part-') || chapterId.startsWith('chapter-')) {
+            url = `${baseUrl}/c/${mangaId}/${chapterId}/`;
+        } else {
+            url = this.getComicUrl(mangaId, baseUrl);
+        }
 
-    async getSearchTags(): Promise<TagSection[]> {
-        return this.parser.getSearchTags();
+        const $ = await this.DOMHTML(url);
+        return this.parser.parseChapterDetails($, mangaId, chapterId, baseUrl);
     }
 }
