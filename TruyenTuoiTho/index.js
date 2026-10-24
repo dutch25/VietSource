@@ -464,7 +464,7 @@ exports.TruyenTuoiTho = exports.TruyenTuoiThoInfo = void 0;
 const types_1 = require("@paperback/types");
 const TruyenTuoiThoParser_1 = require("./TruyenTuoiThoParser");
 const BASE_URL = 'https://truyentuoitho.com';
-const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev';
+const PROXY_URL = 'https://nhentai-club-proxy.dutch25.workers.dev';
 exports.TruyenTuoiThoInfo = {
     version: '1.1.11',
     name: 'TruyenTuoiTho',
