@@ -21,6 +21,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **www.hentaivnx.com** - `HentaiVN`
 - **multporn.net** - `Multporn`
 - **ilikecomix.com** - `ILikeComix`
+- **8muses.io** - `EightMuses`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -52,7 +53,8 @@ dutch-extension/
 │   ├── Tranh18/
 │   ├── HentaiVN/
 │   ├── Multporn/
-│   └── ILikeComix/
+│   ├── ILikeComix/
+│   └── EightMuses/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -386,6 +388,34 @@ dutch-extension/
 
 ---
 
+# Source: EightMuses
+
+**Website**: https://8muses.io
+
+### SourceInfo
+- **Version**: 1.0.0
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI
+
+### URL Patterns
+- Homepage: `https://8muses.io/`
+- Comic / Gallery: `https://8muses.io/g/{mangaId}`
+- Search: `https://8muses.io/search?q={search}` & `https://8muses.io/search/page/{page}?q={search}`
+- Browse: `https://8muses.io/browse` & `https://8muses.io/browse/page/{page}`
+- New: `https://8muses.io/new` & `https://8muses.io/new/page/{page}`
+
+### Homepage Sections
+1. **Mới Nhất (New)**: `https://8muses.io/new`
+2. **Tất Cả (Browse All)**: `https://8muses.io/browse`
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> EightMuses -> Cài đặt nguồn -> URL cơ sở**.
+
+---
+
+
 
 
 
@@ -419,6 +449,8 @@ dutch-extension/
 **If working on Multporn:** Update `src/Multporn/Multporn.ts` - `version: 'x.x.x'`
 
 **If working on ILikeComix:** Update `src/ILikeComix/ILikeComix.ts` - `version: 'x.x.x'`
+
+**If working on EightMuses:** Update `src/EightMuses/EightMuses.ts` - `version: 'x.x.x'`
 
 DO NOT update package.json unless specifically asked.
 
