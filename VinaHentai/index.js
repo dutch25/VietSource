@@ -465,15 +465,13 @@ const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.vip';
 function safeEncodeUrl(url) {
-    try {
-        return encodeURI(decodeURI(url));
-    }
-    catch {
+    if (/[^\x00-\x7F]/.test(url)) {
         return encodeURI(url);
     }
+    return url;
 }
 exports.VinaHentaiInfo = {
-    version: '1.1.25',
+    version: '1.1.26',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -526,9 +524,9 @@ class VinaHentai extends types_1.Source {
             { id: 'latest', title: 'Truyện Hentai Mới', url: `${BASE_URL}` },
             { id: 'week', title: 'Top Tuần', url: `${BASE_URL}/bang-xep-hang/truyen?period=weekly` },
             { id: 'month', title: 'Top Tháng', url: `${BASE_URL}/bang-xep-hang/truyen?period=monthly` },
-            { id: 'private', title: 'Bộ Sưu Tập Riêng', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che` },
-            { id: 'private2', title: 'Bộ Sưu Tập Riêng 2', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&sort=viewNumber` },
-            { id: 'private3', title: 'Bộ Sưu Tập Riêng 3', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&sort=likeNumber` },
+            { id: 'private', title: 'Bộ Sưu Tập Riêng', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=1` },
+            { id: 'private2', title: 'Bộ Sưu Tập Riêng 2', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=1&sort=viewNumber` },
+            { id: 'private3', title: 'Bộ Sưu Tập Riêng 3', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=1&sort=likeNumber` },
         ];
         for (const section of sections) {
             sectionCallback(App.createHomeSection({
@@ -541,23 +539,8 @@ class VinaHentai extends types_1.Source {
         for (const section of sections) {
             try {
                 let manga = [];
-                if (section.id === 'private' || section.id === 'private2' || section.id === 'private3') {
-                    const sortParam = section.id === 'private2' ? '&sort=viewNumber' : section.id === 'private3' ? '&sort=likeNumber' : '';
-                    try {
-                        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=1${sortParam}`, method: 'GET' }), 0);
-                        if (response.status === 200) {
-                            const $ = this.cheerio.load(response.data);
-                            manga = this.parser.parseHomePage($);
-                        }
-                    }
-                    catch (e) { }
-                    if (manga.length === 0)
-                        continue;
-                }
-                else {
-                    const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 0);
-                    if (response.status === 403 || response.status === 503)
-                        continue;
+                const response = await this.requestManager.schedule(App.createRequest({ url: section.url, method: 'GET' }), 1);
+                if (response.status === 200) {
                     const $ = this.cheerio.load(response.data);
                     if (section.id === 'hot') {
                         manga = this.parser.parseSection($, 'hot');
@@ -578,6 +561,13 @@ class VinaHentai extends types_1.Source {
                 }));
             }
             catch (e) {
+                sectionCallback(App.createHomeSection({
+                    id: section.id,
+                    title: section.title,
+                    containsMoreItems: true,
+                    type: types_1.HomeSectionType.singleRowNormal,
+                    items: [],
+                }));
             }
         }
     }
@@ -586,25 +576,15 @@ class VinaHentai extends types_1.Source {
         let url = `${BASE_URL}/danh-sach?page=${page}`;
         if (homepageSectionId === 'private' || homepageSectionId === 'private2' || homepageSectionId === 'private3') {
             const sortParam = homepageSectionId === 'private2' ? '&sort=viewNumber' : homepageSectionId === 'private3' ? '&sort=likeNumber' : '';
-            try {
-                const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=${page}${sortParam}`, method: 'GET' }), 0);
-                if (response.status === 200) {
-                    const $ = this.cheerio.load(response.data);
-                    const manga = this.parser.parseHomePage($);
-                    const isLast = manga.length === 0 || this.parser.isLastPage($, page);
-                    return App.createPagedResults({ results: manga, metadata: isLast ? undefined : { page: page + 1 } });
-                }
-            }
-            catch (e) { }
-            return App.createPagedResults({ results: [], metadata: undefined });
+            url = `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=${page}${sortParam}`;
         }
-        if (homepageSectionId === 'week') {
+        else if (homepageSectionId === 'week') {
             url = `${BASE_URL}/bang-xep-hang/truyen?period=weekly&page=${page}`;
         }
         else if (homepageSectionId === 'month') {
             url = `${BASE_URL}/bang-xep-hang/truyen?period=monthly&page=${page}`;
         }
-        const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
+        const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 1);
         const $ = this.cheerio.load(response.data);
         const manga = this.parser.parseHomePage($);
         const isLast = manga.length === 0 || this.parser.isLastPage($, page);
