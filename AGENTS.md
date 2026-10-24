@@ -320,7 +320,7 @@ dutch-extension/
 **Website**: https://allporncomic.com
 
 ### SourceInfo
-- **Version**: 1.0.0
+- **Version**: 1.0.1
 - **Author**: Dutch25
 - **Content Rating**: ADULT (18+)
 - **Tags**: "Adult" (RED), "18+" (YELLOW)
@@ -337,9 +337,12 @@ dutch-extension/
 1. **Mới Cập Nhật**: `https://allporncomic.com/porncomic/?m_orderby=latest`
 2. **Xem Nhiều (Trending)**: `https://allporncomic.com/porncomic/?m_orderby=views`
 3. **Đánh Giá Cao**: `https://allporncomic.com/porncomic/?m_orderby=rating`
-4. **3D Comics**: `https://allporncomic.com/porncomic-category/3dd/`
-5. **Manhwa 18+**: `https://allporncomic.com/porncomic-category/manhwad/`
-6. **Hentai Manga**: `https://allporncomic.com/porncomic-category/hentaib/`
+4. **Private 1**: `https://allporncomic.com/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=rating`
+5. **Private 2**: `https://allporncomic.com/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=trending`
+6. **Private 3**: `https://allporncomic.com/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=views`
+7. **3D Comics**: `https://allporncomic.com/porncomic-category/3dd/`
+8. **Manhwa 18+**: `https://allporncomic.com/porncomic-category/manhwad/`
+9. **Hentai Manga**: `https://allporncomic.com/porncomic-category/hentaib/`
 
 ### In-App Manual Domain Update
 - Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> AllPornComic -> Cài đặt nguồn -> URL cơ sở**.
