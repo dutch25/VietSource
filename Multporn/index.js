@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const MultpornParser_1 = require("./MultpornParser");
 const MultpornSetting_1 = require("./MultpornSetting");
 exports.MultpornInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'Multporn',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -681,9 +681,9 @@ class MultpornParser {
         const mangaList = [];
         const seenIds = new Set();
         $('.views-row, .views-view-grid td, .views-view-grid [class*="col-"]').each((_, el) => {
-            // Skip video nodes on /new
-            const isVideo = $(el).find('.views-field-field-vd-preciew img, .views-field-field-vote-video').length > 0;
-            if (isVideo)
+            // Skip video nodes if they have video preview specifically
+            const hasVideoPreview = $(el).find('.views-field-field-vd-preciew img').length > 0;
+            if (hasVideoPreview)
                 return;
             const titleEl = $(el).find('.views-field-title a, h2 a, h3 a').first();
             let href = titleEl.attr('href') || $(el).find('a').attr('href') || '';
