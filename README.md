@@ -60,6 +60,7 @@ Hoặc chạm trực tiếp vào nút **[Add to Paperback](paperback://addRepo?d
 | **Multporn** | [multporn.net](https://multporn.net/) | 🔞 Adult | ✅ Hoạt động | Kho truyện Western Porn Comics, Hentai Manga & 3D, Juicebox gallery full HD. |
 | **ILikeComix** | [ilikecomix.com](https://ilikecomix.com/manga/) | 🔞 Adult | ✅ Hoạt động | Kho truyện Western Comics, 3D Comics, Parody & Hentai, hỗ trợ tự đổi domain. |
 | **EightMuses** | [8muses.io](https://8muses.io/) | 🔞 Adult | ✅ Hoạt động | Kho truyện tranh 18+ quốc tế, 3D sex comics, cartoons, hỗ trợ tự đổi domain. |
+| **AllPornComic** | [allporncomic.com](https://allporncomic.com/) | 🔞 Adult | ✅ Hoạt động | Kho truyện tranh 18+ đa dạng thể loại: 3D, Hentai, Manhwa 18+, Western Comics, hỗ trợ tự đổi domain. |
 
 ---
 

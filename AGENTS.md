@@ -22,6 +22,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **multporn.net** - `Multporn`
 - **ilikecomix.com** - `ILikeComix`
 - **8muses.io** - `EightMuses`
+- **allporncomic.com** - `AllPornComic`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -54,7 +55,8 @@ dutch-extension/
 │   ├── HentaiVN/
 │   ├── Multporn/
 │   ├── ILikeComix/
-│   └── EightMuses/
+│   ├── EightMuses/
+│   └── AllPornComic/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -415,10 +417,36 @@ dutch-extension/
 
 ---
 
+# Source: AllPornComic
 
+**Website**: https://allporncomic.com
 
+### SourceInfo
+- **Version**: 1.0.0
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI | CLOUDFLARE_BYPASS_REQUIRED
 
+### URL Patterns
+- Homepage: `https://allporncomic.com/`
+- Comic / Manga: `https://allporncomic.com/porncomic/{mangaId}/`
+- Chapter Reader: `https://allporncomic.com/porncomic/{mangaId}/{chapterId}/`
+- Search: `https://allporncomic.com/?s={search}&post_type=wp-manga` & `https://allporncomic.com/page/{page}/?s={search}&post_type=wp-manga`
+- Category / Genre: `https://allporncomic.com/porncomic-category/{catId}/` & `https://allporncomic.com/porncomic-category/{catId}/page/{page}/`
 
+### Homepage Sections
+1. **Mới Cập Nhật**: `https://allporncomic.com/porncomic/?m_orderby=latest`
+2. **Xem Nhiều (Trending)**: `https://allporncomic.com/porncomic/?m_orderby=views`
+3. **Đánh Giá Cao**: `https://allporncomic.com/porncomic/?m_orderby=rating`
+4. **3D Comics**: `https://allporncomic.com/porncomic-category/3dd/`
+5. **Manhwa 18+**: `https://allporncomic.com/porncomic-category/manhwad/`
+6. **Hentai Manga**: `https://allporncomic.com/porncomic-category/hentaib/`
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> AllPornComic -> Cài đặt nguồn -> URL cơ sở**.
+
+---
 
 # Release Checklist
 
@@ -451,6 +479,8 @@ dutch-extension/
 **If working on ILikeComix:** Update `src/ILikeComix/ILikeComix.ts` - `version: 'x.x.x'`
 
 **If working on EightMuses:** Update `src/EightMuses/EightMuses.ts` - `version: 'x.x.x'`
+
+**If working on AllPornComic:** Update `src/AllPornComic/AllPornComic.ts` - `version: 'x.x.x'`
 
 DO NOT update package.json unless specifically asked.
 
