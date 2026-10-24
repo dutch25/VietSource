@@ -18,6 +18,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **zettruyen4.com** - `ZetTruyen`
 - **truyenggvn.com** - `TruyenGG`
 - **tranh18.cc** - `Tranh18`
+- **www.hentaivnx.com** - `HentaiVN`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -46,7 +47,8 @@ dutch-extension/
 │   ├── MiMi/
 │   ├── ZetTruyen/
 │   ├── TruyenGG/
-│   └── Tranh18/
+│   ├── Tranh18/
+│   └── HentaiVN/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -293,6 +295,37 @@ dutch-extension/
 
 ---
 
+# Source: HentaiVN
+
+**Website**: https://www.hentaivnx.com
+
+### SourceInfo
+- **Version**: 1.0.0
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI | CLOUDFLARE_BYPASS_REQUIRED
+
+### URL Patterns
+- Homepage: `https://www.hentaivnx.com/`
+- Manga: `https://www.hentaivnx.com/truyen-hentai/{mangaId}`
+- Chapter: `https://www.hentaivnx.com/truyen-hentai/{chapterId}`
+- Search: `https://www.hentaivnx.com/tim-truyen?keyword={search}&page={page}`
+- Tag / Genre: `https://www.hentaivnx.com/tim-truyen/{genreId}?page={page}`
+
+### Homepage Sections
+1. **Truyện Đề Cử**: `https://www.hentaivnx.com/`
+2. **Mới Cập Nhật**: `https://www.hentaivnx.com/`
+3. **Manhwa 18+**: `https://www.hentaivnx.com/tim-truyen/manhwa`
+4. **Doujinshi**: `https://www.hentaivnx.com/tim-truyen/doujinshi`
+5. **Truyện Màu**: `https://www.hentaivnx.com/tim-truyen/truyen-mau`
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> HentaiVN -> Cài đặt nguồn -> URL cơ sở**.
+
+---
+
+
 
 # Release Checklist
 
@@ -317,6 +350,8 @@ dutch-extension/
 **If working on TruyenGG:** Update `src/TruyenGG/TruyenGG.ts` - `version: 'x.x.x'`
 
 **If working on Tranh18:** Update `src/Tranh18/Tranh18.ts` - `version: 'x.x.x'`
+
+**If working on HentaiVN:** Update `src/HentaiVN/HentaiVN.ts` - `version: 'x.x.x'`
 
 DO NOT update package.json unless specifically asked.
 

@@ -56,6 +56,7 @@ Hoặc chạm trực tiếp vào nút **[Add to Paperback](paperback://addRepo?d
 | **VinaHentai** | [vinahentai.vip](https://vinahentai.vip) | 🔞 Adult | ✅ Hoạt động | Truyện HOT, Hentai mới, bộ sưu tập riêng, cosplay và lọc chi tiết theo tác giả. |
 | **MiMi** | [mimimoe.moe](https://mimimoe.moe) | 🔞 Adult | ✅ Hoạt động | Tổng hợp truyện dịch gắn thẻ 18+, chất lượng ảnh sắc nét. |
 | **Tranh18** | [tranh18.cc](https://tranh18.cc/) | 🔞 Adult | ✅ Hoạt động | Manhwa 18+ tiếng Việt, cập nhật mới nhất, phân loại tag chi tiết, hỗ trợ tự đổi domain. |
+| **HentaiVN** | [hentaivnx.com](https://www.hentaivnx.com/) | 🔞 Adult | ✅ Hoạt động | Manga, Doujinshi & Manhwa 18+, truyện đề cử, mới cập nhật, hỗ trợ tự đổi domain. |
 
 ---
 
