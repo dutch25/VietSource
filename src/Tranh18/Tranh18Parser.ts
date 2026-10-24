@@ -7,11 +7,11 @@ import {
 } from '@paperback/types';
 
 export class Tranh18Parser {
-    parseCards($: any, baseUrl: string): PartialSourceManga[] {
+    parseCardElements($: any, elements: any, baseUrl: string): PartialSourceManga[] {
         const mangaList: PartialSourceManga[] = [];
         const seenIds = new Set<string>();
 
-        $('.mh-item').each((_: any, el: any) => {
+        elements.each((_: any, el: any) => {
             const linkEl = $(el).find('a[href*="/comic/"]');
             const href = linkEl.attr('href') || '';
             const mangaId = href.replace(/.*?\/comic\//, '').replace(/\/+$/, '').trim();
@@ -45,6 +45,10 @@ export class Tranh18Parser {
         });
 
         return mangaList;
+    }
+
+    parseCards($: any, baseUrl: string): PartialSourceManga[] {
+        return this.parseCardElements($, $('.mh-item'), baseUrl);
     }
 
     parseMangaDetails($: any, mangaId: string, baseUrl: string): SourceManga {

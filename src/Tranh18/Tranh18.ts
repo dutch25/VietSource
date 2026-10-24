@@ -28,7 +28,7 @@ import {
 } from './Tranh18Setting';
 
 export const Tranh18Info: SourceInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'Tranh18',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -62,7 +62,7 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
     }
 
     readonly requestManager = App.createRequestManager({
-        requestsPerSecond: 3,
+        requestsPerSecond: 2,
         requestTimeout: 30000,
         interceptor: {
             interceptRequest: async (request: Request): Promise<Request> => {
@@ -111,18 +111,29 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
     }
 
     private async DOMHTML(url: string): Promise<CheerioAPI> {
-        const request = App.createRequest({ url, method: 'GET' });
-        const response = await this.requestManager.schedule(request, 1);
-        this.CloudFlareError(response.status);
-        return this.cheerio.load(response.data as string);
+        let lastError: any;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const request = App.createRequest({ url, method: 'GET' });
+                const response = await this.requestManager.schedule(request, 1);
+                this.CloudFlareError(response.status);
+                return this.cheerio.load(response.data as string);
+            } catch (err: any) {
+                lastError = err;
+                if (attempt < 2) {
+                    await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+                }
+            }
+        }
+        throw lastError;
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const baseUrl = await this.getBaseUrl();
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${baseUrl}/update` },
-            { id: 'manhwa', title: 'Manhwa 18+', url: `${baseUrl}/tag/manhwa` },
-            { id: 'completed', title: 'Truyện Hoàn Thành', url: `${baseUrl}/completed` },
+            { id: 'latest', title: 'Mới Cập Nhật' },
+            { id: 'manhwa', title: 'Manhwa 18+' },
+            { id: 'completed', title: 'Truyện Hoàn Thành' },
         ];
 
         for (const item of sections) {
@@ -134,26 +145,45 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
             }));
         }
 
-        for (const item of sections) {
-            try {
-                const $ = await this.DOMHTML(item.url);
-                const manga = this.parser.parseCards($, baseUrl);
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: HomeSectionType.singleRowNormal,
-                    items: manga,
-                }));
-            } catch (e) {
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: HomeSectionType.singleRowNormal,
-                    items: [],
-                }));
-            }
+        try {
+            const $home = await this.DOMHTML(baseUrl);
+
+            // 1. Latest section
+            const latestEl = $home('.index-title').first().nextUntil('.index-title, .box-header').find('.mh-item');
+            const latestItems = this.parser.parseCardElements($home, latestEl.length > 0 ? latestEl : $home('.mh-item').slice(0, 15), baseUrl);
+            sectionCallback(App.createHomeSection({
+                id: 'latest',
+                title: 'Mới Cập Nhật',
+                containsMoreItems: true,
+                type: HomeSectionType.singleRowNormal,
+                items: latestItems,
+            }));
+
+            // 2. Manhwa / Hot section
+            const hotHeader = $home('h2:contains("HOT"), h2:contains("Từ khóa HOT")').first().closest('.index-title, .box-header');
+            const hotEl = hotHeader.nextUntil('.box-header, .index-title, footer').find('.mh-item');
+            const hotItems = this.parser.parseCardElements($home, hotEl.length > 0 ? hotEl : $home('.mh-item').slice(15, 35), baseUrl);
+            sectionCallback(App.createHomeSection({
+                id: 'manhwa',
+                title: 'Manhwa 18+',
+                containsMoreItems: true,
+                type: HomeSectionType.singleRowNormal,
+                items: hotItems,
+            }));
+
+            // 3. Completed section
+            const completedHeader = $home('h2:contains("Hoàn thành")').first().closest('.box-header, .index-title');
+            const completedEl = completedHeader.nextUntil('.box-header, .index-title, footer').find('.mh-item');
+            const completedItems = this.parser.parseCardElements($home, completedEl.length > 0 ? completedEl : $home('.mh-item').slice(35), baseUrl);
+            sectionCallback(App.createHomeSection({
+                id: 'completed',
+                title: 'Truyện Hoàn Thành',
+                containsMoreItems: true,
+                type: HomeSectionType.singleRowNormal,
+                items: completedItems,
+            }));
+        } catch (e) {
+            console.error('[Tranh18 error loading homepage]:', e);
         }
     }
 

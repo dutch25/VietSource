@@ -28,7 +28,7 @@ import {
 } from './HentaiVNSetting';
 
 export const HentaiVNInfo: SourceInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -62,7 +62,7 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
     }
 
     readonly requestManager = App.createRequestManager({
-        requestsPerSecond: 3,
+        requestsPerSecond: 2,
         requestTimeout: 30000,
         interceptor: {
             interceptRequest: async (request: Request): Promise<Request> => {
@@ -111,23 +111,34 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
     }
 
     private async DOMHTML(url: string): Promise<CheerioAPI> {
-        const request = App.createRequest({ url, method: 'GET' });
-        const response = await this.requestManager.schedule(request, 1);
-        this.CloudFlareError(response.status);
-        return this.cheerio.load(response.data as string);
+        let lastError: any;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const request = App.createRequest({ url, method: 'GET' });
+                const response = await this.requestManager.schedule(request, 1);
+                this.CloudFlareError(response.status);
+                return this.cheerio.load(response.data as string);
+            } catch (err: any) {
+                lastError = err;
+                if (attempt < 2) {
+                    await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+                }
+            }
+        }
+        throw lastError;
     }
 
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const baseUrl = await this.getBaseUrl();
-        const sections = [
-            { id: 'de_cu', title: 'Truyện Đề Cử', url: `${baseUrl}/` },
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${baseUrl}/` },
-            { id: 'manhwa', title: 'Manhwa 18+', url: `${baseUrl}/tim-truyen/manhwa` },
-            { id: 'doujinshi', title: 'Doujinshi', url: `${baseUrl}/tim-truyen/doujinshi` },
-            { id: 'truyen_mau', title: 'Truyện Màu', url: `${baseUrl}/tim-truyen/truyen-mau` },
+        const initialSections = [
+            { id: 'de_cu', title: 'Truyện Đề Cử' },
+            { id: 'latest', title: 'Mới Cập Nhật' },
+            { id: 'manhwa', title: 'Manhwa 18+' },
+            { id: 'doujinshi', title: 'Doujinshi' },
+            { id: 'truyen_mau', title: 'Truyện Màu' },
         ];
 
-        for (const item of sections) {
+        for (const item of initialSections) {
             sectionCallback(App.createHomeSection({
                 id: item.id,
                 title: item.title,
@@ -136,11 +147,42 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
             }));
         }
 
-        for (const item of sections) {
+        // 1. Fetch homepage once for 'de_cu' and 'latest'
+        try {
+            const $home = await this.DOMHTML(baseUrl);
+
+            const deCu = this.parser.parseCards($home, baseUrl, '.items-slide .item');
+            sectionCallback(App.createHomeSection({
+                id: 'de_cu',
+                title: 'Truyện Đề Cử',
+                containsMoreItems: true,
+                type: HomeSectionType.singleRowNormal,
+                items: deCu,
+            }));
+
+            const latest = this.parser.parseCards($home, baseUrl, 'div.items .item, .Item');
+            sectionCallback(App.createHomeSection({
+                id: 'latest',
+                title: 'Mới Cập Nhật',
+                containsMoreItems: true,
+                type: HomeSectionType.singleRowNormal,
+                items: latest,
+            }));
+        } catch (e) {
+            console.error('[HentaiVN error loading homepage]:', e);
+        }
+
+        // 2. Fetch category sections
+        const categorySections = [
+            { id: 'manhwa', title: 'Manhwa 18+', url: `${baseUrl}/tim-truyen/manhwa` },
+            { id: 'doujinshi', title: 'Doujinshi', url: `${baseUrl}/tim-truyen/doujinshi` },
+            { id: 'truyen_mau', title: 'Truyện Màu', url: `${baseUrl}/tim-truyen/truyen-mau` },
+        ];
+
+        for (const item of categorySections) {
             try {
-                const $ = await this.DOMHTML(item.url);
-                const selector = item.id === 'de_cu' ? '.items-slide .item' : 'div.items .item, .Item';
-                const manga = this.parser.parseCards($, baseUrl, selector);
+                const $cat = await this.DOMHTML(item.url);
+                const manga = this.parser.parseCards($cat, baseUrl, 'div.items .item, .Item');
                 sectionCallback(App.createHomeSection({
                     id: item.id,
                     title: item.title,
@@ -149,13 +191,7 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
                     items: manga,
                 }));
             } catch (e) {
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: HomeSectionType.singleRowNormal,
-                    items: [],
-                }));
+                // Section remains created with empty list if category fetch fails
             }
         }
     }

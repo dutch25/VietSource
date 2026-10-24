@@ -28,17 +28,29 @@ global.App = {
     createDUIButton: (opts) => opts,
     createRequestManager: (opts) => {
         return {
-            schedule: async (req, retry) => {
+            schedule: async (req, retry = 1) => {
                 if (opts.interceptor?.interceptRequest) {
                     req = await opts.interceptor.interceptRequest(req);
                 }
                 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-                const res = await fetch(req.url, {
-                    method: req.method,
-                    headers: req.headers
-                });
-                const data = await res.text();
-                return { status: res.status, data };
+                const attempts = Math.max(retry ?? 1, 3);
+                let lastErr;
+                for (let i = 0; i < attempts; i++) {
+                    try {
+                        const res = await fetch(req.url, {
+                            method: req.method,
+                            headers: req.headers
+                        });
+                        const data = await res.text();
+                        return { status: res.status, data };
+                    } catch (e) {
+                        lastErr = e;
+                        if (i < attempts - 1) {
+                            await new Promise(r => setTimeout(r, 800 * (i + 1)));
+                        }
+                    }
+                }
+                throw lastErr;
             },
             getDefaultUserAgent: async () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
         };

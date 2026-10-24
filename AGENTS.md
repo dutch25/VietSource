@@ -178,7 +178,7 @@ dutch-extension/
 **Website**: https://tranh18.cc
 
 ### SourceInfo
-- **Version**: 1.0.2
+- **Version**: 1.0.3
 - **Author**: Dutch25
 - **Content Rating**: ADULT (18+)
 - **Tags**: "Adult" (RED), "18+" (YELLOW)
@@ -206,7 +206,7 @@ dutch-extension/
 **Website**: https://www.hentaivnx.com
 
 ### SourceInfo
-- **Version**: 1.0.2
+- **Version**: 1.0.3
 - **Author**: Dutch25
 - **Content Rating**: ADULT (18+)
 - **Tags**: "Adult" (RED), "18+" (YELLOW)
