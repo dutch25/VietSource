@@ -19,6 +19,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **truyenggvn.com** - `TruyenGG`
 - **tranh18.cc** - `Tranh18`
 - **www.hentaivnx.com** - `HentaiVN`
+- **multporn.net** - `Multporn`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -48,7 +49,8 @@ dutch-extension/
 │   ├── ZetTruyen/
 │   ├── TruyenGG/
 │   ├── Tranh18/
-│   └── HentaiVN/
+│   ├── HentaiVN/
+│   └── Multporn/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -325,6 +327,35 @@ dutch-extension/
 
 ---
 
+# Source: Multporn
+
+**Website**: https://multporn.net
+
+### SourceInfo
+- **Version**: 1.0.0
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI
+
+### URL Patterns
+- Homepage: `https://multporn.net/`
+- Comic / Node: `https://multporn.net/{mangaId}`
+- Search: `https://multporn.net/search?search_api_views_fulltext={keyword}&page={page}`
+- Category: `https://multporn.net/{categorySlug}?page={page}`
+
+### Homepage Sections
+1. **Mới Nhất (New Uploads)**: `https://multporn.net/new`
+2. **Comics Cập Nhật**: `https://multporn.net/updated_comics`
+3. **Hentai Manga**: `https://multporn.net/new?type=3&language=1`
+4. **Manga Cập Nhật**: `https://multporn.net/updated_manga`
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> Multporn -> Cài đặt nguồn -> URL cơ sở**.
+
+---
+
+
 
 
 # Release Checklist
@@ -352,6 +383,8 @@ dutch-extension/
 **If working on Tranh18:** Update `src/Tranh18/Tranh18.ts` - `version: 'x.x.x'`
 
 **If working on HentaiVN:** Update `src/HentaiVN/HentaiVN.ts` - `version: 'x.x.x'`
+
+**If working on Multporn:** Update `src/Multporn/Multporn.ts` - `version: 'x.x.x'`
 
 DO NOT update package.json unless specifically asked.
 
