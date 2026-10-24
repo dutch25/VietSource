@@ -473,7 +473,7 @@ function safeEncodeUrl(url) {
     }
 }
 exports.VinaHentaiInfo = {
-    version: '1.1.24',
+    version: '1.1.25',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -526,9 +526,9 @@ class VinaHentai extends types_1.Source {
             { id: 'latest', title: 'Truyện Hentai Mới', url: `${BASE_URL}` },
             { id: 'week', title: 'Top Tuần', url: `${BASE_URL}/bang-xep-hang/truyen?period=weekly` },
             { id: 'month', title: 'Top Tháng', url: `${BASE_URL}/bang-xep-hang/truyen?period=monthly` },
-            { id: 'private', title: 'Bộ Sưu Tập Riêng', url: `${BASE_URL}/genres/anal` },
-            { id: 'private2', title: 'Bộ Sưu Tập Riêng 2', url: `${BASE_URL}/genres/anal` },
-            { id: 'private3', title: 'Bộ Sưu Tập Riêng 3', url: `${BASE_URL}/genres/anal` },
+            { id: 'private', title: 'Bộ Sưu Tập Riêng', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che` },
+            { id: 'private2', title: 'Bộ Sưu Tập Riêng 2', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&sort=viewNumber` },
+            { id: 'private3', title: 'Bộ Sưu Tập Riêng 3', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&sort=likeNumber` },
         ];
         for (const section of sections) {
             sectionCallback(App.createHomeSection({
@@ -544,7 +544,7 @@ class VinaHentai extends types_1.Source {
                 if (section.id === 'private' || section.id === 'private2' || section.id === 'private3') {
                     const sortParam = section.id === 'private2' ? '&sort=viewNumber' : section.id === 'private3' ? '&sort=likeNumber' : '';
                     try {
-                        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=1${sortParam}`, method: 'GET' }), 0);
+                        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=1${sortParam}`, method: 'GET' }), 0);
                         if (response.status === 200) {
                             const $ = this.cheerio.load(response.data);
                             manga = this.parser.parseHomePage($);
@@ -587,11 +587,12 @@ class VinaHentai extends types_1.Source {
         if (homepageSectionId === 'private' || homepageSectionId === 'private2' || homepageSectionId === 'private3') {
             const sortParam = homepageSectionId === 'private2' ? '&sort=viewNumber' : homepageSectionId === 'private3' ? '&sort=likeNumber' : '';
             try {
-                const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/search/advanced?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=${page}${sortParam}`, method: 'GET' }), 0);
+                const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi%2Ctrap%2Cfutanari%2Cfurry&includeGenres=anal%2Ckhong-che&page=${page}${sortParam}`, method: 'GET' }), 0);
                 if (response.status === 200) {
                     const $ = this.cheerio.load(response.data);
                     const manga = this.parser.parseHomePage($);
-                    return App.createPagedResults({ results: manga, metadata: { page: page + 1 } });
+                    const isLast = manga.length === 0 || this.parser.isLastPage($, page);
+                    return App.createPagedResults({ results: manga, metadata: isLast ? undefined : { page: page + 1 } });
                 }
             }
             catch (e) { }
