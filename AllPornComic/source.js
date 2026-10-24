@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const AllPornComicParser_1 = require("./AllPornComicParser");
 const AllPornComicSetting_1 = require("./AllPornComicSetting");
 exports.AllPornComicInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'AllPornComic',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -529,9 +529,26 @@ class AllPornComic extends types_1.Source {
     getMangaShareUrl(mangaId) {
         return `${AllPornComicSetting_1.DEFAULT_BASE_URL}/porncomic/${mangaId}/`;
     }
+    CloudFlareError(status) {
+        if (status === 503 || status === 403) {
+            throw new Error(`CLOUDFLARE BYPASS ERROR:\nPlease go to home page ${exports.AllPornComicInfo.name} source and press the cloud icon.`);
+        }
+    }
+    async getCloudflareBypassRequestAsync() {
+        const baseUrl = await this.getBaseUrl();
+        return App.createRequest({
+            url: baseUrl,
+            method: 'GET',
+            headers: {
+                'referer': `${baseUrl}/`,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            },
+        });
+    }
     async DOMHTML(url) {
         const request = App.createRequest({ url, method: 'GET' });
         const response = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(response.status);
         return this.cheerio.load(response.data);
     }
     async getHomePageSections(sectionCallback) {
@@ -540,6 +557,9 @@ class AllPornComic extends types_1.Source {
             { id: 'latest', title: 'Mới Cập Nhật', url: `${baseUrl}/porncomic/?m_orderby=latest` },
             { id: 'trending', title: 'Xem Nhiều (Trending)', url: `${baseUrl}/porncomic/?m_orderby=views` },
             { id: 'rating', title: 'Đánh Giá Cao', url: `${baseUrl}/porncomic/?m_orderby=rating` },
+            { id: 'private_1', title: 'Private 1', url: `${baseUrl}/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=rating` },
+            { id: 'private_2', title: 'Private 2', url: `${baseUrl}/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=trending` },
+            { id: 'private_3', title: 'Private 3', url: `${baseUrl}/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=views` },
             { id: '3d', title: '3D Comics', url: `${baseUrl}/porncomic-category/3dd/` },
             { id: 'manhwa', title: 'Manhwa 18+', url: `${baseUrl}/porncomic-category/manhwad/` },
             { id: 'hentai', title: 'Hentai Manga', url: `${baseUrl}/porncomic-category/hentaib/` },
@@ -587,6 +607,21 @@ class AllPornComic extends types_1.Source {
         }
         else if (homepageSectionId === 'rating') {
             url = page === 1 ? `${baseUrl}/porncomic/?m_orderby=rating` : `${baseUrl}/porncomic/page/${page}/?m_orderby=rating`;
+        }
+        else if (homepageSectionId === 'private_1') {
+            url = page === 1
+                ? `${baseUrl}/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=rating`
+                : `${baseUrl}/page/${page}/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=rating`;
+        }
+        else if (homepageSectionId === 'private_2') {
+            url = page === 1
+                ? `${baseUrl}/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=trending`
+                : `${baseUrl}/page/${page}/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=trending`;
+        }
+        else if (homepageSectionId === 'private_3') {
+            url = page === 1
+                ? `${baseUrl}/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=views`
+                : `${baseUrl}/page/${page}/?s&post_type=wp-manga&genre%5B0%5D=analc&genre%5B1%5D=uncensorede&op&author&artist&release&adult&m_orderby=views`;
         }
         else if (homepageSectionId === '3d') {
             url = page === 1 ? `${baseUrl}/porncomic-category/3dd/` : `${baseUrl}/porncomic-category/3dd/page/${page}/`;
