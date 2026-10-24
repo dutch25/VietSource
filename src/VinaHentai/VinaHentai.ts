@@ -19,7 +19,7 @@ import { Parser } from './VinaHentaiParser'
 
 const BASE_URL = 'https://vinahentai.vip'
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.22',
+    version: '1.1.23',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -71,8 +71,8 @@ export class VinaHentai extends Source {
         const sections = [
             { id: 'hot', title: 'Truyện HOT', url: `${BASE_URL}` },
             { id: 'latest', title: 'Truyện Hentai Mới', url: `${BASE_URL}` },
-            { id: 'week', title: 'Top Tuần', url: `${BASE_URL}/leaderboard/manga?period=weekly` },
-            { id: 'month', title: 'Top Tháng', url: `${BASE_URL}/leaderboard/manga?period=monthly` },
+            { id: 'week', title: 'Top Tuần', url: `${BASE_URL}/bang-xep-hang/truyen?period=weekly` },
+            { id: 'month', title: 'Top Tháng', url: `${BASE_URL}/bang-xep-hang/truyen?period=monthly` },
             { id: 'private', title: 'Bộ Sưu Tập Riêng', url: `${BASE_URL}/genres/anal` },
             { id: 'private2', title: 'Bộ Sưu Tập Riêng 2', url: `${BASE_URL}/genres/anal` },
             { id: 'private3', title: 'Bộ Sưu Tập Riêng 3', url: `${BASE_URL}/genres/anal` },
@@ -150,9 +150,9 @@ export class VinaHentai extends Source {
         }
 
         if (homepageSectionId === 'week') {
-            url = `${BASE_URL}/leaderboard/manga?period=weekly&page=${page}`
+            url = `${BASE_URL}/bang-xep-hang/truyen?period=weekly&page=${page}`
         } else if (homepageSectionId === 'month') {
-            url = `${BASE_URL}/leaderboard/manga?period=monthly&page=${page}`
+            url = `${BASE_URL}/bang-xep-hang/truyen?period=monthly&page=${page}`
         }
 
         const response = await this.requestManager.schedule(
@@ -179,7 +179,7 @@ export class VinaHentai extends Source {
             }
         } else {
             const searchQuery = encodeURIComponent(query.title ?? '')
-            url = `${BASE_URL}/search?q=${searchQuery}&page=${page}`
+            url = `${BASE_URL}/tim-kiem?q=${searchQuery}&page=${page}`
         }
 
         const response = await this.requestManager.schedule(

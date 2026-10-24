@@ -55,14 +55,47 @@ export class Parser {
             const slug = parts[1].trim()
             if (slug === 'manage') return
 
-            let title = $(el).attr('aria-label') || $(el).attr('title') || ''
+            // 1. Heading element (e.g. h2 in search page)
+            const heading = $(el).find('h1, h2, h3, h4').first()
+            let title = heading.attr('title') || heading.text().trim()
+
+            // 2. Element with line-clamp-2 (used in homepage & leaderboard cards)
             if (!title) {
-                const titleEl = $(el).find('.truncate').last()
-                title = titleEl.attr('title') || titleEl.text().trim()
+                const lineClamp = $(el).find('.line-clamp-2').first()
+                title = lineClamp.attr('title') || lineClamp.text().trim()
             }
+
+            // 3. Image alt attribute
             if (!title) {
-                const titleEl = $(el).find('h2, h3, p').first()
-                title = titleEl.attr('title') || titleEl.text().trim() || slug
+                const imgAlt = $(el).find('img').first().attr('alt')?.trim()
+                if (imgAlt) title = imgAlt
+            }
+
+            // 4. Card link attribute
+            if (!title) {
+                title = $(el).attr('title')?.trim() || $(el).attr('aria-label')?.trim() || ''
+            }
+
+            // 5. Fallback formatting slug if title still missing
+            if (!title) {
+                title = slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+            }
+
+            title = title.replace(/\s+/g, ' ').trim()
+
+            // Extract subtitle (chapter badge, e.g. "Part 3", "Chap 12", "Oneshot")
+            let subtitle: string | undefined = undefined
+            const badgeEl = $(el).find('div[style*="aspect-ratio"] span.truncate, div[style*="aspect-ratio"] span[class*="rounded-full"], .aspect-\\[3\\/4\\] span.truncate, .aspect-\\[3\\/4\\] span[class*="rounded-full"]').first()
+            if (badgeEl.length > 0) {
+                const badgeText = (badgeEl.attr('title') || badgeEl.text()).trim()
+                if (badgeText && badgeText !== title) {
+                    subtitle = badgeText
+                }
+            } else {
+                const chapCount = $(el).find('.text-txt-secondary span').first().text().trim()
+                if (chapCount && chapCount.includes('chương')) {
+                    subtitle = chapCount
+                }
             }
 
             const img = $(el).find('img').first()
@@ -78,7 +111,12 @@ export class Parser {
 
             if (slug && title) {
                 try {
-                    results.push(App.createPartialSourceManga({ mangaId: slug, title, image }))
+                    results.push(App.createPartialSourceManga({
+                        mangaId: slug,
+                        title,
+                        image,
+                        subtitle
+                    }))
                 } catch(e) {}
             }
         })
