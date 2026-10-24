@@ -17,6 +17,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **mimimoe.moe** - `MiMi`
 - **zettruyen4.com** - `ZetTruyen`
 - **truyenggvn.com** - `TruyenGG`
+- **tranh18.cc** - `Tranh18`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -43,7 +44,9 @@ dutch-extension/
 │   ├── NHentaiClub/
 │   ├── VinaHentai/
 │   ├── MiMi/
-│   └── ZetTruyen/
+│   ├── ZetTruyen/
+│   ├── TruyenGG/
+│   └── Tranh18/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -262,6 +265,35 @@ dutch-extension/
 
 ---
 
+# Source: Tranh18
+
+**Website**: https://tranh18.cc
+
+### SourceInfo
+- **Version**: 1.0.0
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI | CLOUDFLARE_BYPASS_REQUIRED
+
+### URL Patterns
+- Homepage: `https://tranh18.cc/`
+- Manga: `https://tranh18.cc/comic/{mangaId}`
+- Chapter: `https://tranh18.cc/{mangaId}/chapter/{chapterNum}`
+- Search: `https://tranh18.cc/search?keyword={search}&page={page}`
+- Tag / Genre: `https://tranh18.cc/tag/{tagSlug}?page={page}`
+
+### Homepage Sections
+1. **Mới Cập Nhật**: `https://tranh18.cc/update`
+2. **Manhwa 18+**: `https://tranh18.cc/tag/manhwa`
+3. **Truyện Hoàn Thành**: `https://tranh18.cc/completed`
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> Tranh18 -> Cài đặt nguồn -> URL cơ sở**.
+
+---
+
+
 # Release Checklist
 
 **IMPORTANT: You MUST update the version in the .ts file every time you make changes!**
@@ -283,6 +315,8 @@ dutch-extension/
 **If working on TruyenTuoiTho:** Update `src/TruyenTuoiTho/TruyenTuoiTho.ts` - `version: 'x.x.x'`
 
 **If working on TruyenGG:** Update `src/TruyenGG/TruyenGG.ts` - `version: 'x.x.x'`
+
+**If working on Tranh18:** Update `src/Tranh18/Tranh18.ts` - `version: 'x.x.x'`
 
 DO NOT update package.json unless specifically asked.
 

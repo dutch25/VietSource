@@ -40,6 +40,7 @@ Hoặc chạm trực tiếp vào nút **[Add to Paperback](paperback://addRepo?d
 | **TruyenQQ** | [truyenqqko.com](https://truyenqqko.com/) | Mọi lứa tuổi | ✅ Hoạt động | Cập nhật nhanh chóng, kho truyện phong phú đa thể loại, tìm kiếm nâng cao. |
 | **TopTruyen** | [toptruyenzone13.com](https://www.toptruyenzone13.com/) | Mọi lứa tuổi | ✅ Hoạt động | Tổng hợp manhwa, manhua và manga xu hướng hàng đầu. Hỗ trợ tự đổi domain trong cài đặt Paperback. |
 | **ZetTruyen** | [zettruyen4.com](https://www.zettruyen4.com/) | Mọi lứa tuổi | ✅ Hoạt động | Đọc truyện tranh Manhwa online chất lượng cao, cập nhật nhanh, hỗ trợ tự đổi domain. |
+| **TruyenGG** | [truyenggvn.com](https://truyenggvn.com/) | Mọi lứa tuổi | ✅ Hoạt động | Kho truyện Manhwa, Manhua, Manga chất lượng cao, 5 section trang chủ, tìm kiếm Ajax tức thì. |
 | **GocTruyenTranh** | [goctruyentranhvui30.com](https://goctruyentranhvui30.com/) | Mọi lứa tuổi | ✅ Hoạt động | Đọc truyện bản quyền mượt mà, hỗ trợ tìm kiếm theo thể loại. |
 | **LuotTruyen** | [luottruyen16.com](https://luottruyen16.com) | Tuổi Teen | ❌ Không hoạt động | Manhwa, truyện màu lãng mạn, hành động hấp dẫn. |
 
@@ -54,6 +55,7 @@ Hoặc chạm trực tiếp vào nút **[Add to Paperback](paperback://addRepo?d
 | **NHentaiClub** | [nhentaiclub.space](https://nhentaiclub.space/) | 🔞 Adult | ✅ Hoạt động | Manga/Doujinshi 18+, bảng xếp hạng theo ngày/tuần/tháng/mọi thời đại, lọc hơn 130+ thể loại. |
 | **VinaHentai** | [vinahentai.vip](https://vinahentai.vip) | 🔞 Adult | ✅ Hoạt động | Truyện HOT, Hentai mới, bộ sưu tập riêng, cosplay và lọc chi tiết theo tác giả. |
 | **MiMi** | [mimimoe.moe](https://mimimoe.moe) | 🔞 Adult | ✅ Hoạt động | Tổng hợp truyện dịch gắn thẻ 18+, chất lượng ảnh sắc nét. |
+| **Tranh18** | [tranh18.cc](https://tranh18.cc/) | 🔞 Adult | ✅ Hoạt động | Manhwa 18+ tiếng Việt, cập nhật mới nhất, phân loại tag chi tiết, hỗ trợ tự đổi domain. |
 
 ---
 
