@@ -466,7 +466,7 @@ const HentaiVNParser_1 = require("./HentaiVNParser");
 const HentaiVNSetting_1 = require("./HentaiVNSetting");
 const PROXY_URL = 'https://nhentai-club-proxy.dutch25.workers.dev';
 exports.HentaiVNInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -683,7 +683,14 @@ class HentaiVN extends types_1.Source {
             url = `${baseUrl}/tim-truyen?keyword=${encodeURIComponent(query.title.trim())}&page=${page}`;
         }
         else if (query.includedTags && query.includedTags.length > 0) {
-            url = `${baseUrl}/tim-truyen/${query.includedTags[0].id}?page=${page}`;
+            const tag = query.includedTags[0];
+            if (tag.id.startsWith('artist:')) {
+                const artistName = tag.id.replace(/^artist:/, '');
+                url = `${baseUrl}/tim-truyen?keyword=${encodeURIComponent(artistName)}&page=${page}`;
+            }
+            else {
+                url = `${baseUrl}/tim-truyen/${tag.id}?page=${page}`;
+            }
         }
         else {
             url = `${baseUrl}/?page=${page}`;
@@ -776,20 +783,30 @@ class HentaiVNParser {
         $('li.row, .list-info p, .detail-info li').each((_, el) => {
             const text = $(el).text().replace(/\s+/g, ' ').trim();
             if (text.includes('Tác giả')) {
-                const match = text.replace(/Tác giả\s*/i, '').trim();
+                const match = $(el).find('.col-xs-8').text().trim() || text.replace(/Tác giả\s*/i, '').trim();
                 if (match && match.toLowerCase() !== 'đang cập nhật') {
                     author = match;
                 }
             }
             if (text.includes('Tình trạng')) {
-                const match = text.replace(/Tình trạng\s*/i, '').trim();
+                const match = $(el).find('.col-xs-8').text().trim() || text.replace(/Tình trạng\s*/i, '').trim();
                 if (match) {
                     status = match;
                 }
             }
         });
+        // If author is still "Đang cập nhật", check title brackets for [Artist] or (Artist)
+        if (author === 'Đang cập nhật') {
+            const bracketMatch = rawTitle.match(/^\s*\[([^\]]+)\]/) || rawTitle.match(/^\s*\(([^)]+)\)/);
+            if (bracketMatch && bracketMatch[1]) {
+                const candidate = bracketMatch[1].trim();
+                if (!/tới chap|full|truyện|chapter|chap/i.test(candidate)) {
+                    author = candidate;
+                }
+            }
+        }
         const tags = [];
-        $('.kind a[href*="/tim-truyen/"], a[href*="/tim-truyen/"]').each((_, el) => {
+        $('li.kind a, .detail-info .kind a, .kind a[href*="/tim-truyen/"]').each((_, el) => {
             const href = $(el).attr('href') || '';
             const tagId = href.replace(/.*?\/tim-truyen\//, '').replace(/\/+$/, '').trim();
             const label = $(el).text().trim();
@@ -797,13 +814,21 @@ class HentaiVNParser {
                 tags.push({ id: tagId, label });
             }
         });
-        const tagSections = [
-            App.createTagSection({
+        const tagSections = [];
+        if (author && author.toLowerCase() !== 'đang cập nhật') {
+            tagSections.push(App.createTagSection({
+                id: 'artist',
+                label: 'Tác giả',
+                tags: [App.createTag({ id: `artist:${author}`, label: author })],
+            }));
+        }
+        if (tags.length > 0) {
+            tagSections.push(App.createTagSection({
                 id: 'genres',
                 label: 'Thể loại',
                 tags: tags.map(t => App.createTag({ id: t.id, label: t.label })),
-            }),
-        ];
+            }));
+        }
         return App.createSourceManga({
             id: mangaId,
             mangaInfo: App.createMangaInfo({
@@ -812,6 +837,7 @@ class HentaiVNParser {
                 desc,
                 status,
                 author,
+                artist: author !== 'Đang cập nhật' ? author : undefined,
                 tags: tagSections,
             }),
         });
