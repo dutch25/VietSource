@@ -16,6 +16,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **vinahentai.vip** - `VinaHentai`
 - **mimimoe.moe** - `MiMi`
 - **zettruyen4.com** - `ZetTruyen`
+- **truyenggvn.com** - `TruyenGG`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -232,6 +233,35 @@ dutch-extension/
 
 ---
 
+# Source: TruyenGG
+
+**Website**: https://truyenggvn.com
+
+### SourceInfo
+- **Version**: 1.0.0
+- **Author**: Dutch25
+- **Content Rating**: EVERYONE
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI | CLOUDFLARE_BYPASS_REQUIRED
+
+### URL Patterns
+- Homepage: `https://truyenggvn.com/`
+- Manga: `https://truyenggvn.com/truyen-tranh/{mangaId}`
+- Chapter: `https://truyenggvn.com/truyen-tranh/{chapterId}`
+- Search Ajax: `POST https://truyenggvn.com/frontend/search/search` (body: `search={keyword}`)
+- Genre / Tag: `https://truyenggvn.com/the-loai/{genreId}.html`
+
+### Homepage Sections
+1. **Truyện HOT**: `https://truyenggvn.com/truyen-yeu-thich.html`
+2. **Mới Cập Nhật**: `https://truyenggvn.com/truyen-moi-cap-nhat.html`
+3. **Top Manhwa**: `https://truyenggvn.com/the-loai/manhwa-49.html?sort=4`
+4. **Top Manhua**: `https://truyenggvn.com/the-loai/manhua-35.html?sort=4`
+5. **Top Manga**: `https://truyenggvn.com/the-loai/manga-469.html?sort=4`
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> TruyenGG -> Cài đặt nguồn -> URL cơ sở**.
+
+---
+
 # Release Checklist
 
 **IMPORTANT: You MUST update the version in the .ts file every time you make changes!**
@@ -251,6 +281,8 @@ dutch-extension/
 **If working on ZetTruyen:** Update `src/ZetTruyen/ZetTruyen.ts` - `version: 'x.x.x'`
 
 **If working on TruyenTuoiTho:** Update `src/TruyenTuoiTho/TruyenTuoiTho.ts` - `version: 'x.x.x'`
+
+**If working on TruyenGG:** Update `src/TruyenGG/TruyenGG.ts` - `version: 'x.x.x'`
 
 DO NOT update package.json unless specifically asked.
 
