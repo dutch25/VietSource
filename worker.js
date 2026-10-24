@@ -23,6 +23,11 @@ export default {
       'https://img.resourcehub.shop/', // TruyenTuoiTho CDN
       'https://resourcehub.shop/', // TruyenTuoiTho CDN Alternate
       'https://goctruyentranhvui30.com/', // GocTruyenTranh
+      'https://cdn300.tranh18.net/', // Tranh18 CDN
+      'https://tranh18.cc/',      // Tranh18 covers
+      'https://m.tranh18.cc/',    // Tranh18 covers
+      'https://www.hentaivnx.com/', // HentaiVN covers
+      'https://hentaivnx.com/',   // HentaiVN covers
     ]
 
     // Allowed domains for pages (HTML)
@@ -32,11 +37,15 @@ export default {
       'cdn.hv2t.com',
       'truyentuoitho.com',
       'goctruyentranhvui30.com',
+      'tranh18.cc',
+      'hentaivnx.com',
     ]
 
     const isImage = imageAllowed.some(prefix => target.startsWith(prefix)) || 
                     target.includes('.nhentaiclub.shop') || 
-                    target.includes('nhentaiclub.space')
+                    target.includes('nhentaiclub.space') ||
+                    target.includes('2tcdn.cfd') ||
+                    target.includes('tranh18.net')
     const isPage = pageAllowed.some(domain => target.includes(domain)) && !isImage
 
     if (!isImage && !isPage) {
@@ -51,6 +60,10 @@ export default {
       referer = 'https://truyentuoitho.com'
     } else if (target.includes('goctruyentranhvui30.com')) {
       referer = 'https://goctruyentranhvui30.com'
+    } else if (target.includes('tranh18.cc') || target.includes('tranh18.net')) {
+      referer = 'https://tranh18.cc/'
+    } else if (target.includes('hentaivnx.com') || target.includes('2tcdn.cfd')) {
+      referer = 'https://www.hentaivnx.com/'
     }
 
     // HARDCODED AUTH COOKIES (from browser session)
@@ -61,7 +74,9 @@ export default {
       'Referer': referer,
       'Origin': referer,
       'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-      'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      'Accept': isImage
+        ? 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+        : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
     }
 

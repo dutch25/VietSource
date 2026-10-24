@@ -18,7 +18,7 @@ import {
 import { Parser } from './TruyenTuoiThoParser'
 
 const BASE_URL = 'https://truyentuoitho.com'
-const PROXY_URL = 'https://nhentai-club-proxy.feedandafk2018.workers.dev'
+const PROXY_URL = 'https://nhentai-club-proxy.dutch25.workers.dev'
 
 export const TruyenTuoiThoInfo: SourceInfo = {
     version: '1.1.11',

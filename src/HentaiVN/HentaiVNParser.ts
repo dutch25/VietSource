@@ -7,7 +7,7 @@ import {
 } from '@paperback/types';
 
 export class HentaiVNParser {
-    parseCards($: any, baseUrl: string, selector = 'div.items .item, .items-slide .item, .list-items .item, .Item'): PartialSourceManga[] {
+    parseCards($: any, baseUrl: string, selector = 'div.items .item, .items-slide .item, .list-items .item, .Item', proxyUrl?: string): PartialSourceManga[] {
         const mangaList: PartialSourceManga[] = [];
         const seenIds = new Set<string>();
 
@@ -29,6 +29,9 @@ export class HentaiVNParser {
             if (image && !image.startsWith('http')) {
                 image = `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
             }
+            if (proxyUrl && image && image.startsWith('http')) {
+                image = `${proxyUrl}/?url=${encodeURIComponent(image)}`;
+            }
 
             const chapter = $(el).find('ul.comic-item li, .chapter a, .ep a, .chapter').first().text().replace(/\s+/g, ' ').trim();
 
@@ -45,7 +48,7 @@ export class HentaiVNParser {
         return mangaList;
     }
 
-    parseMangaDetails($: any, mangaId: string, baseUrl: string): SourceManga {
+    parseMangaDetails($: any, mangaId: string, baseUrl: string, proxyUrl?: string): SourceManga {
         const rawTitle = $('h1').first().text().trim() ||
             $('meta[property="og:title"]').attr('content') ||
             mangaId;
@@ -56,6 +59,9 @@ export class HentaiVNParser {
             '';
         if (image && !image.startsWith('http')) {
             image = `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
+        }
+        if (proxyUrl && image && image.startsWith('http')) {
+            image = `${proxyUrl}/?url=${encodeURIComponent(image)}`;
         }
 
         const desc = $('.detail-content p, .detail-content').first().text().trim() || 'Không có mô tả';
@@ -138,7 +144,7 @@ export class HentaiVNParser {
         return chapters;
     }
 
-    parseChapterDetails($: any, mangaId: string, chapterId: string, baseUrl: string): ChapterDetails {
+    parseChapterDetails($: any, mangaId: string, chapterId: string, baseUrl: string, proxyUrl?: string): ChapterDetails {
         const pages: string[] = [];
 
         $('.reading-detail img, .page-chapter img').each((_: any, el: any) => {
@@ -152,6 +158,10 @@ export class HentaiVNParser {
                 src = 'https:' + src;
             } else if (src.startsWith('/')) {
                 src = `${baseUrl}${src}`;
+            }
+
+            if (proxyUrl && src && src.startsWith('http')) {
+                src = `${proxyUrl}/?url=${encodeURIComponent(src)}`;
             }
 
             if (!pages.includes(src)) {

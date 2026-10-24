@@ -464,8 +464,9 @@ exports.Tranh18 = exports.Tranh18Info = void 0;
 const types_1 = require("@paperback/types");
 const Tranh18Parser_1 = require("./Tranh18Parser");
 const Tranh18Setting_1 = require("./Tranh18Setting");
+const PROXY_URL = 'https://nhentai-club-proxy.dutch25.workers.dev';
 exports.Tranh18Info = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'Tranh18',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -539,9 +540,31 @@ class Tranh18 extends types_1.Source {
         return App.createRequest({
             url: baseUrl,
             method: 'GET',
+            headers: {
+                'referer': `${baseUrl}/`,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            },
         });
     }
     async DOMHTML(url) {
+        // 1. Try proxy worker first (bypasses ISP DPI and Cloudflare blocking)
+        try {
+            const proxyRequest = App.createRequest({
+                url: `${PROXY_URL}/?url=${encodeURIComponent(url)}`,
+                method: 'GET',
+            });
+            const proxyResponse = await this.requestManager.schedule(proxyRequest, 0);
+            if (proxyResponse.status === 200 && proxyResponse.data) {
+                const html = proxyResponse.data;
+                if (!html.includes('challenges.cloudflare.com') && !html.includes('cf-challenge')) {
+                    return this.cheerio.load(html);
+                }
+            }
+        }
+        catch (e) {
+            // Silently fall back to direct request
+        }
+        // 2. Direct request fallback with retry
         let lastError;
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
@@ -578,7 +601,7 @@ class Tranh18 extends types_1.Source {
             const $home = await this.DOMHTML(baseUrl);
             // 1. Latest section
             const latestEl = $home('.index-title').first().nextUntil('.index-title, .box-header').find('.mh-item');
-            const latestItems = this.parser.parseCardElements($home, latestEl.length > 0 ? latestEl : $home('.mh-item').slice(0, 15), baseUrl);
+            const latestItems = this.parser.parseCardElements($home, latestEl.length > 0 ? latestEl : $home('.mh-item').slice(0, 15), baseUrl, PROXY_URL);
             sectionCallback(App.createHomeSection({
                 id: 'latest',
                 title: 'Mới Cập Nhật',
@@ -589,7 +612,7 @@ class Tranh18 extends types_1.Source {
             // 2. Manhwa / Hot section
             const hotHeader = $home('h2:contains("HOT"), h2:contains("Từ khóa HOT")').first().closest('.index-title, .box-header');
             const hotEl = hotHeader.nextUntil('.box-header, .index-title, footer').find('.mh-item');
-            const hotItems = this.parser.parseCardElements($home, hotEl.length > 0 ? hotEl : $home('.mh-item').slice(15, 35), baseUrl);
+            const hotItems = this.parser.parseCardElements($home, hotEl.length > 0 ? hotEl : $home('.mh-item').slice(15, 35), baseUrl, PROXY_URL);
             sectionCallback(App.createHomeSection({
                 id: 'manhwa',
                 title: 'Manhwa 18+',
@@ -600,7 +623,7 @@ class Tranh18 extends types_1.Source {
             // 3. Completed section
             const completedHeader = $home('h2:contains("Hoàn thành")').first().closest('.box-header, .index-title');
             const completedEl = completedHeader.nextUntil('.box-header, .index-title, footer').find('.mh-item');
-            const completedItems = this.parser.parseCardElements($home, completedEl.length > 0 ? completedEl : $home('.mh-item').slice(35), baseUrl);
+            const completedItems = this.parser.parseCardElements($home, completedEl.length > 0 ? completedEl : $home('.mh-item').slice(35), baseUrl, PROXY_URL);
             sectionCallback(App.createHomeSection({
                 id: 'completed',
                 title: 'Truyện Hoàn Thành',
@@ -630,7 +653,7 @@ class Tranh18 extends types_1.Source {
             return App.createPagedResults({ results: [], metadata: undefined });
         }
         const $ = await this.DOMHTML(url);
-        const manga = this.parser.parseCards($, baseUrl);
+        const manga = this.parser.parseCards($, baseUrl, PROXY_URL);
         const isLast = manga.length === 0 || this.parser.isLastPage($, page);
         return App.createPagedResults({
             results: manga,
@@ -651,7 +674,7 @@ class Tranh18 extends types_1.Source {
             url = `${baseUrl}/update?page=${page}`;
         }
         const $ = await this.DOMHTML(url);
-        const manga = this.parser.parseCards($, baseUrl);
+        const manga = this.parser.parseCards($, baseUrl, PROXY_URL);
         const isLast = manga.length === 0 || this.parser.isLastPage($, page);
         return App.createPagedResults({
             results: manga,
@@ -661,7 +684,7 @@ class Tranh18 extends types_1.Source {
     async getMangaDetails(mangaId) {
         const baseUrl = await this.getBaseUrl();
         const $ = await this.DOMHTML(`${baseUrl}/comic/${mangaId}`);
-        return this.parser.parseMangaDetails($, mangaId, baseUrl);
+        return this.parser.parseMangaDetails($, mangaId, baseUrl, PROXY_URL);
     }
     async getChapters(mangaId) {
         const baseUrl = await this.getBaseUrl();
@@ -672,7 +695,7 @@ class Tranh18 extends types_1.Source {
         const baseUrl = await this.getBaseUrl();
         const cleanId = chapterId.replace(/^\//, '');
         const $ = await this.DOMHTML(`${baseUrl}/${cleanId}`);
-        return this.parser.parseChapterDetails($, mangaId, chapterId, baseUrl);
+        return this.parser.parseChapterDetails($, mangaId, chapterId, baseUrl, PROXY_URL);
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
@@ -685,7 +708,7 @@ exports.Tranh18 = Tranh18;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Tranh18Parser = void 0;
 class Tranh18Parser {
-    parseCardElements($, elements, baseUrl) {
+    parseCardElements($, elements, baseUrl, proxyUrl) {
         const mangaList = [];
         const seenIds = new Set();
         elements.each((_, el) => {
@@ -707,6 +730,9 @@ class Tranh18Parser {
             if (image && !image.startsWith('http')) {
                 image = `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
             }
+            if (proxyUrl && image && image.startsWith('http')) {
+                image = `${proxyUrl}/?url=${encodeURIComponent(image)}`;
+            }
             const subtitle = $(el).find('.chapter').text().trim().substring(0, 50);
             mangaList.push(App.createPartialSourceManga({
                 mangaId,
@@ -717,10 +743,10 @@ class Tranh18Parser {
         });
         return mangaList;
     }
-    parseCards($, baseUrl) {
-        return this.parseCardElements($, $('.mh-item'), baseUrl);
+    parseCards($, baseUrl, proxyUrl) {
+        return this.parseCardElements($, $('.mh-item'), baseUrl, proxyUrl);
     }
-    parseMangaDetails($, mangaId, baseUrl) {
+    parseMangaDetails($, mangaId, baseUrl, proxyUrl) {
         const rawTitle = $('h1').first().text().trim() ||
             $('meta[property="og:title"]').attr('content') ||
             mangaId;
@@ -734,6 +760,9 @@ class Tranh18Parser {
         }
         if (image && !image.startsWith('http')) {
             image = `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
+        }
+        if (proxyUrl && image && image.startsWith('http')) {
+            image = `${proxyUrl}/?url=${encodeURIComponent(image)}`;
         }
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ||
             $('.detail-info, .desc, .content, .introduction').first().text().trim() ||
@@ -805,7 +834,7 @@ class Tranh18Parser {
         // Ensure chronological or latest-first order as provided by website
         return chapters;
     }
-    parseChapterDetails($, mangaId, chapterId, baseUrl) {
+    parseChapterDetails($, mangaId, chapterId, baseUrl, proxyUrl) {
         const pages = [];
         $('.comiclist img, .comicpage img, #content img, .comic-content img').each((_, el) => {
             let src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-original') || '';
@@ -818,6 +847,9 @@ class Tranh18Parser {
             }
             else if (src.startsWith('/')) {
                 src = `${baseUrl}${src}`;
+            }
+            if (proxyUrl && src && src.startsWith('http')) {
+                src = `${proxyUrl}/?url=${encodeURIComponent(src)}`;
             }
             if (!pages.includes(src)) {
                 pages.push(src);

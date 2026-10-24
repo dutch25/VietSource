@@ -464,8 +464,9 @@ exports.HentaiVN = exports.HentaiVNInfo = void 0;
 const types_1 = require("@paperback/types");
 const HentaiVNParser_1 = require("./HentaiVNParser");
 const HentaiVNSetting_1 = require("./HentaiVNSetting");
+const PROXY_URL = 'https://nhentai-club-proxy.dutch25.workers.dev';
 exports.HentaiVNInfo = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -539,9 +540,31 @@ class HentaiVN extends types_1.Source {
         return App.createRequest({
             url: baseUrl,
             method: 'GET',
+            headers: {
+                'referer': `${baseUrl}/`,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            },
         });
     }
     async DOMHTML(url) {
+        // 1. Try proxy worker first (bypasses ISP DPI and Cloudflare blocking)
+        try {
+            const proxyRequest = App.createRequest({
+                url: `${PROXY_URL}/?url=${encodeURIComponent(url)}`,
+                method: 'GET',
+            });
+            const proxyResponse = await this.requestManager.schedule(proxyRequest, 0);
+            if (proxyResponse.status === 200 && proxyResponse.data) {
+                const html = proxyResponse.data;
+                if (!html.includes('challenges.cloudflare.com') && !html.includes('cf-challenge')) {
+                    return this.cheerio.load(html);
+                }
+            }
+        }
+        catch (e) {
+            // Silently fall back to direct request
+        }
+        // 2. Direct request fallback with retry
         let lastError;
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
@@ -579,7 +602,7 @@ class HentaiVN extends types_1.Source {
         // 1. Fetch homepage once for 'de_cu' and 'latest'
         try {
             const $home = await this.DOMHTML(baseUrl);
-            const deCu = this.parser.parseCards($home, baseUrl, '.items-slide .item');
+            const deCu = this.parser.parseCards($home, baseUrl, '.items-slide .item', PROXY_URL);
             sectionCallback(App.createHomeSection({
                 id: 'de_cu',
                 title: 'Truyện Đề Cử',
@@ -587,7 +610,7 @@ class HentaiVN extends types_1.Source {
                 type: types_1.HomeSectionType.singleRowNormal,
                 items: deCu,
             }));
-            const latest = this.parser.parseCards($home, baseUrl, 'div.items .item, .Item');
+            const latest = this.parser.parseCards($home, baseUrl, 'div.items .item, .Item', PROXY_URL);
             sectionCallback(App.createHomeSection({
                 id: 'latest',
                 title: 'Mới Cập Nhật',
@@ -608,7 +631,7 @@ class HentaiVN extends types_1.Source {
         for (const item of categorySections) {
             try {
                 const $cat = await this.DOMHTML(item.url);
-                const manga = this.parser.parseCards($cat, baseUrl, 'div.items .item, .Item');
+                const manga = this.parser.parseCards($cat, baseUrl, 'div.items .item, .Item', PROXY_URL);
                 sectionCallback(App.createHomeSection({
                     id: item.id,
                     title: item.title,
@@ -645,7 +668,7 @@ class HentaiVN extends types_1.Source {
             return App.createPagedResults({ results: [], metadata: undefined });
         }
         const $ = await this.DOMHTML(url);
-        const manga = this.parser.parseCards($, baseUrl);
+        const manga = this.parser.parseCards($, baseUrl, undefined, PROXY_URL);
         const isLast = manga.length === 0 || this.parser.isLastPage($, page);
         return App.createPagedResults({
             results: manga,
@@ -666,7 +689,7 @@ class HentaiVN extends types_1.Source {
             url = `${baseUrl}/?page=${page}`;
         }
         const $ = await this.DOMHTML(url);
-        const manga = this.parser.parseCards($, baseUrl);
+        const manga = this.parser.parseCards($, baseUrl, undefined, PROXY_URL);
         const isLast = manga.length === 0 || this.parser.isLastPage($, page);
         return App.createPagedResults({
             results: manga,
@@ -676,7 +699,7 @@ class HentaiVN extends types_1.Source {
     async getMangaDetails(mangaId) {
         const baseUrl = await this.getBaseUrl();
         const $ = await this.DOMHTML(`${baseUrl}/truyen-hentai/${mangaId}`);
-        return this.parser.parseMangaDetails($, mangaId, baseUrl);
+        return this.parser.parseMangaDetails($, mangaId, baseUrl, PROXY_URL);
     }
     async getChapters(mangaId) {
         const baseUrl = await this.getBaseUrl();
@@ -687,7 +710,7 @@ class HentaiVN extends types_1.Source {
         const baseUrl = await this.getBaseUrl();
         const cleanId = chapterId.replace(/^\//, '');
         const $ = await this.DOMHTML(`${baseUrl}/truyen-hentai/${cleanId}`);
-        return this.parser.parseChapterDetails($, mangaId, chapterId, baseUrl);
+        return this.parser.parseChapterDetails($, mangaId, chapterId, baseUrl, PROXY_URL);
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
@@ -700,7 +723,7 @@ exports.HentaiVN = HentaiVN;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HentaiVNParser = void 0;
 class HentaiVNParser {
-    parseCards($, baseUrl, selector = 'div.items .item, .items-slide .item, .list-items .item, .Item') {
+    parseCards($, baseUrl, selector = 'div.items .item, .items-slide .item, .list-items .item, .Item', proxyUrl) {
         const mangaList = [];
         const seenIds = new Set();
         $(selector).each((_, el) => {
@@ -720,6 +743,9 @@ class HentaiVNParser {
             if (image && !image.startsWith('http')) {
                 image = `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
             }
+            if (proxyUrl && image && image.startsWith('http')) {
+                image = `${proxyUrl}/?url=${encodeURIComponent(image)}`;
+            }
             const chapter = $(el).find('ul.comic-item li, .chapter a, .ep a, .chapter').first().text().replace(/\s+/g, ' ').trim();
             mangaList.push(App.createPartialSourceManga({
                 mangaId,
@@ -730,7 +756,7 @@ class HentaiVNParser {
         });
         return mangaList;
     }
-    parseMangaDetails($, mangaId, baseUrl) {
+    parseMangaDetails($, mangaId, baseUrl, proxyUrl) {
         const rawTitle = $('h1').first().text().trim() ||
             $('meta[property="og:title"]').attr('content') ||
             mangaId;
@@ -740,6 +766,9 @@ class HentaiVNParser {
             '';
         if (image && !image.startsWith('http')) {
             image = `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
+        }
+        if (proxyUrl && image && image.startsWith('http')) {
+            image = `${proxyUrl}/?url=${encodeURIComponent(image)}`;
         }
         const desc = $('.detail-content p, .detail-content').first().text().trim() || 'Không có mô tả';
         let author = 'Đang cập nhật';
@@ -809,7 +838,7 @@ class HentaiVNParser {
         });
         return chapters;
     }
-    parseChapterDetails($, mangaId, chapterId, baseUrl) {
+    parseChapterDetails($, mangaId, chapterId, baseUrl, proxyUrl) {
         const pages = [];
         $('.reading-detail img, .page-chapter img').each((_, el) => {
             let src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-original') || '';
@@ -822,6 +851,9 @@ class HentaiVNParser {
             }
             else if (src.startsWith('/')) {
                 src = `${baseUrl}${src}`;
+            }
+            if (proxyUrl && src && src.startsWith('http')) {
+                src = `${proxyUrl}/?url=${encodeURIComponent(src)}`;
             }
             if (!pages.includes(src)) {
                 pages.push(src);

@@ -7,7 +7,7 @@ import {
 } from '@paperback/types';
 
 export class Tranh18Parser {
-    parseCardElements($: any, elements: any, baseUrl: string): PartialSourceManga[] {
+    parseCardElements($: any, elements: any, baseUrl: string, proxyUrl?: string): PartialSourceManga[] {
         const mangaList: PartialSourceManga[] = [];
         const seenIds = new Set<string>();
 
@@ -31,6 +31,9 @@ export class Tranh18Parser {
             if (image && !image.startsWith('http')) {
                 image = `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
             }
+            if (proxyUrl && image && image.startsWith('http')) {
+                image = `${proxyUrl}/?url=${encodeURIComponent(image)}`;
+            }
 
             const subtitle = $(el).find('.chapter').text().trim().substring(0, 50);
 
@@ -47,11 +50,11 @@ export class Tranh18Parser {
         return mangaList;
     }
 
-    parseCards($: any, baseUrl: string): PartialSourceManga[] {
-        return this.parseCardElements($, $('.mh-item'), baseUrl);
+    parseCards($: any, baseUrl: string, proxyUrl?: string): PartialSourceManga[] {
+        return this.parseCardElements($, $('.mh-item'), baseUrl, proxyUrl);
     }
 
-    parseMangaDetails($: any, mangaId: string, baseUrl: string): SourceManga {
+    parseMangaDetails($: any, mangaId: string, baseUrl: string, proxyUrl?: string): SourceManga {
         const rawTitle = $('h1').first().text().trim() ||
             $('meta[property="og:title"]').attr('content') ||
             mangaId;
@@ -65,6 +68,9 @@ export class Tranh18Parser {
         }
         if (image && !image.startsWith('http')) {
             image = `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
+        }
+        if (proxyUrl && image && image.startsWith('http')) {
+            image = `${proxyUrl}/?url=${encodeURIComponent(image)}`;
         }
 
         const desc = $('meta[property="og:description"]').attr('content')?.trim() ||
@@ -150,7 +156,7 @@ export class Tranh18Parser {
         return chapters;
     }
 
-    parseChapterDetails($: any, mangaId: string, chapterId: string, baseUrl: string): ChapterDetails {
+    parseChapterDetails($: any, mangaId: string, chapterId: string, baseUrl: string, proxyUrl?: string): ChapterDetails {
         const pages: string[] = [];
 
         $('.comiclist img, .comicpage img, #content img, .comic-content img').each((_: any, el: any) => {
@@ -164,6 +170,10 @@ export class Tranh18Parser {
                 src = 'https:' + src;
             } else if (src.startsWith('/')) {
                 src = `${baseUrl}${src}`;
+            }
+
+            if (proxyUrl && src && src.startsWith('http')) {
+                src = `${proxyUrl}/?url=${encodeURIComponent(src)}`;
             }
 
             if (!pages.includes(src)) {

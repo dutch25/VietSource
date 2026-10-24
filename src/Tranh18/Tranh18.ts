@@ -27,8 +27,10 @@ import {
     resetSettings,
 } from './Tranh18Setting';
 
+const PROXY_URL = 'https://nhentai-club-proxy.dutch25.workers.dev';
+
 export const Tranh18Info: SourceInfo = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'Tranh18',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -107,10 +109,32 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
         return App.createRequest({
             url: baseUrl,
             method: 'GET',
+            headers: {
+                'referer': `${baseUrl}/`,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            },
         });
     }
 
     private async DOMHTML(url: string): Promise<CheerioAPI> {
+        // 1. Try proxy worker first (bypasses ISP DPI and Cloudflare blocking)
+        try {
+            const proxyRequest = App.createRequest({
+                url: `${PROXY_URL}/?url=${encodeURIComponent(url)}`,
+                method: 'GET',
+            });
+            const proxyResponse = await this.requestManager.schedule(proxyRequest, 0);
+            if (proxyResponse.status === 200 && proxyResponse.data) {
+                const html = proxyResponse.data as string;
+                if (!html.includes('challenges.cloudflare.com') && !html.includes('cf-challenge')) {
+                    return this.cheerio.load(html);
+                }
+            }
+        } catch (e) {
+            // Silently fall back to direct request
+        }
+
+        // 2. Direct request fallback with retry
         let lastError: any;
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
@@ -150,7 +174,7 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
 
             // 1. Latest section
             const latestEl = $home('.index-title').first().nextUntil('.index-title, .box-header').find('.mh-item');
-            const latestItems = this.parser.parseCardElements($home, latestEl.length > 0 ? latestEl : $home('.mh-item').slice(0, 15), baseUrl);
+            const latestItems = this.parser.parseCardElements($home, latestEl.length > 0 ? latestEl : $home('.mh-item').slice(0, 15), baseUrl, PROXY_URL);
             sectionCallback(App.createHomeSection({
                 id: 'latest',
                 title: 'Mới Cập Nhật',
@@ -162,7 +186,7 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
             // 2. Manhwa / Hot section
             const hotHeader = $home('h2:contains("HOT"), h2:contains("Từ khóa HOT")').first().closest('.index-title, .box-header');
             const hotEl = hotHeader.nextUntil('.box-header, .index-title, footer').find('.mh-item');
-            const hotItems = this.parser.parseCardElements($home, hotEl.length > 0 ? hotEl : $home('.mh-item').slice(15, 35), baseUrl);
+            const hotItems = this.parser.parseCardElements($home, hotEl.length > 0 ? hotEl : $home('.mh-item').slice(15, 35), baseUrl, PROXY_URL);
             sectionCallback(App.createHomeSection({
                 id: 'manhwa',
                 title: 'Manhwa 18+',
@@ -174,7 +198,7 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
             // 3. Completed section
             const completedHeader = $home('h2:contains("Hoàn thành")').first().closest('.box-header, .index-title');
             const completedEl = completedHeader.nextUntil('.box-header, .index-title, footer').find('.mh-item');
-            const completedItems = this.parser.parseCardElements($home, completedEl.length > 0 ? completedEl : $home('.mh-item').slice(35), baseUrl);
+            const completedItems = this.parser.parseCardElements($home, completedEl.length > 0 ? completedEl : $home('.mh-item').slice(35), baseUrl, PROXY_URL);
             sectionCallback(App.createHomeSection({
                 id: 'completed',
                 title: 'Truyện Hoàn Thành',
@@ -205,7 +229,7 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
         }
 
         const $ = await this.DOMHTML(url);
-        const manga = this.parser.parseCards($, baseUrl);
+        const manga = this.parser.parseCards($, baseUrl, PROXY_URL);
         const isLast = manga.length === 0 || this.parser.isLastPage($, page);
 
         return App.createPagedResults({
@@ -228,7 +252,7 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
         }
 
         const $ = await this.DOMHTML(url);
-        const manga = this.parser.parseCards($, baseUrl);
+        const manga = this.parser.parseCards($, baseUrl, PROXY_URL);
         const isLast = manga.length === 0 || this.parser.isLastPage($, page);
 
         return App.createPagedResults({
@@ -240,7 +264,7 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const baseUrl = await this.getBaseUrl();
         const $ = await this.DOMHTML(`${baseUrl}/comic/${mangaId}`);
-        return this.parser.parseMangaDetails($, mangaId, baseUrl);
+        return this.parser.parseMangaDetails($, mangaId, baseUrl, PROXY_URL);
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
@@ -253,7 +277,7 @@ export class Tranh18 extends Source implements CloudflareBypassRequestProviding 
         const baseUrl = await this.getBaseUrl();
         const cleanId = chapterId.replace(/^\//, '');
         const $ = await this.DOMHTML(`${baseUrl}/${cleanId}`);
-        return this.parser.parseChapterDetails($, mangaId, chapterId, baseUrl);
+        return this.parser.parseChapterDetails($, mangaId, chapterId, baseUrl, PROXY_URL);
     }
 
     async getSearchTags(): Promise<TagSection[]> {

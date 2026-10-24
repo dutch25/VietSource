@@ -27,8 +27,10 @@ import {
     resetSettings,
 } from './HentaiVNSetting';
 
+const PROXY_URL = 'https://nhentai-club-proxy.dutch25.workers.dev';
+
 export const HentaiVNInfo: SourceInfo = {
-    version: '1.0.3',
+    version: '1.0.4',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -107,10 +109,32 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
         return App.createRequest({
             url: baseUrl,
             method: 'GET',
+            headers: {
+                'referer': `${baseUrl}/`,
+                'user-agent': await this.requestManager.getDefaultUserAgent(),
+            },
         });
     }
 
     private async DOMHTML(url: string): Promise<CheerioAPI> {
+        // 1. Try proxy worker first (bypasses ISP DPI and Cloudflare blocking)
+        try {
+            const proxyRequest = App.createRequest({
+                url: `${PROXY_URL}/?url=${encodeURIComponent(url)}`,
+                method: 'GET',
+            });
+            const proxyResponse = await this.requestManager.schedule(proxyRequest, 0);
+            if (proxyResponse.status === 200 && proxyResponse.data) {
+                const html = proxyResponse.data as string;
+                if (!html.includes('challenges.cloudflare.com') && !html.includes('cf-challenge')) {
+                    return this.cheerio.load(html);
+                }
+            }
+        } catch (e) {
+            // Silently fall back to direct request
+        }
+
+        // 2. Direct request fallback with retry
         let lastError: any;
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
@@ -151,7 +175,7 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
         try {
             const $home = await this.DOMHTML(baseUrl);
 
-            const deCu = this.parser.parseCards($home, baseUrl, '.items-slide .item');
+            const deCu = this.parser.parseCards($home, baseUrl, '.items-slide .item', PROXY_URL);
             sectionCallback(App.createHomeSection({
                 id: 'de_cu',
                 title: 'Truyện Đề Cử',
@@ -160,7 +184,7 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
                 items: deCu,
             }));
 
-            const latest = this.parser.parseCards($home, baseUrl, 'div.items .item, .Item');
+            const latest = this.parser.parseCards($home, baseUrl, 'div.items .item, .Item', PROXY_URL);
             sectionCallback(App.createHomeSection({
                 id: 'latest',
                 title: 'Mới Cập Nhật',
@@ -182,7 +206,7 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
         for (const item of categorySections) {
             try {
                 const $cat = await this.DOMHTML(item.url);
-                const manga = this.parser.parseCards($cat, baseUrl, 'div.items .item, .Item');
+                const manga = this.parser.parseCards($cat, baseUrl, 'div.items .item, .Item', PROXY_URL);
                 sectionCallback(App.createHomeSection({
                     id: item.id,
                     title: item.title,
@@ -218,7 +242,7 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
         }
 
         const $ = await this.DOMHTML(url);
-        const manga = this.parser.parseCards($, baseUrl);
+        const manga = this.parser.parseCards($, baseUrl, undefined, PROXY_URL);
         const isLast = manga.length === 0 || this.parser.isLastPage($, page);
 
         return App.createPagedResults({
@@ -241,7 +265,7 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
         }
 
         const $ = await this.DOMHTML(url);
-        const manga = this.parser.parseCards($, baseUrl);
+        const manga = this.parser.parseCards($, baseUrl, undefined, PROXY_URL);
         const isLast = manga.length === 0 || this.parser.isLastPage($, page);
 
         return App.createPagedResults({
@@ -253,7 +277,7 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const baseUrl = await this.getBaseUrl();
         const $ = await this.DOMHTML(`${baseUrl}/truyen-hentai/${mangaId}`);
-        return this.parser.parseMangaDetails($, mangaId, baseUrl);
+        return this.parser.parseMangaDetails($, mangaId, baseUrl, PROXY_URL);
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
@@ -266,7 +290,7 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
         const baseUrl = await this.getBaseUrl();
         const cleanId = chapterId.replace(/^\//, '');
         const $ = await this.DOMHTML(`${baseUrl}/truyen-hentai/${cleanId}`);
-        return this.parser.parseChapterDetails($, mangaId, chapterId, baseUrl);
+        return this.parser.parseChapterDetails($, mangaId, chapterId, baseUrl, PROXY_URL);
     }
 
     async getSearchTags(): Promise<TagSection[]> {
