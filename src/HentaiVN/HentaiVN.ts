@@ -30,7 +30,7 @@ import {
 const PROXY_URL = 'https://nhentai-club-proxy.dutch25.workers.dev';
 
 export const HentaiVNInfo: SourceInfo = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -259,7 +259,13 @@ export class HentaiVN extends Source implements CloudflareBypassRequestProviding
         if (query.title && query.title.trim()) {
             url = `${baseUrl}/tim-truyen?keyword=${encodeURIComponent(query.title.trim())}&page=${page}`;
         } else if (query.includedTags && query.includedTags.length > 0) {
-            url = `${baseUrl}/tim-truyen/${query.includedTags[0].id}?page=${page}`;
+            const tag = query.includedTags[0];
+            if (tag.id.startsWith('artist:')) {
+                const artistName = tag.id.replace(/^artist:/, '');
+                url = `${baseUrl}/tim-truyen?keyword=${encodeURIComponent(artistName)}&page=${page}`;
+            } else {
+                url = `${baseUrl}/tim-truyen/${tag.id}?page=${page}`;
+            }
         } else {
             url = `${baseUrl}/?page=${page}`;
         }

@@ -72,21 +72,32 @@ export class HentaiVNParser {
         $('li.row, .list-info p, .detail-info li').each((_: any, el: any) => {
             const text = $(el).text().replace(/\s+/g, ' ').trim();
             if (text.includes('Tác giả')) {
-                const match = text.replace(/Tác giả\s*/i, '').trim();
+                const match = $(el).find('.col-xs-8').text().trim() || text.replace(/Tác giả\s*/i, '').trim();
                 if (match && match.toLowerCase() !== 'đang cập nhật') {
                     author = match;
                 }
             }
             if (text.includes('Tình trạng')) {
-                const match = text.replace(/Tình trạng\s*/i, '').trim();
+                const match = $(el).find('.col-xs-8').text().trim() || text.replace(/Tình trạng\s*/i, '').trim();
                 if (match) {
                     status = match;
                 }
             }
         });
 
+        // If author is still "Đang cập nhật", check title brackets for [Artist] or (Artist)
+        if (author === 'Đang cập nhật') {
+            const bracketMatch = rawTitle.match(/^\s*\[([^\]]+)\]/) || rawTitle.match(/^\s*\(([^)]+)\)/);
+            if (bracketMatch && bracketMatch[1]) {
+                const candidate = bracketMatch[1].trim();
+                if (!/tới chap|full|truyện|chapter|chap/i.test(candidate)) {
+                    author = candidate;
+                }
+            }
+        }
+
         const tags: { id: string; label: string }[] = [];
-        $('.kind a[href*="/tim-truyen/"], a[href*="/tim-truyen/"]').each((_: any, el: any) => {
+        $('li.kind a, .detail-info .kind a, .kind a[href*="/tim-truyen/"]').each((_: any, el: any) => {
             const href = $(el).attr('href') || '';
             const tagId = href.replace(/.*?\/tim-truyen\//, '').replace(/\/+$/, '').trim();
             const label = $(el).text().trim();
@@ -95,13 +106,26 @@ export class HentaiVNParser {
             }
         });
 
-        const tagSections: TagSection[] = [
-            App.createTagSection({
-                id: 'genres',
-                label: 'Thể loại',
-                tags: tags.map(t => App.createTag({ id: t.id, label: t.label })),
-            }),
-        ];
+        const tagSections: TagSection[] = [];
+        if (author && author.toLowerCase() !== 'đang cập nhật') {
+            tagSections.push(
+                App.createTagSection({
+                    id: 'artist',
+                    label: 'Tác giả',
+                    tags: [App.createTag({ id: `artist:${author}`, label: author })],
+                })
+            );
+        }
+
+        if (tags.length > 0) {
+            tagSections.push(
+                App.createTagSection({
+                    id: 'genres',
+                    label: 'Thể loại',
+                    tags: tags.map(t => App.createTag({ id: t.id, label: t.label })),
+                })
+            );
+        }
 
         return App.createSourceManga({
             id: mangaId,
@@ -111,6 +135,7 @@ export class HentaiVNParser {
                 desc,
                 status,
                 author,
+                artist: author !== 'Đang cập nhật' ? author : undefined,
                 tags: tagSections,
             }),
         });

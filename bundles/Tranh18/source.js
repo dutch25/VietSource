@@ -466,7 +466,7 @@ const Tranh18Parser_1 = require("./Tranh18Parser");
 const Tranh18Setting_1 = require("./Tranh18Setting");
 const PROXY_URL = 'https://nhentai-club-proxy.dutch25.workers.dev';
 exports.Tranh18Info = {
-    version: '1.0.4',
+    version: '1.0.5',
     name: 'Tranh18',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -668,7 +668,18 @@ class Tranh18 extends types_1.Source {
             url = `${baseUrl}/search?keyword=${encodeURIComponent(query.title.trim())}&page=${page}`;
         }
         else if (query.includedTags && query.includedTags.length > 0) {
-            url = `${baseUrl}/tag/${query.includedTags[0].id}?page=${page}`;
+            const tag = query.includedTags[0];
+            if (tag.id.startsWith('artist:')) {
+                const artistName = tag.id.replace(/^artist:/, '');
+                url = `${baseUrl}/search?keyword=${encodeURIComponent(artistName)}&page=${page}`;
+            }
+            else if (tag.id.startsWith('author:')) {
+                const authorId = tag.id.replace(/^author:/, '');
+                url = `${baseUrl}/author/${encodeURIComponent(authorId)}?page=${page}`;
+            }
+            else {
+                url = `${baseUrl}/comics?tag=${encodeURIComponent(tag.id)}&page=${page}`;
+            }
         }
         else {
             url = `${baseUrl}/update?page=${page}`;
@@ -768,33 +779,111 @@ class Tranh18Parser {
             $('.detail-info, .desc, .content, .introduction').first().text().trim() ||
             'Không có mô tả';
         let author = 'Đang cập nhật';
-        $('p, div, li').each((_, el) => {
-            const text = $(el).text().trim();
-            if (text.startsWith('Tác giả:')) {
-                const parsedAuthor = text.replace('Tác giả:', '').trim();
-                if (parsedAuthor && parsedAuthor.toLowerCase() !== 'dang cap nhat') {
-                    author = parsedAuthor;
+        const jsonLdTags = [];
+        // 1. Extract from Book JSON-LD schema
+        $('script[type="application/ld+json"]').each((_, s) => {
+            try {
+                const data = JSON.parse($(s).html());
+                if (data && data['@type'] === 'Book') {
+                    if (data.author?.name && !/dang cap nhat|đang cập nhật/i.test(data.author.name)) {
+                        author = data.author.name.trim();
+                    }
+                    if (Array.isArray(data.genre)) {
+                        for (const g of data.genre) {
+                            if (g && typeof g === 'string')
+                                jsonLdTags.push(g.trim());
+                        }
+                    }
+                    else if (typeof data.genre === 'string') {
+                        jsonLdTags.push(data.genre.trim());
+                    }
+                    if (typeof data.keywords === 'string') {
+                        for (const kw of data.keywords.split(',')) {
+                            const trimmed = kw.trim();
+                            if (trimmed && !/tranh18|truyen tranh 18/i.test(trimmed)) {
+                                jsonLdTags.push(trimmed);
+                            }
+                        }
+                    }
                 }
             }
+            catch (e) { }
         });
+        // 2. Check DOM Author
+        if (author === 'Đang cập nhật') {
+            const authorText = $('.bd-author a').first().text().replace(/\s+/g, ' ').trim() ||
+                $('.bd-author').first().text().replace(/Tác giả\s*:\s*/i, '').replace(/\s+/g, ' ').trim();
+            if (authorText && !/dang cap nhat|đang cập nhật/i.test(authorText)) {
+                author = authorText;
+            }
+        }
+        // 3. Check bracket author in title (e.g. [Artist Name])
+        if (author === 'Đang cập nhật') {
+            const bracketMatch = rawTitle.match(/^\s*\[([^\]]+)\]/) || rawTitle.match(/^\s*\(([^)]+)\)/);
+            if (bracketMatch && bracketMatch[1]) {
+                const candidate = bracketMatch[1].trim();
+                if (!/tới chap|full|truyện|chapter|chap/i.test(candidate)) {
+                    author = candidate;
+                }
+            }
+        }
         const fullText = $.text();
         const status = fullText.includes('Hoàn thành') ? 'Hoàn thành' : 'Đang cập nhật';
         const tags = [];
-        $('a[href*="/tag/"]').each((_, el) => {
-            const tagHref = $(el).attr('href') || '';
-            const tagId = tagHref.replace(/.*?\/tag\//, '').replace(/\/+$/, '').trim();
+        const seen = new Set();
+        const addTag = (id, label) => {
+            const cleanId = id.trim();
+            const cleanLabel = label.trim();
+            if (cleanId && cleanLabel && !seen.has(cleanId.toLowerCase())) {
+                seen.add(cleanId.toLowerCase());
+                tags.push({ id: cleanId, label: cleanLabel });
+            }
+        };
+        // 4. Collect tags from .bd-tags and links
+        $('.bd-tags a, a[href*="/tag/"], a[href*="comics?tag="]').each((_, el) => {
+            const href = $(el).attr('href') || '';
+            let tagId = '';
+            if (href.includes('/tag/')) {
+                tagId = href.replace(/.*?\/tag\//, '').replace(/\/+$/, '').trim();
+            }
+            else if (href.includes('tag=')) {
+                const m = href.match(/[?&]tag=([^&]+)/);
+                tagId = m ? decodeURIComponent(m[1]) : '';
+            }
             const label = $(el).text().trim();
-            if (tagId && label && !tags.some(t => t.id === tagId)) {
-                tags.push({ id: tagId, label });
+            if (tagId && label && label.toLowerCase() !== 'từ khóa:') {
+                addTag(tagId, label);
             }
         });
-        const tagSections = [
-            App.createTagSection({
+        // Collect tags from JSON-LD
+        for (const g of jsonLdTags) {
+            addTag(g.toLowerCase(), g);
+        }
+        // Collect genre from .bd-facts (e.g. Thể loại 18+)
+        $('.bd-facts a, .bd-facts .bd-fact').each((_, el) => {
+            const text = $(el).text().replace(/\s+/g, ' ').trim();
+            if (text.includes('Thể loại')) {
+                const val = $(el).find('b').text().trim() || text.replace(/Thể loại\s*/i, '').trim();
+                if (val && val !== 'Thể loại') {
+                    addTag(val.toLowerCase(), val);
+                }
+            }
+        });
+        const tagSections = [];
+        if (author && author !== 'Đang cập nhật') {
+            tagSections.push(App.createTagSection({
+                id: 'artist',
+                label: 'Tác giả',
+                tags: [App.createTag({ id: `artist:${author}`, label: author })],
+            }));
+        }
+        if (tags.length > 0) {
+            tagSections.push(App.createTagSection({
                 id: 'genres',
                 label: 'Thể loại',
                 tags: tags.map(t => App.createTag({ id: t.id, label: t.label })),
-            }),
-        ];
+            }));
+        }
         return App.createSourceManga({
             id: mangaId,
             mangaInfo: App.createMangaInfo({
@@ -803,6 +892,7 @@ class Tranh18Parser {
                 desc,
                 status,
                 author,
+                artist: author !== 'Đang cập nhật' ? author : undefined,
                 tags: tagSections,
             }),
         });
@@ -880,25 +970,79 @@ class Tranh18Parser {
                 label: 'Thể loại',
                 tags: [
                     App.createTag({ id: 'manhwa', label: 'Manhwa' }),
-                    App.createTag({ id: 'furry', label: 'Furry' }),
-                    App.createTag({ id: 'ntr', label: 'NTR' }),
-                    App.createTag({ id: 'drama', label: 'Drama' }),
-                    App.createTag({ id: 'mature', label: 'Mature' }),
-                    App.createTag({ id: 'romance', label: 'Romance' }),
-                    App.createTag({ id: 'harem', label: 'Harem' }),
-                    App.createTag({ id: 'yaoi', label: 'Yaoi' }),
-                    App.createTag({ id: 'elf', label: 'Elf' }),
-                    App.createTag({ id: 'milf', label: 'Milf' }),
-                    App.createTag({ id: 'footjob', label: 'Footjob' }),
+                    App.createTag({ id: '18+', label: '18+' }),
                     App.createTag({ id: 'adult', label: 'Adult' }),
+                    App.createTag({ id: 'ahegao', label: 'Ahegao' }),
+                    App.createTag({ id: 'anal', label: 'Anal' }),
+                    App.createTag({ id: 'bdsm', label: 'BDSM' }),
+                    App.createTag({ id: 'big-ass', label: 'Big Ass' }),
                     App.createTag({ id: 'big-boobs', label: 'Big Boobs' }),
                     App.createTag({ id: 'big-penis', label: 'Big Penis' }),
-                    App.createTag({ id: 'ahegao', label: 'Ahegao' }),
                     App.createTag({ id: 'blowjobs', label: 'BlowJobs' }),
-                    App.createTag({ id: 'lang-man', label: 'Lãng Mạn' }),
-                    App.createTag({ id: 'big-ass', label: 'Big Ass' }),
-                    App.createTag({ id: 'full-color', label: 'Full Color' }),
+                    App.createTag({ id: 'cheating', label: 'Cheating' }),
+                    App.createTag({ id: 'choi-hai-lo', label: 'Chơi Hai Lỗ' }),
+                    App.createTag({ id: 'comedy', label: 'Comedy' }),
+                    App.createTag({ id: 'cosplay', label: 'Cosplay' }),
+                    App.createTag({ id: 'cunnilingus', label: 'Cunnilingus' }),
+                    App.createTag({ id: 'doujinshi', label: 'Doujinshi' }),
+                    App.createTag({ id: 'drama', label: 'Drama' }),
+                    App.createTag({ id: 'ecchi', label: 'Ecchi' }),
+                    App.createTag({ id: 'elf', label: 'Elf' }),
                     App.createTag({ id: 'fantasy', label: 'Fantasy' }),
+                    App.createTag({ id: 'femdom', label: 'Femdom' }),
+                    App.createTag({ id: 'fingering', label: 'Fingering' }),
+                    App.createTag({ id: 'footjob', label: 'Footjob' }),
+                    App.createTag({ id: 'full-color', label: 'Full Color' }),
+                    App.createTag({ id: 'furry', label: 'Furry' }),
+                    App.createTag({ id: 'gangbang', label: 'GangBang' }),
+                    App.createTag({ id: 'glasses', label: 'Glasses' }),
+                    App.createTag({ id: 'group', label: 'Group' }),
+                    App.createTag({ id: 'handjob', label: 'Handjob' }),
+                    App.createTag({ id: 'harem', label: 'Harem' }),
+                    App.createTag({ id: 'hentai', label: 'Hentai' }),
+                    App.createTag({ id: 'housewife', label: 'Housewife' }),
+                    App.createTag({ id: 'incest', label: 'Incest' }),
+                    App.createTag({ id: 'isekai', label: 'Isekai' }),
+                    App.createTag({ id: 'lang-man', label: 'Lãng Mạn' }),
+                    App.createTag({ id: 'manga', label: 'Manga' }),
+                    App.createTag({ id: 'manhua', label: 'Manhua' }),
+                    App.createTag({ id: 'masturbation', label: 'Masturbation' }),
+                    App.createTag({ id: 'mature', label: 'Mature' }),
+                    App.createTag({ id: 'milf', label: 'Milf' }),
+                    App.createTag({ id: 'mind-break', label: 'Mind Break' }),
+                    App.createTag({ id: 'mind-control', label: 'Mind Control' }),
+                    App.createTag({ id: 'mother', label: 'Mother' }),
+                    App.createTag({ id: 'nakadashi', label: 'Nakadashi' }),
+                    App.createTag({ id: 'netori', label: 'Netori' }),
+                    App.createTag({ id: 'ntr', label: 'NTR' }),
+                    App.createTag({ id: 'nu-sinh', label: 'Nữ Sinh' }),
+                    App.createTag({ id: 'oneshot', label: 'Oneshot' }),
+                    App.createTag({ id: 'paizuri', label: 'Paizuri' }),
+                    App.createTag({ id: 'pantyhose', label: 'Pantyhose' }),
+                    App.createTag({ id: 'pregnant', label: 'Pregnant' }),
+                    App.createTag({ id: 'rape', label: 'Rape' }),
+                    App.createTag({ id: 'romance', label: 'Romance' }),
+                    App.createTag({ id: 'schoolgirl', label: 'SchoolGirl' }),
+                    App.createTag({ id: 'sex-toys', label: 'Sex Toys' }),
+                    App.createTag({ id: 'shota', label: 'Shota' }),
+                    App.createTag({ id: 'sister', label: 'Sister' }),
+                    App.createTag({ id: 'slave', label: 'Slave' }),
+                    App.createTag({ id: 'small-boobs', label: 'Small Boobs' }),
+                    App.createTag({ id: 'smut', label: 'Smut' }),
+                    App.createTag({ id: 'stockings', label: 'Stockings' }),
+                    App.createTag({ id: 'supernatural', label: 'Supernatural' }),
+                    App.createTag({ id: 'swimsuit', label: 'Swimsuit' }),
+                    App.createTag({ id: 'tentacles', label: 'Tentacles' }),
+                    App.createTag({ id: 'truyen-khong-che', label: 'Truyện Không Che' }),
+                    App.createTag({ id: 'truyen-mau', label: 'Truyện Màu' }),
+                    App.createTag({ id: 'uncensored', label: 'Uncensored' }),
+                    App.createTag({ id: 'vanilla', label: 'Vanilla' }),
+                    App.createTag({ id: 'veu-to', label: 'Vếu To' }),
+                    App.createTag({ id: 'virgin', label: 'Virgin' }),
+                    App.createTag({ id: 'webtoon', label: 'Webtoon' }),
+                    App.createTag({ id: 'x-ray', label: 'X-ray' }),
+                    App.createTag({ id: 'yaoi', label: 'Yaoi' }),
+                    App.createTag({ id: 'yuri', label: 'Yuri' }),
                 ],
             }),
         ];
