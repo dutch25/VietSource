@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const Tranh18Parser_1 = require("./Tranh18Parser");
 const Tranh18Setting_1 = require("./Tranh18Setting");
 exports.Tranh18Info = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'Tranh18',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -494,7 +494,7 @@ class Tranh18 extends types_1.Source {
         this.stateManager = App.createSourceStateManager();
         this.parser = new Tranh18Parser_1.Tranh18Parser();
         this.requestManager = App.createRequestManager({
-            requestsPerSecond: 3,
+            requestsPerSecond: 2,
             requestTimeout: 30000,
             interceptor: {
                 interceptRequest: async (request) => {
@@ -542,17 +542,29 @@ class Tranh18 extends types_1.Source {
         });
     }
     async DOMHTML(url) {
-        const request = App.createRequest({ url, method: 'GET' });
-        const response = await this.requestManager.schedule(request, 1);
-        this.CloudFlareError(response.status);
-        return this.cheerio.load(response.data);
+        let lastError;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const request = App.createRequest({ url, method: 'GET' });
+                const response = await this.requestManager.schedule(request, 1);
+                this.CloudFlareError(response.status);
+                return this.cheerio.load(response.data);
+            }
+            catch (err) {
+                lastError = err;
+                if (attempt < 2) {
+                    await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+                }
+            }
+        }
+        throw lastError;
     }
     async getHomePageSections(sectionCallback) {
         const baseUrl = await this.getBaseUrl();
         const sections = [
-            { id: 'latest', title: 'Mới Cập Nhật', url: `${baseUrl}/update` },
-            { id: 'manhwa', title: 'Manhwa 18+', url: `${baseUrl}/tag/manhwa` },
-            { id: 'completed', title: 'Truyện Hoàn Thành', url: `${baseUrl}/completed` },
+            { id: 'latest', title: 'Mới Cập Nhật' },
+            { id: 'manhwa', title: 'Manhwa 18+' },
+            { id: 'completed', title: 'Truyện Hoàn Thành' },
         ];
         for (const item of sections) {
             sectionCallback(App.createHomeSection({
@@ -562,27 +574,43 @@ class Tranh18 extends types_1.Source {
                 type: types_1.HomeSectionType.singleRowNormal,
             }));
         }
-        for (const item of sections) {
-            try {
-                const $ = await this.DOMHTML(item.url);
-                const manga = this.parser.parseCards($, baseUrl);
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: types_1.HomeSectionType.singleRowNormal,
-                    items: manga,
-                }));
-            }
-            catch (e) {
-                sectionCallback(App.createHomeSection({
-                    id: item.id,
-                    title: item.title,
-                    containsMoreItems: true,
-                    type: types_1.HomeSectionType.singleRowNormal,
-                    items: [],
-                }));
-            }
+        try {
+            const $home = await this.DOMHTML(baseUrl);
+            // 1. Latest section
+            const latestEl = $home('.index-title').first().nextUntil('.index-title, .box-header').find('.mh-item');
+            const latestItems = this.parser.parseCardElements($home, latestEl.length > 0 ? latestEl : $home('.mh-item').slice(0, 15), baseUrl);
+            sectionCallback(App.createHomeSection({
+                id: 'latest',
+                title: 'Mới Cập Nhật',
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+                items: latestItems,
+            }));
+            // 2. Manhwa / Hot section
+            const hotHeader = $home('h2:contains("HOT"), h2:contains("Từ khóa HOT")').first().closest('.index-title, .box-header');
+            const hotEl = hotHeader.nextUntil('.box-header, .index-title, footer').find('.mh-item');
+            const hotItems = this.parser.parseCardElements($home, hotEl.length > 0 ? hotEl : $home('.mh-item').slice(15, 35), baseUrl);
+            sectionCallback(App.createHomeSection({
+                id: 'manhwa',
+                title: 'Manhwa 18+',
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+                items: hotItems,
+            }));
+            // 3. Completed section
+            const completedHeader = $home('h2:contains("Hoàn thành")').first().closest('.box-header, .index-title');
+            const completedEl = completedHeader.nextUntil('.box-header, .index-title, footer').find('.mh-item');
+            const completedItems = this.parser.parseCardElements($home, completedEl.length > 0 ? completedEl : $home('.mh-item').slice(35), baseUrl);
+            sectionCallback(App.createHomeSection({
+                id: 'completed',
+                title: 'Truyện Hoàn Thành',
+                containsMoreItems: true,
+                type: types_1.HomeSectionType.singleRowNormal,
+                items: completedItems,
+            }));
+        }
+        catch (e) {
+            console.error('[Tranh18 error loading homepage]:', e);
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
@@ -657,10 +685,10 @@ exports.Tranh18 = Tranh18;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Tranh18Parser = void 0;
 class Tranh18Parser {
-    parseCards($, baseUrl) {
+    parseCardElements($, elements, baseUrl) {
         const mangaList = [];
         const seenIds = new Set();
-        $('.mh-item').each((_, el) => {
+        elements.each((_, el) => {
             const linkEl = $(el).find('a[href*="/comic/"]');
             const href = linkEl.attr('href') || '';
             const mangaId = href.replace(/.*?\/comic\//, '').replace(/\/+$/, '').trim();
@@ -688,6 +716,9 @@ class Tranh18Parser {
             }));
         });
         return mangaList;
+    }
+    parseCards($, baseUrl) {
+        return this.parseCardElements($, $('.mh-item'), baseUrl);
     }
     parseMangaDetails($, mangaId, baseUrl) {
         const rawTitle = $('h1').first().text().trim() ||
