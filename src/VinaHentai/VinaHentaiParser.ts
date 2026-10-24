@@ -184,19 +184,28 @@ export class Parser {
 
     parseChapters($: CheerioAPI): Chapter[] {
         const chapters: Chapter[] = []
+        const seen = new Set<string>()
 
-        $('a[href^="/manga/"]').each((_: any, el: any) => {
+        // Prefer chapter links inside the main chapter list container if present
+        let chapterLinks = $('div.divide-y a[href^="/manga/"]')
+        if (chapterLinks.length === 0) {
+            chapterLinks = $('a[href^="/manga/"]')
+        }
+
+        chapterLinks.each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
             const parts = href.split('/').filter(Boolean)
             if (parts.length !== 3) return // /manga/{slug}/{chapterSlug}
 
             const chapterId = parts[2]
+            if (seen.has(chapterId)) return
+
             const title = $(el).find('.text-txt-primary').first().text().trim()
                 || $(el).text().trim()
                 || `Chapter ${chapterId}`
 
             const lowerTitle = title.toLowerCase()
-            if (lowerTitle.includes('từ đầu') || lowerTitle.includes('mới nhất') || lowerTitle.includes('đọc tiếp')) {
+            if (lowerTitle.startsWith('đọc ') || lowerTitle.includes('từ đầu') || lowerTitle.includes('mới nhất') || lowerTitle.includes('đọc tiếp')) {
                 return
             }
 
@@ -207,6 +216,7 @@ export class Parser {
             const chapNumMatch = chapterId.match(/(?:chap|chapter)-([\d.]+)/i)
             const chapNum = chapNumMatch ? parseFloat(chapNumMatch[1]) : (chapters.length + 1)
 
+            seen.add(chapterId)
             chapters.push(App.createChapter({
                 id: chapterId,
                 chapNum: chapNum,
@@ -220,7 +230,8 @@ export class Parser {
 
     parseChapterPages($: CheerioAPI): string[] {
         const html = $.html()
-        const regex = /https:\/\/cdn\.vinahentai\.[a-z]+\/manga-images\/[^\s"'\\]+\.(webp|jpg|jpeg|png|gif)/g
+        // Support any CDN hosting /manga-images/ (e.g. cdn.vinahentai.vip, cdn.hentaivnreal.com, etc.)
+        const regex = /https:\/\/[^\s"'\\]+\/manga-images\/[^\s"'\\]+\.(webp|jpg|jpeg|png|gif)/g
         const matches = html.match(regex) ?? []
 
         const pages: string[] = []
@@ -231,6 +242,20 @@ export class Parser {
                 pages.push(url)
             }
         }
+
+        // Fallback: search reader img tags if regex found nothing
+        if (pages.length === 0) {
+            $('img').each((_: any, el: any) => {
+                const src = $(el).attr('src') || $(el).attr('data-src') || ''
+                if (src && /^https?:\/\//i.test(src) && !src.includes('logo') && !src.includes('avatar') && !src.includes('icon') && !src.includes('data:image')) {
+                    if (!seen.has(src)) {
+                        seen.add(src)
+                        pages.push(src)
+                    }
+                }
+            })
+        }
+
         return pages
     }
 
