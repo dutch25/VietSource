@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const Tranh18Parser_1 = require("./Tranh18Parser");
 const Tranh18Setting_1 = require("./Tranh18Setting");
 exports.Tranh18Info = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'Tranh18',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -488,9 +488,9 @@ exports.Tranh18Info = {
         types_1.SourceIntents.SETTINGS_UI |
         types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
-class Tranh18 {
-    constructor(cheerio) {
-        this.cheerio = cheerio;
+class Tranh18 extends types_1.Source {
+    constructor() {
+        super(...arguments);
         this.stateManager = App.createSourceStateManager();
         this.parser = new Tranh18Parser_1.Tranh18Parser();
         this.requestManager = App.createRequestManager({
@@ -539,10 +539,6 @@ class Tranh18 {
         return App.createRequest({
             url: baseUrl,
             method: 'GET',
-            headers: {
-                'referer': `${baseUrl}/`,
-                'user-agent': await this.requestManager.getDefaultUserAgent(),
-            },
         });
     }
     async DOMHTML(url) {
@@ -567,15 +563,26 @@ class Tranh18 {
             }));
         }
         for (const item of sections) {
-            const $ = await this.DOMHTML(item.url);
-            const manga = this.parser.parseCards($, baseUrl);
-            sectionCallback(App.createHomeSection({
-                id: item.id,
-                title: item.title,
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal,
-                items: manga,
-            }));
+            try {
+                const $ = await this.DOMHTML(item.url);
+                const manga = this.parser.parseCards($, baseUrl);
+                sectionCallback(App.createHomeSection({
+                    id: item.id,
+                    title: item.title,
+                    containsMoreItems: true,
+                    type: types_1.HomeSectionType.singleRowNormal,
+                    items: manga,
+                }));
+            }
+            catch (e) {
+                sectionCallback(App.createHomeSection({
+                    id: item.id,
+                    title: item.title,
+                    containsMoreItems: true,
+                    type: types_1.HomeSectionType.singleRowNormal,
+                    items: [],
+                }));
+            }
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {

@@ -12,9 +12,9 @@ export class MultpornParser {
         const seenIds = new Set<string>();
 
         $('.views-row, .views-view-grid td, .views-view-grid [class*="col-"]').each((_: any, el: any) => {
-            // Skip video nodes on /new
-            const isVideo = $(el).find('.views-field-field-vd-preciew img, .views-field-field-vote-video').length > 0;
-            if (isVideo) return;
+            // Skip video nodes if they have video preview specifically
+            const hasVideoPreview = $(el).find('.views-field-field-vd-preciew img').length > 0;
+            if (hasVideoPreview) return;
 
             const titleEl = $(el).find('.views-field-title a, h2 a, h3 a').first();
             let href = titleEl.attr('href') || $(el).find('a').attr('href') || '';

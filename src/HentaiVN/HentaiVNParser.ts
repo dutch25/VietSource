@@ -7,11 +7,11 @@ import {
 } from '@paperback/types';
 
 export class HentaiVNParser {
-    parseCards($: any, baseUrl: string): PartialSourceManga[] {
+    parseCards($: any, baseUrl: string, selector = 'div.items .item, .items-slide .item, .list-items .item, .Item'): PartialSourceManga[] {
         const mangaList: PartialSourceManga[] = [];
         const seenIds = new Set<string>();
 
-        $('div.items .item, .items-slide .item, .list-items .item, .Item').each((_: any, el: any) => {
+        $(selector).each((_: any, el: any) => {
             const linkEl = $(el).find('a[href*="/truyen-hentai/"]').first();
             const href = linkEl.attr('href') || '';
             const mangaId = href.replace(/.*?\/truyen-hentai\//, '').replace(/\/+$/, '').trim();

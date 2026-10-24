@@ -2,19 +2,16 @@ import {
     BadgeColor,
     Chapter,
     ChapterDetails,
-    ChapterProviding,
     CloudflareBypassRequestProviding,
     ContentRating,
     DUISection,
-    HomePageSectionsProviding,
     HomeSection,
     HomeSectionType,
-    MangaProviding,
     PagedResults,
     Request,
     Response,
     SearchRequest,
-    SearchResultsProviding,
+    Source,
     SourceInfo,
     SourceIntents,
     SourceManga,
@@ -31,7 +28,7 @@ import {
 } from './HentaiVNSetting';
 
 export const HentaiVNInfo: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -56,9 +53,7 @@ export const HentaiVNInfo: SourceInfo = {
         SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
 
-export class HentaiVN implements SearchResultsProviding, MangaProviding, ChapterProviding, HomePageSectionsProviding, CloudflareBypassRequestProviding {
-    constructor(private cheerio: CheerioAPI) { }
-
+export class HentaiVN extends Source implements CloudflareBypassRequestProviding {
     stateManager = App.createSourceStateManager();
     parser = new HentaiVNParser();
 
@@ -112,10 +107,6 @@ export class HentaiVN implements SearchResultsProviding, MangaProviding, Chapter
         return App.createRequest({
             url: baseUrl,
             method: 'GET',
-            headers: {
-                'referer': `${baseUrl}/`,
-                'user-agent': await this.requestManager.getDefaultUserAgent(),
-            },
         });
     }
 
@@ -146,15 +137,26 @@ export class HentaiVN implements SearchResultsProviding, MangaProviding, Chapter
         }
 
         for (const item of sections) {
-            const $ = await this.DOMHTML(item.url);
-            const manga = this.parser.parseCards($, baseUrl);
-            sectionCallback(App.createHomeSection({
-                id: item.id,
-                title: item.title,
-                containsMoreItems: true,
-                type: HomeSectionType.singleRowNormal,
-                items: manga,
-            }));
+            try {
+                const $ = await this.DOMHTML(item.url);
+                const selector = item.id === 'de_cu' ? '.items-slide .item' : 'div.items .item, .Item';
+                const manga = this.parser.parseCards($, baseUrl, selector);
+                sectionCallback(App.createHomeSection({
+                    id: item.id,
+                    title: item.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items: manga,
+                }));
+            } catch (e) {
+                sectionCallback(App.createHomeSection({
+                    id: item.id,
+                    title: item.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items: [],
+                }));
+            }
         }
     }
 

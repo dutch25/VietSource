@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const HentaiVNParser_1 = require("./HentaiVNParser");
 const HentaiVNSetting_1 = require("./HentaiVNSetting");
 exports.HentaiVNInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'HentaiVN',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -488,9 +488,9 @@ exports.HentaiVNInfo = {
         types_1.SourceIntents.SETTINGS_UI |
         types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
-class HentaiVN {
-    constructor(cheerio) {
-        this.cheerio = cheerio;
+class HentaiVN extends types_1.Source {
+    constructor() {
+        super(...arguments);
         this.stateManager = App.createSourceStateManager();
         this.parser = new HentaiVNParser_1.HentaiVNParser();
         this.requestManager = App.createRequestManager({
@@ -539,10 +539,6 @@ class HentaiVN {
         return App.createRequest({
             url: baseUrl,
             method: 'GET',
-            headers: {
-                'referer': `${baseUrl}/`,
-                'user-agent': await this.requestManager.getDefaultUserAgent(),
-            },
         });
     }
     async DOMHTML(url) {
@@ -569,15 +565,27 @@ class HentaiVN {
             }));
         }
         for (const item of sections) {
-            const $ = await this.DOMHTML(item.url);
-            const manga = this.parser.parseCards($, baseUrl);
-            sectionCallback(App.createHomeSection({
-                id: item.id,
-                title: item.title,
-                containsMoreItems: true,
-                type: types_1.HomeSectionType.singleRowNormal,
-                items: manga,
-            }));
+            try {
+                const $ = await this.DOMHTML(item.url);
+                const selector = item.id === 'de_cu' ? '.items-slide .item' : 'div.items .item, .Item';
+                const manga = this.parser.parseCards($, baseUrl, selector);
+                sectionCallback(App.createHomeSection({
+                    id: item.id,
+                    title: item.title,
+                    containsMoreItems: true,
+                    type: types_1.HomeSectionType.singleRowNormal,
+                    items: manga,
+                }));
+            }
+            catch (e) {
+                sectionCallback(App.createHomeSection({
+                    id: item.id,
+                    title: item.title,
+                    containsMoreItems: true,
+                    type: types_1.HomeSectionType.singleRowNormal,
+                    items: [],
+                }));
+            }
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
@@ -658,10 +666,10 @@ exports.HentaiVN = HentaiVN;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HentaiVNParser = void 0;
 class HentaiVNParser {
-    parseCards($, baseUrl) {
+    parseCards($, baseUrl, selector = 'div.items .item, .items-slide .item, .list-items .item, .Item') {
         const mangaList = [];
         const seenIds = new Set();
-        $('div.items .item, .items-slide .item, .list-items .item, .Item').each((_, el) => {
+        $(selector).each((_, el) => {
             const linkEl = $(el).find('a[href*="/truyen-hentai/"]').first();
             const href = linkEl.attr('href') || '';
             const mangaId = href.replace(/.*?\/truyen-hentai\//, '').replace(/\/+$/, '').trim();

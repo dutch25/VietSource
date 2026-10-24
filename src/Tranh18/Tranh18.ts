@@ -2,19 +2,16 @@ import {
     BadgeColor,
     Chapter,
     ChapterDetails,
-    ChapterProviding,
     CloudflareBypassRequestProviding,
     ContentRating,
     DUISection,
-    HomePageSectionsProviding,
     HomeSection,
     HomeSectionType,
-    MangaProviding,
     PagedResults,
     Request,
     Response,
     SearchRequest,
-    SearchResultsProviding,
+    Source,
     SourceInfo,
     SourceIntents,
     SourceManga,
@@ -31,7 +28,7 @@ import {
 } from './Tranh18Setting';
 
 export const Tranh18Info: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'Tranh18',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -56,9 +53,7 @@ export const Tranh18Info: SourceInfo = {
         SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
 
-export class Tranh18 implements SearchResultsProviding, MangaProviding, ChapterProviding, HomePageSectionsProviding, CloudflareBypassRequestProviding {
-    constructor(private cheerio: CheerioAPI) { }
-
+export class Tranh18 extends Source implements CloudflareBypassRequestProviding {
     stateManager = App.createSourceStateManager();
     parser = new Tranh18Parser();
 
@@ -112,10 +107,6 @@ export class Tranh18 implements SearchResultsProviding, MangaProviding, ChapterP
         return App.createRequest({
             url: baseUrl,
             method: 'GET',
-            headers: {
-                'referer': `${baseUrl}/`,
-                'user-agent': await this.requestManager.getDefaultUserAgent(),
-            },
         });
     }
 
@@ -144,15 +135,25 @@ export class Tranh18 implements SearchResultsProviding, MangaProviding, ChapterP
         }
 
         for (const item of sections) {
-            const $ = await this.DOMHTML(item.url);
-            const manga = this.parser.parseCards($, baseUrl);
-            sectionCallback(App.createHomeSection({
-                id: item.id,
-                title: item.title,
-                containsMoreItems: true,
-                type: HomeSectionType.singleRowNormal,
-                items: manga,
-            }));
+            try {
+                const $ = await this.DOMHTML(item.url);
+                const manga = this.parser.parseCards($, baseUrl);
+                sectionCallback(App.createHomeSection({
+                    id: item.id,
+                    title: item.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items: manga,
+                }));
+            } catch (e) {
+                sectionCallback(App.createHomeSection({
+                    id: item.id,
+                    title: item.title,
+                    containsMoreItems: true,
+                    type: HomeSectionType.singleRowNormal,
+                    items: [],
+                }));
+            }
         }
     }
 

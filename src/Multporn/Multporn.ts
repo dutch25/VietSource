@@ -27,7 +27,7 @@ import {
 } from './MultpornSetting';
 
 export const MultpornInfo: SourceInfo = {
-    version: '1.0.1',
+    version: '1.0.2',
     name: 'Multporn',
     icon: 'icon.png',
     author: 'Dutch25',
