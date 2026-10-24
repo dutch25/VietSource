@@ -464,8 +464,16 @@ exports.VinaHentai = exports.VinaHentaiInfo = void 0;
 const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
 const BASE_URL = 'https://vinahentai.vip';
+function safeEncodeUrl(url) {
+    try {
+        return encodeURI(decodeURI(url));
+    }
+    catch {
+        return encodeURI(url);
+    }
+}
 exports.VinaHentaiInfo = {
-    version: '1.1.23',
+    version: '1.1.24',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -490,6 +498,7 @@ class VinaHentai extends types_1.Source {
             requestTimeout: 30000,
             interceptor: {
                 interceptRequest: async (request) => {
+                    request.url = safeEncodeUrl(request.url);
                     request.headers = {
                         ...(request.headers ?? {}),
                         'referer': BASE_URL,
@@ -624,17 +633,17 @@ class VinaHentai extends types_1.Source {
         return App.createPagedResults({ results: manga, metadata: isLast ? undefined : { page: page + 1 } });
     }
     async getMangaDetails(mangaId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}`, method: 'GET' }), 0);
+        const response = await this.requestManager.schedule(App.createRequest({ url: safeEncodeUrl(`${BASE_URL}/manga/${mangaId}`), method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}`, method: 'GET' }), 0);
+        const response = await this.requestManager.schedule(App.createRequest({ url: safeEncodeUrl(`${BASE_URL}/manga/${mangaId}`), method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseChapters($);
     }
     async getChapterDetails(mangaId, chapterId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: `${BASE_URL}/manga/${mangaId}/${chapterId}`, method: 'GET' }), 0);
+        const response = await this.requestManager.schedule(App.createRequest({ url: safeEncodeUrl(`${BASE_URL}/manga/${mangaId}/${chapterId}`), method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         const pages = this.parser.parseChapterPages($);
         if (pages.length === 0) {
@@ -643,7 +652,7 @@ class VinaHentai extends types_1.Source {
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     getMangaShareUrl(mangaId) {
-        return `${BASE_URL}/manga/${mangaId}`;
+        return safeEncodeUrl(`${BASE_URL}/manga/${mangaId}`);
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
@@ -813,17 +822,25 @@ class Parser {
     }
     parseChapters($) {
         const chapters = [];
-        $('a[href^="/manga/"]').each((_, el) => {
+        const seen = new Set();
+        // Prefer chapter links inside the main chapter list container if present
+        let chapterLinks = $('div.divide-y a[href^="/manga/"]');
+        if (chapterLinks.length === 0) {
+            chapterLinks = $('a[href^="/manga/"]');
+        }
+        chapterLinks.each((_, el) => {
             const href = $(el).attr('href') ?? '';
             const parts = href.split('/').filter(Boolean);
             if (parts.length !== 3)
                 return; // /manga/{slug}/{chapterSlug}
             const chapterId = parts[2];
+            if (seen.has(chapterId))
+                return;
             const title = $(el).find('.text-txt-primary').first().text().trim()
                 || $(el).text().trim()
                 || `Chapter ${chapterId}`;
             const lowerTitle = title.toLowerCase();
-            if (lowerTitle.includes('từ đầu') || lowerTitle.includes('mới nhất') || lowerTitle.includes('đọc tiếp')) {
+            if (lowerTitle.startsWith('đọc ') || lowerTitle.includes('từ đầu') || lowerTitle.includes('mới nhất') || lowerTitle.includes('đọc tiếp')) {
                 return;
             }
             const timeStr = $(el).find('time').first().attr('dateTime') ?? '';
@@ -831,6 +848,7 @@ class Parser {
             // Try to extract chapter number
             const chapNumMatch = chapterId.match(/(?:chap|chapter)-([\d.]+)/i);
             const chapNum = chapNumMatch ? parseFloat(chapNumMatch[1]) : (chapters.length + 1);
+            seen.add(chapterId);
             chapters.push(App.createChapter({
                 id: chapterId,
                 chapNum: chapNum,
@@ -842,7 +860,8 @@ class Parser {
     }
     parseChapterPages($) {
         const html = $.html();
-        const regex = /https:\/\/cdn\.vinahentai\.[a-z]+\/manga-images\/[^\s"'\\]+\.(webp|jpg|jpeg|png|gif)/g;
+        // Support any CDN hosting /manga-images/ (e.g. cdn.vinahentai.vip, cdn.hentaivnreal.com, etc.)
+        const regex = /https:\/\/[^\s"'\\]+\/manga-images\/[^\s"'\\]+\.(webp|jpg|jpeg|png|gif)/g;
         const matches = html.match(regex) ?? [];
         const pages = [];
         const seen = new Set();
@@ -851,6 +870,18 @@ class Parser {
                 seen.add(url);
                 pages.push(url);
             }
+        }
+        // Fallback: search reader img tags if regex found nothing
+        if (pages.length === 0) {
+            $('img').each((_, el) => {
+                const src = $(el).attr('src') || $(el).attr('data-src') || '';
+                if (src && /^https?:\/\//i.test(src) && !src.includes('logo') && !src.includes('avatar') && !src.includes('icon') && !src.includes('data:image')) {
+                    if (!seen.has(src)) {
+                        seen.add(src);
+                        pages.push(src);
+                    }
+                }
+            });
         }
         return pages;
     }
