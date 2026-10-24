@@ -58,6 +58,7 @@ Hoặc chạm trực tiếp vào nút **[Add to Paperback](paperback://addRepo?d
 | **Tranh18** | [tranh18.cc](https://tranh18.cc/) | 🔞 Adult | ✅ Hoạt động | Manhwa 18+ tiếng Việt, cập nhật mới nhất, phân loại tag chi tiết, hỗ trợ tự đổi domain. |
 | **HentaiVN** | [hentaivnx.com](https://www.hentaivnx.com/) | 🔞 Adult | ✅ Hoạt động | Manga, Doujinshi & Manhwa 18+, truyện đề cử, mới cập nhật, hỗ trợ tự đổi domain. |
 | **Multporn** | [multporn.net](https://multporn.net/) | 🔞 Adult | ✅ Hoạt động | Kho truyện Western Porn Comics, Hentai Manga & 3D, Juicebox gallery full HD. |
+| **ILikeComix** | [ilikecomix.com](https://ilikecomix.com/manga/) | 🔞 Adult | ✅ Hoạt động | Kho truyện Western Comics, 3D Comics, Parody & Hentai, hỗ trợ tự đổi domain. |
 
 ---
 

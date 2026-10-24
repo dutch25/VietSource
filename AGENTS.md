@@ -20,6 +20,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **tranh18.cc** - `Tranh18`
 - **www.hentaivnx.com** - `HentaiVN`
 - **multporn.net** - `Multporn`
+- **ilikecomix.com** - `ILikeComix`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -50,7 +51,8 @@ dutch-extension/
 │   ├── TruyenGG/
 │   ├── Tranh18/
 │   ├── HentaiVN/
-│   └── Multporn/
+│   ├── Multporn/
+│   └── ILikeComix/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -355,6 +357,36 @@ dutch-extension/
 
 ---
 
+# Source: ILikeComix
+
+**Website**: https://ilikecomix.com/manga
+
+### SourceInfo
+- **Version**: 1.0.0
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI
+
+### URL Patterns
+- Homepage: `https://ilikecomix.com/manga/`
+- Comic: `https://ilikecomix.com/manga/c/{mangaId}/`
+- Chapter: `https://ilikecomix.com/manga/c/{chapterId}/`
+- Search: `https://ilikecomix.com/manga/?s={search}&post_type=wp-manga`
+- Genre: `https://ilikecomix.com/manga/manga-genre/{genreId}/`
+
+### Homepage Sections
+1. **Mới Cập Nhật**: `https://ilikecomix.com/manga/?m_orderby=latest`
+2. **Xem Nhiều (Trending)**: `https://ilikecomix.com/manga/?m_orderby=trending`
+3. **Đánh Giá Cao**: `https://ilikecomix.com/manga/?m_orderby=rating`
+4. **3D Comics**: `https://ilikecomix.com/manga/manga-genre/3d-comics/`
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> ILikeComix -> Cài đặt nguồn -> URL cơ sở**.
+
+---
+
+
 
 
 
@@ -385,6 +417,8 @@ dutch-extension/
 **If working on HentaiVN:** Update `src/HentaiVN/HentaiVN.ts` - `version: 'x.x.x'`
 
 **If working on Multporn:** Update `src/Multporn/Multporn.ts` - `version: 'x.x.x'`
+
+**If working on ILikeComix:** Update `src/ILikeComix/ILikeComix.ts` - `version: 'x.x.x'`
 
 DO NOT update package.json unless specifically asked.
 
