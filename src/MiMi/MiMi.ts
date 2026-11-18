@@ -23,7 +23,7 @@ import {
 import { Parser } from './MiMiParser';
 
 export const MiMiInfo: SourceInfo = {
-    version: '1.1.2',
+    version: '1.1.3',
     name: 'MiMi',
     icon: 'icon.png',
     author: 'AlanNois',
@@ -155,9 +155,13 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
     async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
         const sections = [
             App.createHomeSection({ id: 'genre_183_223', title: 'Private Section', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
-            App.createHomeSection({ id: 'album_1080', title: 'Art siêu nứng', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
-            App.createHomeSection({ id: 'album_156', title: 'Cool Art', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'album_1665', title: 'Peak', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'album_245', title: 'Peak 2', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'album_6414', title: 'Art siêu nứng', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'album_4805', title: 'Art siêu nứng 2', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'album_605', title: 'Đáng theo dõi', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'album_1426', title: 'Hidden Gem', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
+            App.createHomeSection({ id: 'album_156', title: 'Cool Art', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'popular', title: 'Phổ Biến Nhất', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
             App.createHomeSection({ id: 'latest', title: 'Mới Cập Nhật', containsMoreItems: true, type: HomeSectionType.singleRowNormal }),
         ];
@@ -170,14 +174,26 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
                 case 'genre_183_223':
                     response = await this.apiRequest('manga/advanced-search', 'genre=183,223&exclude_genre=196,213,184,308,349,351,381&page=1&page_size=25');
                     break;
-                case 'album_1080':
-                    response = await this.apiRequest('albums/1080/manga', 'page=1&page_size=25');
+                case 'album_1665':
+                    response = await this.apiRequest('albums/1665/manga', 'page=1&page_size=25');
+                    break;
+                case 'album_245':
+                    response = await this.apiRequest('albums/245/manga', 'page=1&page_size=25');
+                    break;
+                case 'album_6414':
+                    response = await this.apiRequest('albums/6414/manga', 'page=1&page_size=25');
+                    break;
+                case 'album_4805':
+                    response = await this.apiRequest('albums/4805/manga', 'page=1&page_size=25');
+                    break;
+                case 'album_605':
+                    response = await this.apiRequest('albums/605/manga', 'page=1&page_size=25');
+                    break;
+                case 'album_1426':
+                    response = await this.apiRequest('albums/1426/manga', 'page=1&page_size=25');
                     break;
                 case 'album_156':
                     response = await this.apiRequest('albums/156/manga', 'page=1&page_size=25');
-                    break;
-                case 'album_1665':
-                    response = await this.apiRequest('albums/1665/manga', 'page=1&page_size=25');
                     break;
                 case 'popular':
                     response = await this.apiRequest('manga', 'sort=views&exclude_genre=196&page=1&page_size=25');
@@ -202,14 +218,26 @@ export class MiMi implements ChapterProviding, MangaProviding, SearchResultsProv
             case 'genre_183_223':
                 response = await this.apiRequest('manga/advanced-search', `genre=183,223&exclude_genre=196,213,184,308,349,351,381&page=${page}&page_size=25`);
                 break;
-            case 'album_1080':
-                response = await this.apiRequest('albums/1080/manga', `page=${page}&page_size=25`);
+            case 'album_1665':
+                response = await this.apiRequest('albums/1665/manga', `page=${page}&page_size=25`);
+                break;
+            case 'album_245':
+                response = await this.apiRequest('albums/245/manga', `page=${page}&page_size=25`);
+                break;
+            case 'album_6414':
+                response = await this.apiRequest('albums/6414/manga', `page=${page}&page_size=25`);
+                break;
+            case 'album_4805':
+                response = await this.apiRequest('albums/4805/manga', `page=${page}&page_size=25`);
+                break;
+            case 'album_605':
+                response = await this.apiRequest('albums/605/manga', `page=${page}&page_size=25`);
+                break;
+            case 'album_1426':
+                response = await this.apiRequest('albums/1426/manga', `page=${page}&page_size=25`);
                 break;
             case 'album_156':
                 response = await this.apiRequest('albums/156/manga', `page=${page}&page_size=25`);
-                break;
-            case 'album_1665':
-                response = await this.apiRequest('albums/1665/manga', `page=${page}&page_size=25`);
                 break;
             case 'popular':
                 response = await this.apiRequest('manga', `sort=views&exclude_genre=196&page=${page}&page_size=25`);

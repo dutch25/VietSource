@@ -10,7 +10,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **www.toptruyenzone12.com** - `TopTruyen`
 - **goctruyentranhvui30.com** - `GocTruyenTranh`
 - **luottruyen16.com** - `LuotTruyen`
-- **vinahentai.vip** - `VinaHentai`
+- **vinahentai.best** - `VinaHentai`
 - **mimimoe.moe** - `MiMi`
 - **zettruyen4.com** - `ZetTruyen`
 - **truyenggvn.com** - `TruyenGG`
