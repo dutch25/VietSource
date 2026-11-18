@@ -106,18 +106,42 @@ export class Parser {
         const chapters: Chapter[] = [];
         const seen = new Set<string>();
 
-        // Find all links to chapters e.g. /manhwa-18/mangaId/chuong-X
-        $(`a[href*="/${mangaId}/chuong-"], a[href*="/chuong-"]`).each((_: number, elem: any) => {
+        // Match all chapter list items
+        $('a[href*="/' + mangaId + '/"]').each((_: number, elem: any) => {
             const href = $(elem).attr('href') || '';
-            const match = href.match(/chuong-(\d+(\.\d+)?)/i);
-            if (!match) return;
+            const parts = href.split('/').filter(Boolean);
+            const chapSlug = parts.pop() || '';
 
-            const chapSlug = href.split('/').filter(Boolean).pop() || `chuong-${match[1]}`;
+            // Skip buttons like "Đọc từ đầu" or "Đọc mới nhất" which don't have the chapter list row structure
+            // Or ensure it matches chap- / chuong- / chapter-
+            const numMatch = chapSlug.match(/(?:chuong|chap|chapter)-?(\d+(\.\d+)?)/i);
+            if (!numMatch) return;
+
+            // Only parse if it has the chapter title element inside
+            const titleSpan = $(elem).find('span.text-txt-primary, span[style*="line-clamp:2"]');
+            if (titleSpan.length === 0) return;
+
             if (seen.has(chapSlug)) return;
             seen.add(chapSlug);
 
-            const chapNum = parseFloat(match[1]);
-            let name = $(elem).text().trim() || `Chương ${chapNum}`;
+            const chapNum = parseFloat(numMatch[1]);
+            let name = titleSpan.first().text().trim();
+            if (!name) {
+                name = `Chương ${chapNum}`;
+            }
+
+            // Extract publish date if available
+            let time: Date | undefined = undefined;
+            const timeElem = $(elem).find('time[dateTime]').first();
+            if (timeElem.length > 0) {
+                const dateStr = timeElem.attr('dateTime');
+                if (dateStr) {
+                    const parsedDate = new Date(dateStr);
+                    if (!isNaN(parsedDate.getTime())) {
+                        time = parsedDate;
+                    }
+                }
+            }
 
             chapters.push(
                 App.createChapter({
@@ -125,6 +149,7 @@ export class Parser {
                     chapNum: isNaN(chapNum) ? 0 : chapNum,
                     name: name,
                     langCode: '🇻🇳',
+                    time: time,
                 })
             );
         });

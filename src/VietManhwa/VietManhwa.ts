@@ -18,7 +18,7 @@ import { Parser } from './VietManhwaParser';
 import { domainSettings, getDomain, resetSettings, DEFAULT_BASE_URL } from './VietManhwaSetting';
 
 export const VietManhwaInfo: SourceInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'VietManhwa',
     icon: 'icon.png',
     author: 'Dutch25',
