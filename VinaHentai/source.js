@@ -463,7 +463,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VinaHentai = exports.VinaHentaiInfo = void 0;
 const types_1 = require("@paperback/types");
 const VinaHentaiParser_1 = require("./VinaHentaiParser");
-const BASE_URL = 'https://vinahentai.vip';
+const VinaHentaiSetting_1 = require("./VinaHentaiSetting");
 function safeEncodeUrl(url) {
     if (/[^\x00-\x7F]/.test(url)) {
         return encodeURI(url);
@@ -471,62 +471,78 @@ function safeEncodeUrl(url) {
     return url;
 }
 exports.VinaHentaiInfo = {
-    version: '1.1.26',
+    version: '1.1.27',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
     authorWebsite: 'https://github.com/Dutch25',
     description: 'Extension for VinaHentai',
     contentRating: types_1.ContentRating.ADULT,
-    websiteBaseURL: BASE_URL,
+    websiteBaseURL: VinaHentaiSetting_1.DEFAULT_BASE_URL,
     sourceTags: [
         { text: 'Adult', type: types_1.BadgeColor.RED },
         { text: '18+', type: types_1.BadgeColor.YELLOW },
     ],
     intents: types_1.SourceIntents.MANGA_CHAPTERS |
         types_1.SourceIntents.HOMEPAGE_SECTIONS |
+        types_1.SourceIntents.SETTINGS_UI |
         types_1.SourceIntents.CLOUDFLARE_BYPASS_REQUIRED,
 };
 class VinaHentai extends types_1.Source {
     constructor() {
         super(...arguments);
         this.parser = new VinaHentaiParser_1.Parser();
+        this.stateManager = App.createSourceStateManager();
         this.requestManager = App.createRequestManager({
             requestsPerSecond: 3,
             requestTimeout: 30000,
             interceptor: {
                 interceptRequest: async (request) => {
+                    const baseUrl = await (0, VinaHentaiSetting_1.getDomain)(this.stateManager);
                     request.url = safeEncodeUrl(request.url);
                     request.headers = {
                         ...(request.headers ?? {}),
-                        'referer': BASE_URL,
+                        'referer': `${baseUrl}/`,
                         'user-agent': await this.requestManager.getDefaultUserAgent(),
                     };
                     return request;
                 },
                 interceptResponse: async (response) => response,
-            }
+            },
+        });
+    }
+    async getSourceMenu() {
+        return App.createDUISection({
+            id: 'main',
+            header: 'Cài đặt nguồn',
+            isHidden: false,
+            rows: async () => [
+                (0, VinaHentaiSetting_1.domainSettings)(this.stateManager),
+                (0, VinaHentaiSetting_1.resetSettings)(this.stateManager),
+            ],
         });
     }
     async getCloudflareBypassRequestAsync() {
+        const baseUrl = await (0, VinaHentaiSetting_1.getDomain)(this.stateManager);
         return App.createRequest({
-            url: BASE_URL,
+            url: baseUrl,
             method: 'GET',
             headers: {
-                'referer': BASE_URL,
+                'referer': `${baseUrl}/`,
                 'user-agent': await this.requestManager.getDefaultUserAgent(),
-            }
+            },
         });
     }
     async getHomePageSections(sectionCallback) {
+        const baseUrl = await (0, VinaHentaiSetting_1.getDomain)(this.stateManager);
         const sections = [
-            { id: 'hot', title: 'Truyện HOT', url: `${BASE_URL}` },
-            { id: 'latest', title: 'Truyện Hentai Mới', url: `${BASE_URL}` },
-            { id: 'week', title: 'Top Tuần', url: `${BASE_URL}/bang-xep-hang/truyen?period=weekly` },
-            { id: 'month', title: 'Top Tháng', url: `${BASE_URL}/bang-xep-hang/truyen?period=monthly` },
-            { id: 'private', title: 'Bộ Sưu Tập Riêng', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=1` },
-            { id: 'private2', title: 'Bộ Sưu Tập Riêng 2', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=1&sort=viewNumber` },
-            { id: 'private3', title: 'Bộ Sưu Tập Riêng 3', url: `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=1&sort=likeNumber` },
+            { id: 'hot', title: 'Truyện HOT', url: `${baseUrl}` },
+            { id: 'latest', title: 'Truyện Hentai Mới', url: `${baseUrl}` },
+            { id: 'week', title: 'Top Tuần', url: `${baseUrl}/bang-xep-hang/truyen?period=weekly` },
+            { id: 'month', title: 'Top Tháng', url: `${baseUrl}/bang-xep-hang/truyen?period=monthly` },
+            { id: 'private', title: 'Bộ Sưu Tập Riêng', url: `${baseUrl}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=1` },
+            { id: 'private2', title: 'Bộ Sưu Tập Riêng 2', url: `${baseUrl}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=1&sort=viewNumber` },
+            { id: 'private3', title: 'Bộ Sưu Tập Riêng 3', url: `${baseUrl}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=1&sort=likeNumber` },
         ];
         for (const section of sections) {
             sectionCallback(App.createHomeSection({
@@ -572,17 +588,18 @@ class VinaHentai extends types_1.Source {
         }
     }
     async getViewMoreItems(homepageSectionId, metadata) {
+        const baseUrl = await (0, VinaHentaiSetting_1.getDomain)(this.stateManager);
         const page = metadata?.page ?? 1;
-        let url = `${BASE_URL}/danh-sach?page=${page}`;
+        let url = `${baseUrl}/danh-sach?page=${page}`;
         if (homepageSectionId === 'private' || homepageSectionId === 'private2' || homepageSectionId === 'private3') {
             const sortParam = homepageSectionId === 'private2' ? '&sort=viewNumber' : homepageSectionId === 'private3' ? '&sort=likeNumber' : '';
-            url = `${BASE_URL}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=${page}${sortParam}`;
+            url = `${baseUrl}/tim-kiem/nang-cao?apply=1&excludeGenres=yaoi,trap,futanari,furry&includeGenres=anal,khong-che&page=${page}${sortParam}`;
         }
         else if (homepageSectionId === 'week') {
-            url = `${BASE_URL}/bang-xep-hang/truyen?period=weekly&page=${page}`;
+            url = `${baseUrl}/bang-xep-hang/truyen?period=weekly&page=${page}`;
         }
         else if (homepageSectionId === 'month') {
-            url = `${BASE_URL}/bang-xep-hang/truyen?period=monthly&page=${page}`;
+            url = `${baseUrl}/bang-xep-hang/truyen?period=monthly&page=${page}`;
         }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 1);
         const $ = this.cheerio.load(response.data);
@@ -591,21 +608,22 @@ class VinaHentai extends types_1.Source {
         return App.createPagedResults({ results: manga, metadata: isLast ? undefined : { page: page + 1 } });
     }
     async getSearchResults(query, metadata) {
+        const baseUrl = await (0, VinaHentaiSetting_1.getDomain)(this.stateManager);
         const page = metadata?.page ?? 1;
         const selectedTag = query.includedTags?.[0];
         let url;
         if (selectedTag) {
             if (selectedTag.id.startsWith('author:')) {
                 const authorId = selectedTag.id.replace('author:', '');
-                url = `${BASE_URL}/tac-gia/${authorId}?page=${page}`;
+                url = `${baseUrl}/tac-gia/${authorId}?page=${page}`;
             }
             else {
-                url = `${BASE_URL}/the-loai/${selectedTag.id}?page=${page}`;
+                url = `${baseUrl}/the-loai/${selectedTag.id}?page=${page}`;
             }
         }
         else {
             const searchQuery = encodeURIComponent(query.title ?? '');
-            url = `${BASE_URL}/tim-kiem?q=${searchQuery}&page=${page}`;
+            url = `${baseUrl}/tim-kiem?q=${searchQuery}&page=${page}`;
         }
         const response = await this.requestManager.schedule(App.createRequest({ url, method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
@@ -614,17 +632,20 @@ class VinaHentai extends types_1.Source {
         return App.createPagedResults({ results: manga, metadata: isLast ? undefined : { page: page + 1 } });
     }
     async getMangaDetails(mangaId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: safeEncodeUrl(`${BASE_URL}/manga/${mangaId}`), method: 'GET' }), 0);
+        const baseUrl = await (0, VinaHentaiSetting_1.getDomain)(this.stateManager);
+        const response = await this.requestManager.schedule(App.createRequest({ url: safeEncodeUrl(`${baseUrl}/manga/${mangaId}`), method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseMangaDetails($, mangaId);
     }
     async getChapters(mangaId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: safeEncodeUrl(`${BASE_URL}/manga/${mangaId}`), method: 'GET' }), 0);
+        const baseUrl = await (0, VinaHentaiSetting_1.getDomain)(this.stateManager);
+        const response = await this.requestManager.schedule(App.createRequest({ url: safeEncodeUrl(`${baseUrl}/manga/${mangaId}`), method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         return this.parser.parseChapters($);
     }
     async getChapterDetails(mangaId, chapterId) {
-        const response = await this.requestManager.schedule(App.createRequest({ url: safeEncodeUrl(`${BASE_URL}/manga/${mangaId}/${chapterId}`), method: 'GET' }), 0);
+        const baseUrl = await (0, VinaHentaiSetting_1.getDomain)(this.stateManager);
+        const response = await this.requestManager.schedule(App.createRequest({ url: safeEncodeUrl(`${baseUrl}/manga/${mangaId}/${chapterId}`), method: 'GET' }), 0);
         const $ = this.cheerio.load(response.data);
         const pages = this.parser.parseChapterPages($);
         if (pages.length === 0) {
@@ -633,7 +654,7 @@ class VinaHentai extends types_1.Source {
         return App.createChapterDetails({ id: chapterId, mangaId, pages });
     }
     getMangaShareUrl(mangaId) {
-        return safeEncodeUrl(`${BASE_URL}/manga/${mangaId}`);
+        return safeEncodeUrl(`${VinaHentaiSetting_1.DEFAULT_BASE_URL}/manga/${mangaId}`);
     }
     async getSearchTags() {
         return this.parser.getSearchTags();
@@ -641,7 +662,7 @@ class VinaHentai extends types_1.Source {
 }
 exports.VinaHentai = VinaHentai;
 
-},{"./VinaHentaiParser":63,"@paperback/types":61}],63:[function(require,module,exports){
+},{"./VinaHentaiParser":63,"./VinaHentaiSetting":64,"@paperback/types":61}],63:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
@@ -1087,6 +1108,54 @@ class Parser {
     }
 }
 exports.Parser = Parser;
+
+},{}],64:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.resetSettings = exports.domainSettings = exports.getDomain = exports.DEFAULT_BASE_URL = void 0;
+exports.DEFAULT_BASE_URL = 'https://vinahentai.best';
+const getDomain = async (stateManager) => {
+    return await stateManager.retrieve('baseUrl') ?? exports.DEFAULT_BASE_URL;
+};
+exports.getDomain = getDomain;
+const domainSettings = (stateManager) => {
+    return App.createDUINavigationButton({
+        id: 'domain_settings',
+        label: 'Cài đặt nguồn',
+        form: App.createDUIForm({
+            sections: async () => [
+                App.createDUISection({
+                    isHidden: false,
+                    id: 'content',
+                    rows: async () => [
+                        App.createDUIInputField({
+                            id: 'baseUrl',
+                            label: 'URL cơ sở (Domain)',
+                            value: App.createDUIBinding({
+                                get: async () => await (0, exports.getDomain)(stateManager),
+                                set: async (value) => {
+                                    const trimmed = value.trim().replace(/\/+$/, '');
+                                    await stateManager.store('baseUrl', trimmed || exports.DEFAULT_BASE_URL);
+                                },
+                            }),
+                        }),
+                    ],
+                }),
+            ],
+        }),
+    });
+};
+exports.domainSettings = domainSettings;
+function resetSettings(stateManager) {
+    return App.createDUIButton({
+        id: 'reset',
+        label: 'Đặt lại mặc định',
+        onTap: async () => {
+            await stateManager.store('baseUrl', exports.DEFAULT_BASE_URL);
+        },
+    });
+}
+exports.resetSettings = resetSettings;
 
 },{}]},{},[62])(62)
 });
