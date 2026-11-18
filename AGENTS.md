@@ -21,6 +21,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **8muses.io** - `EightMuses`
 - **allporncomic.com** - `AllPornComic`
 - **hoaphunglieunguyen.com** - `HoaPhungLieuNguyen`
+- **vietmanhwa.org** - `VietManhwa`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -52,7 +53,8 @@ dutch-extension/
 │   ├── ILikeComix/
 │   ├── EightMuses/
 │   ├── AllPornComic/
-│   └── HoaPhungLieuNguyen/
+│   ├── HoaPhungLieuNguyen/
+│   └── VietManhwa/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -372,6 +374,32 @@ dutch-extension/
 
 ### In-App Manual Domain Update
 - Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> HoaPhungLieuNguyen -> Cài đặt nguồn -> URL cơ sở**.
+
+---
+
+# Source: VietManhwa
+
+**Website**: https://vietmanhwa.org
+
+### SourceInfo
+- **Version**: 1.0.0
+- **Author**: Dutch25
+- **Content Rating**: ADULT (18+)
+- **Tags**: "Adult" (RED), "18+" (YELLOW)
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI
+
+### URL Patterns
+- Homepage: `https://vietmanhwa.org/`
+- Manga: `https://vietmanhwa.org/manhwa-18/{mangaId}`
+- Chapter: `https://vietmanhwa.org/manhwa-18/{mangaId}/chuong-{num}`
+- Search & List: `https://vietmanhwa.org/danh-sach?keyword={search}&trang={page}`
+
+### Homepage Sections
+1. **Truyện Nổi Bật**: `https://vietmanhwa.org/`
+2. **Danh Sách Mới Nhất**: `https://vietmanhwa.org/danh-sach`
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> VietManhwa -> Cài đặt nguồn -> URL cơ sở**.
 
 ---
 
