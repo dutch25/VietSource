@@ -20,6 +20,7 @@ This is a **Paperback** iOS extension supporting **Vietnamese manga sources**:
 - **ilikecomix.com** - `ILikeComix`
 - **8muses.io** - `EightMuses`
 - **allporncomic.com** - `AllPornComic`
+- **hoaphunglieunguyen.com** - `HoaPhungLieuNguyen`
 
 Users can browse, search, and read manga from these sites through the Paperback app.
 
@@ -50,7 +51,8 @@ dutch-extension/
 │   ├── Multporn/
 │   ├── ILikeComix/
 │   ├── EightMuses/
-│   └── AllPornComic/
+│   ├── AllPornComic/
+│   └── HoaPhungLieuNguyen/
 ├── bundles/                      ← Built extension (auto-generated)
 ├── package.json                  ← Dependencies and scripts
 ├── tsconfig.json                  ← TypeScript config
@@ -346,6 +348,30 @@ dutch-extension/
 
 ### In-App Manual Domain Update
 - Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> AllPornComic -> Cài đặt nguồn -> URL cơ sở**.
+
+---
+
+# Source: HoaPhungLieuNguyen
+
+**Website**: https://hoaphunglieunguyen.com
+
+### SourceInfo
+- **Version**: 1.0.0
+- **Author**: Dutch25
+- **Content Rating**: EVERYONE
+- **Intents**: MANGA_CHAPTERS | HOMEPAGE_SECTIONS | SETTINGS_UI
+
+### URL Patterns
+- Homepage: `https://hoaphunglieunguyen.com/`
+- Tap / Volume: `https://hoaphunglieunguyen.com/tap/tap-{id}/`
+- Chapter: `https://hoaphunglieunguyen.com/tap/tap-{id}/hoi-{num}/`
+
+### Homepage Sections
+1. **Hỏa Phụng Liêu Nguyên - Trọn Bộ**: Đọc toàn bộ từ hồi 1 đến 637+
+2. **Danh Sách Theo Tập (Tập 1 - 82+)**: Danh sách 82 tập riêng lẻ
+
+### In-App Manual Domain Update
+- Supports `SETTINGS_UI`: User can change base URL inside Paperback via **Settings -> Sources -> HoaPhungLieuNguyen -> Cài đặt nguồn -> URL cơ sở**.
 
 ---
 
