@@ -465,7 +465,7 @@ const types_1 = require("@paperback/types");
 const VietManhwaParser_1 = require("./VietManhwaParser");
 const VietManhwaSetting_1 = require("./VietManhwaSetting");
 exports.VietManhwaInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'VietManhwa',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -706,23 +706,46 @@ class Parser {
     parseChapters($, mangaId) {
         const chapters = [];
         const seen = new Set();
-        // Find all links to chapters e.g. /manhwa-18/mangaId/chuong-X
-        $(`a[href*="/${mangaId}/chuong-"], a[href*="/chuong-"]`).each((_, elem) => {
+        // Match all chapter list items
+        $('a[href*="/' + mangaId + '/"]').each((_, elem) => {
             const href = $(elem).attr('href') || '';
-            const match = href.match(/chuong-(\d+(\.\d+)?)/i);
-            if (!match)
+            const parts = href.split('/').filter(Boolean);
+            const chapSlug = parts.pop() || '';
+            // Skip buttons like "Đọc từ đầu" or "Đọc mới nhất" which don't have the chapter list row structure
+            // Or ensure it matches chap- / chuong- / chapter-
+            const numMatch = chapSlug.match(/(?:chuong|chap|chapter)-?(\d+(\.\d+)?)/i);
+            if (!numMatch)
                 return;
-            const chapSlug = href.split('/').filter(Boolean).pop() || `chuong-${match[1]}`;
+            // Only parse if it has the chapter title element inside
+            const titleSpan = $(elem).find('span.text-txt-primary, span[style*="line-clamp:2"]');
+            if (titleSpan.length === 0)
+                return;
             if (seen.has(chapSlug))
                 return;
             seen.add(chapSlug);
-            const chapNum = parseFloat(match[1]);
-            let name = $(elem).text().trim() || `Chương ${chapNum}`;
+            const chapNum = parseFloat(numMatch[1]);
+            let name = titleSpan.first().text().trim();
+            if (!name) {
+                name = `Chương ${chapNum}`;
+            }
+            // Extract publish date if available
+            let time = undefined;
+            const timeElem = $(elem).find('time[dateTime]').first();
+            if (timeElem.length > 0) {
+                const dateStr = timeElem.attr('dateTime');
+                if (dateStr) {
+                    const parsedDate = new Date(dateStr);
+                    if (!isNaN(parsedDate.getTime())) {
+                        time = parsedDate;
+                    }
+                }
+            }
             chapters.push(App.createChapter({
                 id: chapSlug,
                 chapNum: isNaN(chapNum) ? 0 : chapNum,
                 name: name,
                 langCode: '🇻🇳',
+                time: time,
             }));
         });
         return chapters.sort((a, b) => b.chapNum - a.chapNum);
