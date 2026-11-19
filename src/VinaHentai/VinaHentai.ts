@@ -32,7 +32,7 @@ function safeEncodeUrl(url: string): string {
 }
 
 export const VinaHentaiInfo: SourceInfo = {
-    version: '1.1.27',
+    version: '1.1.28',
     name: 'VinaHentai',
     icon: 'icon.png',
     author: 'Dutch25',
@@ -208,7 +208,7 @@ export class VinaHentai extends Source {
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
         const baseUrl = await getDomain(this.stateManager);
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: safeEncodeUrl(`${baseUrl}/manga/${mangaId}`), method: 'GET' }), 0
+            App.createRequest({ url: safeEncodeUrl(`${baseUrl}/truyen-hentai/${mangaId}`), method: 'GET' }), 0
         );
         const $ = this.cheerio.load(response.data as string);
         return this.parser.parseMangaDetails($, mangaId);
@@ -217,16 +217,16 @@ export class VinaHentai extends Source {
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const baseUrl = await getDomain(this.stateManager);
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: safeEncodeUrl(`${baseUrl}/manga/${mangaId}`), method: 'GET' }), 0
+            App.createRequest({ url: safeEncodeUrl(`${baseUrl}/truyen-hentai/${mangaId}`), method: 'GET' }), 0
         );
         const $ = this.cheerio.load(response.data as string);
-        return this.parser.parseChapters($);
+        return this.parser.parseChapters($, mangaId);
     }
 
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         const baseUrl = await getDomain(this.stateManager);
         const response = await this.requestManager.schedule(
-            App.createRequest({ url: safeEncodeUrl(`${baseUrl}/manga/${mangaId}/${chapterId}`), method: 'GET' }), 0
+            App.createRequest({ url: safeEncodeUrl(`${baseUrl}/truyen-hentai/${mangaId}/${chapterId}`), method: 'GET' }), 0
         );
         const $ = this.cheerio.load(response.data as string);
         const pages = this.parser.parseChapterPages($);
@@ -239,7 +239,7 @@ export class VinaHentai extends Source {
     }
 
     override getMangaShareUrl(mangaId: string): string {
-        return safeEncodeUrl(`${DEFAULT_BASE_URL}/manga/${mangaId}`);
+        return safeEncodeUrl(`${DEFAULT_BASE_URL}/truyen-hentai/${mangaId}`);
     }
 
     async getSearchTags(): Promise<TagSection[]> {

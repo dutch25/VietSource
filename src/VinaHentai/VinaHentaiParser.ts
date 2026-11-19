@@ -11,7 +11,7 @@ import { CheerioAPI } from 'cheerio'
 export class Parser {
 
     parseHomePage($: CheerioAPI): PartialSourceManga[] {
-        const cards = $('a[href^="/manga/"]')
+        const cards = $('a[href*="/truyen-hentai/"], a[href^="/manga/"]')
         const imageMap = this.buildImageMap($)
         return this.parseCards($, cards, imageMap)
     }
@@ -26,7 +26,7 @@ export class Parser {
         for (let i = 0; i < 5; i++) {
             const next = current.next()
             if (next.length > 0) {
-                const cards = next.find('a[href^="/manga/"]')
+                const cards = next.find('a[href*="/truyen-hentai/"], a[href^="/manga/"]')
                 if (cards.length > 0) {
                     return this.parseCards($, cards, imageMap)
                 }
@@ -34,7 +34,7 @@ export class Parser {
 
             const parentNext = current.parent().next()
             if (parentNext.length > 0) {
-                const cards = parentNext.find('a[href^="/manga/"]')
+                const cards = parentNext.find('a[href*="/truyen-hentai/"], a[href^="/manga/"]')
                 if (cards.length > 0) {
                     return this.parseCards($, cards, imageMap)
                 }
@@ -50,7 +50,10 @@ export class Parser {
             const href = $(el).attr('href')
             if (!href) return
             const parts = href.split('/').filter(Boolean)
-            if (parts.length !== 2) return
+            if (parts.length < 2) return // /truyen-hentai/{slug} or /manga/{slug}
+
+            const prefix = parts[0]
+            if (prefix !== 'truyen-hentai' && prefix !== 'manga') return
 
             const slug = parts[1].trim()
             if (slug === 'manage') return
@@ -182,27 +185,29 @@ export class Parser {
         })
     }
 
-    parseChapters($: CheerioAPI): Chapter[] {
+    parseChapters($: CheerioAPI, mangaId?: string): Chapter[] {
         const chapters: Chapter[] = []
         const seen = new Set<string>()
 
-        // Prefer chapter links inside the main chapter list container if present
-        let chapterLinks = $('div.divide-y a[href^="/manga/"]')
-        if (chapterLinks.length === 0) {
-            chapterLinks = $('a[href^="/manga/"]')
-        }
+        // Find chapter links matching /truyen-hentai/{mangaId}/{chapterId} or /manga/{mangaId}/{chapterId}
+        const selector = mangaId 
+            ? `a[href*="/${mangaId}/"]` 
+            : 'div.divide-y a[href*="/truyen-hentai/"], div.divide-y a[href*="/manga/"], a[href*="/truyen-hentai/"], a[href*="/manga/"]'
 
-        chapterLinks.each((_: any, el: any) => {
+        $(selector).each((_: any, el: any) => {
             const href = $(el).attr('href') ?? ''
             const parts = href.split('/').filter(Boolean)
-            if (parts.length !== 3) return // /manga/{slug}/{chapterSlug}
+            if (parts.length < 3) return // [prefix, mangaId, chapterId]
+
+            const prefix = parts[0]
+            if (prefix !== 'truyen-hentai' && prefix !== 'manga') return
 
             const chapterId = parts[2]
             if (seen.has(chapterId)) return
 
-            const title = $(el).find('.text-txt-primary').first().text().trim()
-                || $(el).text().trim()
-                || `Chapter ${chapterId}`
+            // Avoid banner / action buttons
+            const titleSpan = $(el).find('.text-txt-primary, span[style*="line-clamp"], h3, h4').first()
+            let title = titleSpan.text().trim() || $(el).text().trim() || `Chapter ${chapterId}`
 
             const lowerTitle = title.toLowerCase()
             if (lowerTitle.startsWith('đọc ') || lowerTitle.includes('từ đầu') || lowerTitle.includes('mới nhất') || lowerTitle.includes('đọc tiếp')) {
@@ -213,13 +218,13 @@ export class Parser {
             const time = timeStr ? new Date(timeStr) : new Date()
 
             // Try to extract chapter number
-            const chapNumMatch = chapterId.match(/(?:chap|chapter)-([\d.]+)/i)
+            const chapNumMatch = chapterId.match(/(?:chap|chapter|chuong)-?([\d.]+)/i) || title.match(/(?:chap|chapter|chuong)\s*([\d.]+)/i)
             const chapNum = chapNumMatch ? parseFloat(chapNumMatch[1]) : (chapters.length + 1)
 
             seen.add(chapterId)
             chapters.push(App.createChapter({
                 id: chapterId,
-                chapNum: chapNum,
+                chapNum: isNaN(chapNum) ? (chapters.length + 1) : chapNum,
                 name: title,
                 time: time,
             }))
